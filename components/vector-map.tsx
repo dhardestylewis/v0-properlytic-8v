@@ -12,6 +12,8 @@ import { getOpportunityColor, getValueColor, formatOpportunity, formatCurrency, 
 import { TrendingUp, TrendingDown, Minus, Building2 } from "lucide-react"
 import { FanChart } from "./fan-chart"
 import { cellToLatLng } from "h3-js"
+import { MapTooltip } from "./map-tooltip"
+import { useRouter, useSearchParams } from "next/navigation"
 
 interface VectorMapProps {
     filters: FilterState
@@ -44,6 +46,34 @@ export function VectorMap({
     const [isLoadingDetails, setIsLoadingDetails] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
 
+    // ADVANCED TOOLTIP STATE (Full Parity with MapView)
+    const [primaryDetails, setPrimaryDetails] = useState<DetailsResponse | null>(null)
+    const [comparisonDetails, setComparisonDetailsState] = useState<DetailsResponse | null>(null)
+    // Note: previewDetails is computed via useMemo below, removed useState duplicate
+    // Note: year comes from props, not local state
+
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // VIEW SYNC: Update URL when map moves
+    useEffect(() => {
+        if (!mapRef.current) return
+        const map = mapRef.current
+
+        const onMoveEnd = () => {
+            const center = map.getCenter()
+            const zoom = map.getZoom()
+            const params = new URLSearchParams(searchParams.toString())
+            params.set("lat", center.lat.toFixed(5))
+            params.set("lng", center.lng.toFixed(5))
+            params.set("zoom", zoom.toFixed(2))
+            router.replace(`?${params.toString()}`, { scroll: false })
+        }
+
+        map.on("moveend", onMoveEnd)
+        return () => { map.off("moveend", onMoveEnd) }
+    }, [isLoaded, searchParams, router])
+
     // TRACK MOBILE
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768)
@@ -58,6 +88,7 @@ export function VectorMap({
     const activeHoverIds = useRef<Set<string>>(new Set()) // Track all for sweep
     const selectedHexesRef = useRef<string[]>([])
     const [mousePos, setMousePos] = useState<{ x: number, y: number } | null>(null)
+    const [tooltipProps, setTooltipProps] = useState<any>(null)
 
     // HELPERS (Parity with MapView)
     const aggregateDetails = (list: DetailsResponse[]): DetailsResponse => {
@@ -70,8 +101,13 @@ export function VectorMap({
                 n_accts: list.reduce((sum, d) => sum + (d.metrics?.n_accts || 0), 0)
             },
             proforma: {
-                ...primary.proforma,
-                predicted_value: list.reduce((sum, d) => sum + (d.proforma?.predicted_value || 0), 0) / list.length
+                predicted_value: list.reduce((sum, d) => sum + (d.proforma?.predicted_value || 0), 0) / list.length,
+                noi: null,
+                monthly_rent: null,
+                dscr: null,
+                breakeven_occ: null,
+                cap_rate: null,
+                liquidity_rank: null
             },
             opportunity: {
                 ...primary.opportunity,
@@ -88,7 +124,7 @@ export function VectorMap({
                 p90: primary.fanChart.p90.map((_, i) => list.reduce((sum, d) => sum + (d.fanChart?.p90[i] || 0), 0) / list.length),
                 y_med: primary.fanChart.y_med.map((_, i) => list.reduce((sum, d) => sum + (d.fanChart?.y_med[i] || 0), 0) / list.length),
             } : undefined
-        }
+        } as DetailsResponse
     }
 
     const getTrendIcon = (trend: "up" | "down" | "stable" | undefined) => {
@@ -109,9 +145,15 @@ export function VectorMap({
         }
     }, [])
 
-    // INITIALIZE MAP
+    // INITIALIZE MAP (Read from URL for persistence across engine switches)
     useEffect(() => {
         if (!mapContainerRef.current) return
+
+        // Read initial position from URL params (synced by both engines)
+        const urlParams = new URLSearchParams(window.location.search)
+        const initialLat = parseFloat(urlParams.get("lat") || String(mapState.center[1]))
+        const initialLng = parseFloat(urlParams.get("lng") || String(mapState.center[0]))
+        const initialZoom = parseFloat(urlParams.get("zoom") || String(mapState.zoom))
 
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
@@ -133,8 +175,8 @@ export function VectorMap({
                     }
                 ]
             },
-            center: [mapState.center[0], mapState.center[1]],
-            zoom: mapState.zoom,
+            center: [initialLng, initialLat],
+            zoom: initialZoom,
             maxZoom: 18,
             minZoom: 2
         })
@@ -250,6 +292,21 @@ export function VectorMap({
             const id = feature.properties?.h3_id as string
             if (!id) return
 
+            // Map Vector Tile Props -> FeatureProperties
+            const p = feature.properties || {}
+            setTooltipProps({
+                id: p.h3_id,
+                O: (p.opp || 0) * 100,
+                R: p.rel || 0,
+                n_accts: p.count || 0,
+                med_mean_ape_pct: (p.acc || 0) * 100,
+                med_mean_pred_cv_pct: 0,
+                stability_flag: (p.ap || 0) > 0.15,
+                robustness_flag: (p.ap || 0) > 0.25,
+                has_data: (p.count || 0) > 0,
+                med_predicted_value: p.val || 0
+            })
+
             if (hoveredHexRef.current !== id) {
                 const sources = ["h3-a", "h3-b"]
                 activeHoverIds.current.forEach(oldId => {
@@ -359,6 +416,18 @@ export function VectorMap({
                 })
             })
 
+            // MOBILE: Gently pan map if tap was in lower 40% of screen
+            const containerHeight = mapContainerRef.current?.clientHeight || window.innerHeight
+            const tapY = e.point.y
+            const isMobileDevice = window.innerWidth < 768
+            const isLowerScreen = tapY > containerHeight * 0.6
+
+            if (isMobileDevice && isLowerScreen && next.length > 0) {
+                // Pan upward by 150 pixels to keep the tile visible above the tooltip
+                map.panBy([0, -150], { duration: 400, easing: (t) => t * (2 - t) })
+            }
+
+
             selectedHexesRef.current = next
             setSelectedHexes(next)
 
@@ -416,31 +485,32 @@ export function VectorMap({
             }
         })
 
-        // Seamless Swap: Wait for everything to be rendered before switching
-        const onIdle = () => {
-            map.off("idle", onIdle)
+        // Seamless Swap: Robust 'sourcedata' check
+        const onData = (e: any) => {
+            if (e.sourceId === nextSource && map.isSourceLoaded(nextSource) && e.isSourceLoaded) {
+                map.off("sourcedata", onData)
 
-            // Ensure the source we just loaded IS the one we want to show
-            // (prevents race conditions if year changes again quickly)
-            const latestTargetYear = (map as any)._targetYear
-            if (latestTargetYear !== year) return
+                // Ensure the source we just loaded IS the one we want to show
+                const latestTargetYear = (map as any)._targetYear
+                if (latestTargetYear !== year) return
 
-            // Toggle Visibility
-            map.setLayoutProperty(`h3-fill-${nextSuffix}`, "visibility", "visible")
-            map.setLayoutProperty(`h3-comparison-${nextSuffix}`, "visibility", "visible")
-            map.setLayoutProperty(`h3-selected-${nextSuffix}`, "visibility", "visible")
+                // Toggle Visibility
+                map.setLayoutProperty(`h3-fill-${nextSuffix}`, "visibility", "visible")
+                map.setLayoutProperty(`h3-comparison-${nextSuffix}`, "visibility", "visible")
+                map.setLayoutProperty(`h3-selected-${nextSuffix}`, "visibility", "visible")
 
-            map.setLayoutProperty(`h3-fill-${currentSuffix}`, "visibility", "none")
-            map.setLayoutProperty(`h3-comparison-${currentSuffix}`, "visibility", "none")
-            map.setLayoutProperty(`h3-selected-${currentSuffix}`, "visibility", "none")
+                map.setLayoutProperty(`h3-fill-${currentSuffix}`, "visibility", "none")
+                map.setLayoutProperty(`h3-comparison-${currentSuffix}`, "visibility", "none")
+                map.setLayoutProperty(`h3-selected-${currentSuffix}`, "visibility", "none")
 
-                // Update active state
-                ; (map as any)._activeSuffix = nextSuffix
+                    // Update active state
+                    ; (map as any)._activeSuffix = nextSuffix
+            }
         }
 
             // Store target year to handle fast scrubbing
             ; (map as any)._targetYear = year
-        map.on("idle", onIdle)
+        map.on("sourcedata", onData)
 
     }, [year, isLoaded, filters.colorMode])
 
@@ -488,8 +558,8 @@ export function VectorMap({
     }, [selectedHexes, hoveredHex, year])
 
     // COMPARISON & PREVIEW LOGIC
-    const [comparisonDetails, setComparisonDetails] = useState<DetailsResponse | null>(null)
-    const previewDetails = useMemo(() => {
+    // (comparisonDetails is already declared above as state)
+    const computedPreviewDetails = useMemo(() => {
         // Candidate Comparison (Preview) = Current Selection + New Candidate (if Shift held)
         if (!selectionDetails || !hoveredDetails || !isShiftHeld) return null
         if (selectedHexes.includes(hoveredHex!)) return null // Don't preview what is already selected for now (classic logic handles this specifically for removal but simplified here)
@@ -502,15 +572,15 @@ export function VectorMap({
     useEffect(() => {
         if (selectedHexes.length === 0) {
             setComparisonHex(null)
-            setComparisonDetails(null)
+            setComparisonDetailsState(null)
             return
         }
         if (hoveredHex && !selectedHexes.includes(hoveredHex)) {
             setComparisonHex(hoveredHex)
-            setComparisonDetails(hoveredDetails)
+            setComparisonDetailsState(hoveredDetails)
         } else {
             setComparisonHex(null)
-            setComparisonDetails(null)
+            setComparisonDetailsState(null)
         }
     }, [hoveredHex, selectedHexes, hoveredDetails])
 
@@ -541,16 +611,13 @@ export function VectorMap({
         }
     }, [comparisonHex, isLoaded])
 
-    // DYNAMIC FILTERING
+    // DYNAMIC FILTERING (Disabled for Parity with MapView)
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return
         const map = mapRef.current
-        const filter: any[] = ["all"]
-        // if (filters.reliabilityMin > 0) filter.push([">=", ["get", "rel"], filters.reliabilityMin / 100])
-        if (filters.nAcctsMin > 0) filter.push([">=", ["get", "count"], filters.nAcctsMin])
-        if (filters.medNYearsMin > 0) filter.push([">=", ["get", "ny"], filters.medNYearsMin])
-        if (!filters.showUnderperformers) filter.push([">=", ["get", "opp"], -0.05]) // Hide severe underperformers if toggle off
 
+        // MapView shows ALL data regardless of filters
+        // We ensure "all" filter to show everything
         try {
             if (map.getStyle()) {
                 const layers = [
@@ -559,13 +626,13 @@ export function VectorMap({
                     "h3-comparison-a", "h3-comparison-b"
                 ]
                 layers.forEach(id => {
-                    if (map.getLayer(id)) map.setFilter(id, filter.length > 1 ? filter : null)
+                    if (map.getLayer(id)) map.setFilter(id, null) // Clear any filters
                 })
             }
         } catch (e) {
             console.warn("Failed to apply filters", e)
         }
-    }, [filters.nAcctsMin, filters.medNYearsMin, filters.showUnderperformers, isLoaded])
+    }, [isLoaded])
 
     // PARCEL FETCHING
     useEffect(() => {
@@ -643,112 +710,32 @@ export function VectorMap({
                 </div>
             )}
 
-            {/* SHARED TOOLTIP UI (Parity with MapView) */}
-            {isLoaded && displayId && mousePos && createPortal(
-                <div
-                    className={cn(
-                        "z-[9999] glass-panel shadow-2xl overflow-hidden pointer-events-none",
-                        isMobile
-                            ? "fixed bottom-0 left-0 right-0 w-full rounded-t-xl rounded-b-none border-t border-x-0 border-b-0"
-                            : "fixed rounded-xl w-[320px]"
-                    )}
-                    style={isMobile ? {} : {
-                        left: mousePos.x + 20,
-                        top: mousePos.y - 20,
-                        backgroundColor: 'rgba(23, 23, 23, 0.95)'
-                    }}
-                >
-                    <div className="flex flex-col">
-                        {/* Mobile Handle */}
-                        {isMobile && (
-                            <div className="w-full flex justify-center py-2 bg-white/5">
-                                <div className="w-10 h-1 bg-white/20 rounded-full" />
-                            </div>
-                        )}
-
-                        {!isMobile && (
-                            <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-white/5">
-                                <div className="flex items-center gap-2">
-                                    <Building2 className="w-3.5 h-3.5 text-primary" />
-                                    <span className="font-bold text-[10px] tracking-wide text-white uppercase">InvestMap Vector</span>
-                                    {selectedHexes.length > 1 && (
-                                        <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[8px] font-semibold uppercase tracking-wider rounded">
-                                            {selectedHexes.length} Selected
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {!isMobile && (
-                            <div className="p-3 border-b border-white/5 bg-white/5">
-                                <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold mb-0.5">
-                                    {h3Resolution <= 7 ? "District Scale" : h3Resolution <= 9 ? "Neighborhood Scale" : h3Resolution <= 10 ? "Block Scale" : "Property Scale"} (Res {h3Resolution})
-                                </div>
-                                <div className="font-mono text-[9px] text-neutral-500 truncate">
-                                    {displayId}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className={cn("p-4", isMobile ? "space-y-3" : "space-y-5")}>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="text-center">
-                                    <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">
-                                        Value Forecast ({year})
-                                    </div>
-                                    <div className="text-xl font-bold text-white tracking-tight">
-                                        {displayDetails?.proforma?.predicted_value ? formatCurrency(displayDetails.proforma.predicted_value) : "Loading..."}
-                                    </div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">Growth</div>
-                                    <div className={cn("text-xl font-bold tracking-tight flex items-center justify-center gap-1", (displayDetails?.opportunity?.value ?? 0) >= 0 ? "text-green-500" : "text-red-500")}>
-                                        {displayDetails?.opportunity?.value ? formatOpportunity(displayDetails.opportunity.value / 100) : "..."}
-                                        {getTrendIcon((displayDetails?.opportunity?.value ?? 0) >= 0 ? "up" : "down")}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {displayDetails?.fanChart ? (
-                                <div className="space-y-2">
-                                    <div className="text-[10px] uppercase tracking-wider text-neutral-400 font-semibold flex justify-between">
-                                        <span>Value Timeline</span>
-                                        <span className="text-primary/70">{year}</span>
-                                    </div>
-                                    <div className="h-44 -mx-2">
-                                        <FanChart
-                                            data={displayDetails.fanChart}
-                                            currentYear={year}
-                                            height={160}
-                                            historicalValues={displayDetails.historicalValues}
-                                            comparisonData={comparisonDetails?.fanChart}
-                                            comparisonHistoricalValues={comparisonDetails?.historicalValues}
-                                            previewData={previewDetails?.fanChart}
-                                            previewHistoricalValues={previewDetails?.historicalValues}
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                isLoadingDetails && <div className="h-44 flex items-center justify-center">
-                                    <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                                </div>
-                            )}
-
-                            <div className="pt-1 border-t border-white/5 grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <div className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold">Properties</div>
-                                    <div className="text-xs font-medium text-white">{displayDetails?.metrics?.n_accts ?? "..."}</div>
-                                </div>
-                                <div>
-                                    <div className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold">Confidence</div>
-                                    <div className="text-xs font-medium text-white">{displayDetails?.reliability?.value ? formatReliability(displayDetails.reliability.value) : "..."}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>,
-                document.body
+            {/* SHARED TOOLTIP UI */}
+            {isLoaded && displayId && mousePos && (
+                <MapTooltip
+                    x={mousePos.x + 20}
+                    y={mousePos.y - 20}
+                    // VectorMap passes fixed coord prop for header display
+                    coordinates={cellToLatLng(displayId)}
+                    displayProps={tooltipProps || {
+                        id: displayId,
+                        O: 0, R: 0, n_accts: 0, med_mean_ape_pct: 0, med_mean_pred_cv_pct: 0,
+                        stability_flag: false, robustness_flag: false, has_data: false
+                    }} // Fallback to safe empty object if props missing
+                    displayDetails={displayDetails}
+                    primaryDetails={null} // Not yet implemented - single selection mode
+                    selectionDetails={selectionDetails}
+                    comparisonDetails={comparisonDetails} // Now properly computed
+                    previewDetails={computedPreviewDetails} // Computed useMemo
+                    selectedHexes={selectedHexes}
+                    hoveredDetails={hoveredDetails}
+                    year={year}
+                    h3Resolution={h3Resolution}
+                    isLoadingDetails={isLoadingDetails}
+                    isMobile={isMobile}
+                    isMinimized={false}
+                    onYearChange={() => { }} // Placeholder - no timelapse in vector mode yet
+                />
             )}
         </div>
     )
