@@ -416,25 +416,31 @@ export function VectorMap({
             }
         })
 
-        // Seamless Swap: Wait for next source to load before switching
-        const onData = (e: any) => {
-            if (e.sourceId === nextSource && map.isSourceLoaded(nextSource)) {
-                map.off("sourcedata", onData)
+        // Seamless Swap: Wait for everything to be rendered before switching
+        const onIdle = () => {
+            map.off("idle", onIdle)
 
-                // Toggle Visibility
-                map.setLayoutProperty(`h3-fill-${nextSuffix}`, "visibility", "visible")
-                map.setLayoutProperty(`h3-comparison-${nextSuffix}`, "visibility", "visible")
-                map.setLayoutProperty(`h3-selected-${nextSuffix}`, "visibility", "visible")
+            // Ensure the source we just loaded IS the one we want to show
+            // (prevents race conditions if year changes again quickly)
+            const latestTargetYear = (map as any)._targetYear
+            if (latestTargetYear !== year) return
 
-                map.setLayoutProperty(`h3-fill-${currentSuffix}`, "visibility", "none")
-                map.setLayoutProperty(`h3-comparison-${currentSuffix}`, "visibility", "none")
-                map.setLayoutProperty(`h3-selected-${currentSuffix}`, "visibility", "none")
+            // Toggle Visibility
+            map.setLayoutProperty(`h3-fill-${nextSuffix}`, "visibility", "visible")
+            map.setLayoutProperty(`h3-comparison-${nextSuffix}`, "visibility", "visible")
+            map.setLayoutProperty(`h3-selected-${nextSuffix}`, "visibility", "visible")
 
-                    // Update active state
-                    ; (map as any)._activeSuffix = nextSuffix
-            }
+            map.setLayoutProperty(`h3-fill-${currentSuffix}`, "visibility", "none")
+            map.setLayoutProperty(`h3-comparison-${currentSuffix}`, "visibility", "none")
+            map.setLayoutProperty(`h3-selected-${currentSuffix}`, "visibility", "none")
+
+                // Update active state
+                ; (map as any)._activeSuffix = nextSuffix
         }
-        map.on("sourcedata", onData)
+
+            // Store target year to handle fast scrubbing
+            ; (map as any)._targetYear = year
+        map.on("idle", onIdle)
 
     }, [year, isLoaded, filters.colorMode])
 
@@ -540,7 +546,7 @@ export function VectorMap({
         if (!mapRef.current || !isLoaded) return
         const map = mapRef.current
         const filter: any[] = ["all"]
-        if (filters.reliabilityMin > 0) filter.push([">=", ["get", "rel"], filters.reliabilityMin / 100])
+        // if (filters.reliabilityMin > 0) filter.push([">=", ["get", "rel"], filters.reliabilityMin / 100])
         if (filters.nAcctsMin > 0) filter.push([">=", ["get", "count"], filters.nAcctsMin])
         if (filters.medNYearsMin > 0) filter.push([">=", ["get", "ny"], filters.medNYearsMin])
         if (!filters.showUnderperformers) filter.push([">=", ["get", "opp"], -0.05]) // Hide severe underperformers if toggle off
@@ -559,7 +565,7 @@ export function VectorMap({
         } catch (e) {
             console.warn("Failed to apply filters", e)
         }
-    }, [filters.reliabilityMin, filters.nAcctsMin, isLoaded])
+    }, [filters.nAcctsMin, filters.medNYearsMin, filters.showUnderperformers, isLoaded])
 
     // PARCEL FETCHING
     useEffect(() => {

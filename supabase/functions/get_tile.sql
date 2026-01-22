@@ -40,14 +40,14 @@ BEGIN
     WITH mvtgeom AS (
         SELECT 
             g.h3_id,
-            d.opportunity as opp,
-            d.reliability as rel,
-            d.predicted_value as val,
-            d.property_count as count,
-            d.sample_accuracy as acc,
-            d.med_years as ny,
-            d.hard_fail as hf,
-            d.alert_pct as ap,
+            COALESCE(d.opportunity, 0) as opp,
+            COALESCE(d.reliability, 0) as rel,
+            COALESCE(d.predicted_value, 0) as val,
+            COALESCE(d.property_count, 0) as count,
+            COALESCE(d.sample_accuracy, 0) as acc,
+            COALESCE(d.med_years, 0) as ny,
+            COALESCE(d.hard_fail, false) as hf,
+            COALESCE(d.alert_pct, 0) as ap,
             ST_AsMVTGeom(
                 ST_Transform(g.geom, 3857),
                 tile_bbox_3857,
@@ -56,7 +56,7 @@ BEGIN
                 true
             ) as geom
         FROM h3_aoi_grid g
-        JOIN h3_precomputed_hex_details d 
+        LEFT JOIN h3_precomputed_hex_details d 
             ON g.h3_id = d.h3_id 
             AND d.h3_res = g.h3_res
             AND d.forecast_year = query_year
