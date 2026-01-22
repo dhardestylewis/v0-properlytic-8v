@@ -1,6 +1,6 @@
 # Properlytic UI - TODO
 
-> **Updated**: 2026-01-14T20:28
+> **Updated**: 2026-01-21T20:31
 > **Source**: User requests (verbatim)
 
 ---
@@ -12,13 +12,21 @@
 - [x] **Reliability filter broken**: Now works (data exists in hex_rows)
 - [x] **Med Years filter broken**: Hidden (no column exists in DB)
 - [ ] **Zoom/cell loading issue**: Only cells on right side load at some zoom levels
-- [x] **Timelapse rendering slow**: Improved with Double Buffering/Batch Prefetch. Migrating to Tile Server for complete fix. [Updated: 2026-01-21]
-- [/] **Migrate to Tile Server Architecture**: VectorMap component created with MapLibre + MVT tiles. SQL deployed. Pending: run `get_tile.sql` in Supabase. [Updated: 2026-01-21]
-- [x] **Mobile z-index**: Address suggestions dropdown hidden behind year element → Fixed z-[200] [Added: 2026-01-17 15:28]
-- [x] **VectorMap URL Sync**: Both engines read/write lat/lng/zoom to URL params for seamless switching [Added: 2026-01-21]
-- [x] **VectorMap Shared Tooltip**: Extracted tooltip into `map-tooltip.tsx` for parity with MapView [Added: 2026-01-21]
-- [x] **VectorMap Mobile Pan**: Gently pans map when selecting tiles at bottom of screen [Added: 2026-01-21]
-- [x] **VectorMap Default View**: Initial Houston view at zoom 10 for first-time visitors [Added: 2026-01-21]
+- [x] **Timelapse rendering slow**: Fixed with Double Buffering + idle+RAF swap [Updated: 2026-01-21]
+- [/] **Migrate to Tile Server Architecture**: VectorMap component complete. Pending: user must run `get_tile.sql` in Supabase [Updated: 2026-01-21]
+- [x] **Mobile z-index**: Address suggestions dropdown fixed z-[200] [Added: 2026-01-17]
+
+### P1 - VectorMap Full Parity [Added: 2026-01-21]
+- [x] **URL Sync**: Both engines read/write lat/lng/zoom to URL for seamless switching
+- [x] **Shared Tooltip**: Extracted into `map-tooltip.tsx`
+- [x] **Mobile Pan-on-Select**: Centers tile with 800ms ease-out animation
+- [x] **Default Houston View**: Zoom 10 for first-time visitors
+- [x] **Shift Multi-Select**: Toggle hexes in/out of selection
+- [x] **Locked Tooltip Mode**: Activates on selection with first-time drag hint
+- [x] **ESC to Exit Locked**: Uses ref for stable deps
+- [x] **Draggable Tooltip (Desktop)**: Global mouse move/up handlers
+- [x] **Mobile Swipe Dismiss**: Touch handlers with 100px threshold
+- [x] **Timelapse from Tooltip**: localYear state with bidirectional sync
 
 
 ### P2 - Feature Gaps (Tooltip Lock & Comparison Mode) [Added: 2026-01-17]
