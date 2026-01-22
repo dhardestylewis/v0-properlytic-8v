@@ -49,8 +49,23 @@ export function VectorMap({
     // ADVANCED TOOLTIP STATE (Full Parity with MapView)
     const [primaryDetails, setPrimaryDetails] = useState<DetailsResponse | null>(null)
     const [comparisonDetails, setComparisonDetailsState] = useState<DetailsResponse | null>(null)
-    // Note: previewDetails is computed via useMemo below, removed useState duplicate
-    // Note: year comes from props, not local state
+    // Note: previewDetails is computed via useMemo below
+
+    // LOCKED TOOLTIP MODE (Full Parity)
+    const [lockedMode, setLockedMode] = useState(false)
+    const [showDragHint, setShowDragHint] = useState(false)
+    const [isTooltipDragging, setIsTooltipDragging] = useState(false)
+    const [tooltipOffset, setTooltipOffset] = useState({ x: 0, y: 0 })
+    const dragStartRef = useRef<{ x: number; y: number } | null>(null)
+
+    // MOBILE SWIPE STATE
+    const [isMinimized, setIsMinimized] = useState(false)
+    const [dragOffset, setDragOffset] = useState(0)
+    const [touchStart, setTouchStart] = useState<number | null>(null)
+
+    // LOCAL YEAR STATE (for timelapse scrubbing from tooltip)
+    const [localYear, setLocalYear] = useState(year)
+
 
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -133,9 +148,19 @@ export function VectorMap({
         return <Minus className="h-3 w-3 text-muted-foreground" />
     }
 
-    // TRACK SHIFT KEY
+    // TRACK SHIFT KEY & ESC TO EXIT LOCKED MODE
+    const lockedModeRef = useRef(lockedMode)
+    lockedModeRef.current = lockedMode // Keep ref in sync
+
     useEffect(() => {
-        const handleDown = (e: KeyboardEvent) => { if (e.key === "Shift") setIsShiftHeld(true) }
+        const handleDown = (e: KeyboardEvent) => {
+            if (e.key === "Shift") setIsShiftHeld(true)
+            if (e.key === "Escape" && lockedModeRef.current) {
+                setLockedMode(false)
+                setIsTooltipDragging(false)
+                setTooltipOffset({ x: 0, y: 0 })
+            }
+        }
         const handleUp = (e: KeyboardEvent) => { if (e.key === "Shift") setIsShiftHeld(false) }
         window.addEventListener("keydown", handleDown)
         window.addEventListener("keyup", handleUp)
@@ -143,17 +168,47 @@ export function VectorMap({
             window.removeEventListener("keydown", handleDown)
             window.removeEventListener("keyup", handleUp)
         }
-    }, [])
+    }, []) // Empty deps - uses ref for latest lockedMode
+
+    // DESKTOP TOOLTIP DRAG: Global mouse move/up handlers
+    useEffect(() => {
+        if (!isTooltipDragging) return
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!dragStartRef.current) return
+            setTooltipOffset({
+                x: e.clientX - dragStartRef.current.x,
+                y: e.clientY - dragStartRef.current.y
+            })
+        }
+
+        const handleMouseUp = () => {
+            setIsTooltipDragging(false)
+        }
+
+        window.addEventListener("mousemove", handleMouseMove)
+        window.addEventListener("mouseup", handleMouseUp)
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove)
+            window.removeEventListener("mouseup", handleMouseUp)
+        }
+    }, [isTooltipDragging])
+
+    // SYNC LOCAL YEAR WITH PROP YEAR (when prop changes externally)
+    useEffect(() => {
+        setLocalYear(year)
+    }, [year])
 
     // INITIALIZE MAP (Read from URL for persistence across engine switches)
     useEffect(() => {
         if (!mapContainerRef.current) return
 
         // Read initial position from URL params (synced by both engines)
+        // Defaults show Houston at city scale (zoom 10) for first-time visitors
         const urlParams = new URLSearchParams(window.location.search)
-        const initialLat = parseFloat(urlParams.get("lat") || String(mapState.center[1]))
-        const initialLng = parseFloat(urlParams.get("lng") || String(mapState.center[0]))
-        const initialZoom = parseFloat(urlParams.get("zoom") || String(mapState.zoom))
+        const initialLat = parseFloat(urlParams.get("lat") || "29.76")  // Houston center
+        const initialLng = parseFloat(urlParams.get("lng") || "-95.37") // Houston center
+        const initialZoom = parseFloat(urlParams.get("zoom") || "10")   // City scale
 
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
@@ -416,20 +471,38 @@ export function VectorMap({
                 })
             })
 
-            // MOBILE: Gently pan map if tap was in lower 40% of screen
+            // MOBILE: Gently pan map to center the selected tile on screen
             const containerHeight = mapContainerRef.current?.clientHeight || window.innerHeight
             const tapY = e.point.y
             const isMobileDevice = window.innerWidth < 768
-            const isLowerScreen = tapY > containerHeight * 0.6
+            const isLowerScreen = tapY > containerHeight * 0.5 // Bottom half
 
             if (isMobileDevice && isLowerScreen && next.length > 0) {
-                // Pan upward by 150 pixels to keep the tile visible above the tooltip
-                map.panBy([0, -150], { duration: 400, easing: (t) => t * (2 - t) })
+                // Calculate how far from center the tap was, pan to center it
+                const distanceFromCenter = tapY - (containerHeight * 0.35) // Target 35% from top
+                map.panBy([0, distanceFromCenter], {
+                    duration: 800, // Slower, more obvious animation
+                    easing: (t) => 1 - Math.pow(1 - t, 3) // Ease out cubic for smooth deceleration
+                })
             }
 
 
             selectedHexesRef.current = next
             setSelectedHexes(next)
+
+            // LOCKED MODE: Activate on selection, show drag hint once
+            if (next.length > 0 && !isMobileDevice) {
+                setLockedMode(true)
+                setTooltipOffset({ x: 0, y: 0 }) // Reset position
+
+                // First-time drag hint (localStorage check)
+                const hasSeenHint = localStorage.getItem("vectormap_drag_hint")
+                if (!hasSeenHint) {
+                    setShowDragHint(true)
+                    localStorage.setItem("vectormap_drag_hint", "true")
+                    setTimeout(() => setShowDragHint(false), 3000)
+                }
+            }
 
             if (!isShift) {
                 onFeatureSelect(next.length > 0 ? id : null)
@@ -485,32 +558,48 @@ export function VectorMap({
             }
         })
 
-        // Seamless Swap: Robust 'sourcedata' check
-        const onData = (e: any) => {
+        // Seamless Swap: Wait for source + render completion
+        // Use idle event (fires after all tiles rendered) with timeout fallback
+        let swapCompleted = false
+
+        const performSwap = () => {
+            if (swapCompleted) return
+            swapCompleted = true
+
+            // Ensure this is still the target year (handle fast scrubbing)
+            const latestTargetYear = (map as any)._targetYear
+            if (latestTargetYear !== year) return
+
+            // Toggle Visibility
+            map.setLayoutProperty(`h3-fill-${nextSuffix}`, "visibility", "visible")
+            map.setLayoutProperty(`h3-comparison-${nextSuffix}`, "visibility", "visible")
+            map.setLayoutProperty(`h3-selected-${nextSuffix}`, "visibility", "visible")
+
+            map.setLayoutProperty(`h3-fill-${currentSuffix}`, "visibility", "none")
+            map.setLayoutProperty(`h3-comparison-${currentSuffix}`, "visibility", "none")
+            map.setLayoutProperty(`h3-selected-${currentSuffix}`, "visibility", "none")
+
+                // Update active state
+                ; (map as any)._activeSuffix = nextSuffix
+        }
+
+        const onSourceData = (e: any) => {
             if (e.sourceId === nextSource && map.isSourceLoaded(nextSource) && e.isSourceLoaded) {
-                map.off("sourcedata", onData)
-
-                // Ensure the source we just loaded IS the one we want to show
-                const latestTargetYear = (map as any)._targetYear
-                if (latestTargetYear !== year) return
-
-                // Toggle Visibility
-                map.setLayoutProperty(`h3-fill-${nextSuffix}`, "visibility", "visible")
-                map.setLayoutProperty(`h3-comparison-${nextSuffix}`, "visibility", "visible")
-                map.setLayoutProperty(`h3-selected-${nextSuffix}`, "visibility", "visible")
-
-                map.setLayoutProperty(`h3-fill-${currentSuffix}`, "visibility", "none")
-                map.setLayoutProperty(`h3-comparison-${currentSuffix}`, "visibility", "none")
-                map.setLayoutProperty(`h3-selected-${currentSuffix}`, "visibility", "none")
-
-                    // Update active state
-                    ; (map as any)._activeSuffix = nextSuffix
+                map.off("sourcedata", onSourceData)
+                // Wait for idle (render complete) then one extra frame for GPU flush
+                map.once("idle", () => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(performSwap) // Double RAF for GPU sync
+                    })
+                })
+                // Timeout fallback in case idle never fires (edge case)
+                setTimeout(performSwap, 600)
             }
         }
 
             // Store target year to handle fast scrubbing
             ; (map as any)._targetYear = year
-        map.on("sourcedata", onData)
+        map.on("sourcedata", onSourceData)
 
     }, [year, isLoaded, filters.colorMode])
 
@@ -713,28 +802,52 @@ export function VectorMap({
             {/* SHARED TOOLTIP UI */}
             {isLoaded && displayId && mousePos && (
                 <MapTooltip
-                    x={mousePos.x + 20}
-                    y={mousePos.y - 20}
+                    x={(lockedMode ? mousePos.x + 20 + tooltipOffset.x : mousePos.x + 20)}
+                    y={(lockedMode ? mousePos.y - 20 + tooltipOffset.y : mousePos.y - 20)}
                     // VectorMap passes fixed coord prop for header display
                     coordinates={cellToLatLng(displayId)}
                     displayProps={tooltipProps || {
                         id: displayId,
                         O: 0, R: 0, n_accts: 0, med_mean_ape_pct: 0, med_mean_pred_cv_pct: 0,
                         stability_flag: false, robustness_flag: false, has_data: false
-                    }} // Fallback to safe empty object if props missing
+                    }}
                     displayDetails={displayDetails}
-                    primaryDetails={null} // Not yet implemented - single selection mode
+                    primaryDetails={selectedHexes.length > 0 ? selectionDetails : null}
                     selectionDetails={selectionDetails}
-                    comparisonDetails={comparisonDetails} // Now properly computed
-                    previewDetails={computedPreviewDetails} // Computed useMemo
+                    comparisonDetails={comparisonDetails}
+                    previewDetails={computedPreviewDetails}
                     selectedHexes={selectedHexes}
                     hoveredDetails={hoveredDetails}
-                    year={year}
+                    year={localYear}
                     h3Resolution={h3Resolution}
                     isLoadingDetails={isLoadingDetails}
                     isMobile={isMobile}
-                    isMinimized={false}
-                    onYearChange={() => { }} // Placeholder - no timelapse in vector mode yet
+                    isMinimized={isMinimized}
+                    lockedMode={lockedMode}
+                    showDragHint={showDragHint}
+                    onYearChange={setLocalYear}
+                    // Desktop drag handlers
+                    onMouseDown={lockedMode && !isMobile ? (e: React.MouseEvent) => {
+                        setIsTooltipDragging(true)
+                        dragStartRef.current = { x: e.clientX - tooltipOffset.x, y: e.clientY - tooltipOffset.y }
+                    } : undefined}
+                    // Mobile touch handlers for swipe dismiss
+                    onTouchStart={isMobile ? (e: React.TouchEvent) => {
+                        setTouchStart(e.touches[0].clientY)
+                    } : undefined}
+                    onTouchMove={isMobile ? (e: React.TouchEvent) => {
+                        if (touchStart === null) return
+                        const delta = e.touches[0].clientY - touchStart
+                        if (delta > 0) setDragOffset(delta) // Only allow downward swipe
+                    } : undefined}
+                    onTouchEnd={isMobile ? () => {
+                        if (dragOffset > 100) {
+                            setIsMinimized(true)
+                        }
+                        setDragOffset(0)
+                        setTouchStart(null)
+                    } : undefined}
+                    dragOffset={dragOffset}
                 />
             )}
         </div>

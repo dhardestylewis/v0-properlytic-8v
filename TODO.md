@@ -12,9 +12,14 @@
 - [x] **Reliability filter broken**: Now works (data exists in hex_rows)
 - [x] **Med Years filter broken**: Hidden (no column exists in DB)
 - [ ] **Zoom/cell loading issue**: Only cells on right side load at some zoom levels
-- [x] **Timelapse rendering slow**: Improved with Double Buffering/Batch Prefetch. migrating to Tile Server for complete fix. [Updated: 2026-01-21]
-- [ ] **Migrate to Tile Server Architecture**: Move from client-side H3 fetch to PostGIS MVT + MapLibre for scalable performance. [Added: 2026-01-21]
+- [x] **Timelapse rendering slow**: Improved with Double Buffering/Batch Prefetch. Migrating to Tile Server for complete fix. [Updated: 2026-01-21]
+- [/] **Migrate to Tile Server Architecture**: VectorMap component created with MapLibre + MVT tiles. SQL deployed. Pending: run `get_tile.sql` in Supabase. [Updated: 2026-01-21]
 - [x] **Mobile z-index**: Address suggestions dropdown hidden behind year element → Fixed z-[200] [Added: 2026-01-17 15:28]
+- [x] **VectorMap URL Sync**: Both engines read/write lat/lng/zoom to URL params for seamless switching [Added: 2026-01-21]
+- [x] **VectorMap Shared Tooltip**: Extracted tooltip into `map-tooltip.tsx` for parity with MapView [Added: 2026-01-21]
+- [x] **VectorMap Mobile Pan**: Gently pans map when selecting tiles at bottom of screen [Added: 2026-01-21]
+- [x] **VectorMap Default View**: Initial Houston view at zoom 10 for first-time visitors [Added: 2026-01-21]
+
 
 ### P2 - Feature Gaps (Tooltip Lock & Comparison Mode) [Added: 2026-01-17]
 - [x] **Locked tooltip on click**: Clicking tile should lock tooltip to that hex, ignore hover [Added: 2026-01-17 15:27]
