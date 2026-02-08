@@ -80,12 +80,6 @@ export function ExplainerPopup() {
                                 A powerful platform for visualizing real estate value trends, forecasts, and confidence metrics.
                             </p>
                         </div>
-                        <button
-                            onClick={handleMinimize}
-                            className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                            <X className="w-5 h-5 text-muted-foreground" />
-                        </button>
                     </div>
 
                     {/* Content */}
