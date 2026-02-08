@@ -1,30 +1,48 @@
-# Real estate dashboard
+# Properlytic
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+**Property-Level Home Price Forecasting & Risk Intelligence**
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/dhardestylewis-projects/v0-real-estate-dashboard-j8)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/cFSEIjFN8Ph)
+![Properlytic Banner](https://img.shields.io/badge/Status-Active-success)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://houston-price-prediction.vercel.app)
 
-## Overview
+Properlytic is an API-first forecasting platform that brings institutional-grade risk intelligence to the residential real estate market. Instead of a single point estimate, we provide time-stamped, probabilistic forecasts with confidence bands and scenario views, empowering buyers, sellers, and homeowners to make data-driven decisions.
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## 🚀 The Vision
 
-## Deployment
+Real estate is the largest financial decision for most, yet consumers rely on backward-looking comps and broad indices. Properlytic changes this by offering a forward-looking view that quantifies risk and makes uncertainty explicit at the property level.
 
-Your project is live at:
+Our long-term vision is to become the national decision layer for residential real estate—delivering forecasts, risk ranges, and alerts that outperform today’s portals and spreadsheets.
 
-**[https://vercel.com/dhardestylewis-projects/v0-real-estate-dashboard-j8](https://vercel.com/dhardestylewis-projects/v0-real-estate-dashboard-j8)**
+## 💡 Key Features
 
-## Build your app
+*   **Probabilistic Forecasts:** 256 Monte Carlo scenario paths per property.
+*   **Property-Level Granularity:** Insights specific to the building, unit, and micro-location.
+*   **Scenario Analysis:** "What if" views for rates, inventory, and policy shifts.
+*   **API-First Design:** Built for integration into underwriting, portfolio monitoring, and advisory workflows.
+*   **Open Evaluation:** Transparent model monitoring (coverage, drift, segment accuracy).
 
-Continue building your app on:
+## 🛠️ Technology
 
-**[https://v0.app/chat/cFSEIjFN8Ph](https://v0.app/chat/cFSEIjFN8Ph)**
+Properlytic ingests public records, retrains frequently, and delivers fast, interpretable forecasts at parcel scale.
 
-## How It Works
+*   **Live Demo:** [houston-price-prediction.vercel.app](https://houston-price-prediction.vercel.app) (Houston Pilot)
+*   **Wedge Market:** New York City (High heterogeneity & regime shifts)
+*   **Stack:** Python, Next.js, GCP (Compute/Data)
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+## 👥 Team
+
+*   **Daniel Hardesty Lewis** (Founder/CEO-CTO): Leads modeling, data engineering, and product.
+
+## 📈 Market & Validation
+
+We are targeting the ~$13T U.S. residential market. Our go-to-market strategy involves a dual track:
+1.  **Public Distribution:** Free consumer layer to drive adoption and "standard-setting."
+2.  **Institutional Pilots:** Paid API access for lenders, servicers, and investors requiring auditable, scenario-level forecasts.
+
+## 🔗 Links
+
+*   **Live App:** [houston-price-prediction.vercel.app](https://houston-price-prediction.vercel.app)
+*   **GitHub:** [dhardestylewis/v0-properlytic-8v](https://github.com/dhardestylewis/v0-properlytic-8v)
+
+---
+*Submitted for the Columbia Venture Competition 2026*

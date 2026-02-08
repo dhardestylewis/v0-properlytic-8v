@@ -14,6 +14,7 @@ import { FanChart } from "./fan-chart"
 import { cellToLatLng } from "h3-js"
 import { MapTooltip } from "./map-tooltip"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useMapInteraction } from "@/hooks/use-map-interaction"
 
 interface VectorMapProps {
     filters: FilterState
@@ -36,35 +37,28 @@ export function VectorMap({
     const mapRef = useRef<maplibregl.Map | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
 
-    // INTERACTION STATE (Parity with MapView)
-    const [hoveredHex, setHoveredHex] = useState<string | null>(null)
-    const [selectedHexes, setSelectedHexes] = useState<string[]>([])
-    const [selectionDetails, setSelectionDetails] = useState<DetailsResponse | null>(null)
-    const [hoveredDetails, setHoveredDetails] = useState<DetailsResponse | null>(null)
-    const [comparisonHex, setComparisonHex] = useState<string | null>(null)
-    const [isShiftHeld, setIsShiftHeld] = useState(false)
-    const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-    const [isMobile, setIsMobile] = useState(false)
-
-    // ADVANCED TOOLTIP STATE (Full Parity with MapView)
-    const [primaryDetails, setPrimaryDetails] = useState<DetailsResponse | null>(null)
-    const [comparisonDetails, setComparisonDetailsState] = useState<DetailsResponse | null>(null)
-    // Note: previewDetails is computed via useMemo below
-
-    // LOCKED TOOLTIP MODE (Full Parity)
-    const [lockedMode, setLockedMode] = useState(false)
-    const [showDragHint, setShowDragHint] = useState(false)
-    const [isTooltipDragging, setIsTooltipDragging] = useState(false)
-    const [tooltipOffset, setTooltipOffset] = useState({ x: 0, y: 0 })
-    const dragStartRef = useRef<{ x: number; y: number } | null>(null)
-
-    // MOBILE SWIPE STATE
-    const [isMinimized, setIsMinimized] = useState(false)
-    const [dragOffset, setDragOffset] = useState(0)
-    const [touchStart, setTouchStart] = useState<number | null>(null)
-
-    // LOCAL YEAR STATE (for timelapse scrubbing from tooltip)
-    const [localYear, setLocalYear] = useState(year)
+    // SHARED INTERACTION HOOK
+    const {
+        // Selection
+        hoveredHex, setHoveredHex, selectedHexes, setSelectedHexes, selectedHexesRef,
+        // Details
+        selectionDetails, primaryDetails, hoveredDetails, comparisonDetails, previewDetails, isLoadingDetails,
+        // Interaction
+        isShiftHeld, lockedMode, setLockedMode, showDragHint, setShowDragHint, isTooltipDragging, setIsTooltipDragging,
+        tooltipOffset, setTooltipOffset, dragStartRef,
+        // Mobile
+        isMobile, isMinimized, setIsMinimized, dragOffset, setDragOffset, touchStart, setTouchStart,
+        // Timelapse
+        localYear, setLocalYear,
+        // Comparison
+        comparisonHex,
+        // Handlers
+        handleHexClick, handleHexHover, aggregateDetails
+    } = useMapInteraction({
+        year,
+        onFeatureSelect,
+        onFeatureHover
+    })
 
 
     const router = useRouter()
@@ -90,114 +84,32 @@ export function VectorMap({
     }, [isLoaded, searchParams, router])
 
     // TRACK MOBILE
-    useEffect(() => {
-        const check = () => setIsMobile(window.innerWidth < 768)
-        check()
-        window.addEventListener('resize', check)
-        return () => window.removeEventListener('resize', check)
-    }, [])
+    // TRACK MOBILE - Handled by useMapInteraction hook
 
     // DATA CACHE & REFS (Avoid stale closures and trails)
-    const detailsCache = useRef<Map<string, DetailsResponse>>(new Map())
     const hoveredHexRef = useRef<string | null>(null)
     const activeHoverIds = useRef<Set<string>>(new Set()) // Track all for sweep
-    const selectedHexesRef = useRef<string[]>([])
     const [mousePos, setMousePos] = useState<{ x: number, y: number } | null>(null)
+
     const [tooltipProps, setTooltipProps] = useState<any>(null)
 
-    // HELPERS (Parity with MapView)
-    const aggregateDetails = (list: DetailsResponse[]): DetailsResponse => {
-        if (list.length === 0) throw new Error("Empty list")
-        const primary = list[0]
-        return {
-            ...primary,
-            metrics: {
-                ...primary.metrics,
-                n_accts: list.reduce((sum, d) => sum + (d.metrics?.n_accts || 0), 0)
-            },
-            proforma: {
-                predicted_value: list.reduce((sum, d) => sum + (d.proforma?.predicted_value || 0), 0) / list.length,
-                noi: null,
-                monthly_rent: null,
-                dscr: null,
-                breakeven_occ: null,
-                cap_rate: null,
-                liquidity_rank: null
-            },
-            opportunity: {
-                ...primary.opportunity,
-                value: list.reduce((sum, d) => sum + (d.opportunity?.value || 0), 0) / list.length
-            },
-            reliability: {
-                ...primary.reliability,
-                value: list.reduce((sum, d) => sum + (d.reliability?.value || 0), 0) / list.length
-            },
-            fanChart: primary.fanChart ? {
-                years: [...primary.fanChart.years],
-                p10: primary.fanChart.p10.map((_, i) => list.reduce((sum, d) => sum + (d.fanChart?.p10[i] || 0), 0) / list.length),
-                p50: primary.fanChart.p50.map((_, i) => list.reduce((sum, d) => sum + (d.fanChart?.p50[i] || 0), 0) / list.length),
-                p90: primary.fanChart.p90.map((_, i) => list.reduce((sum, d) => sum + (d.fanChart?.p90[i] || 0), 0) / list.length),
-                y_med: primary.fanChart.y_med.map((_, i) => list.reduce((sum, d) => sum + (d.fanChart?.y_med[i] || 0), 0) / list.length),
-            } : undefined
-        } as DetailsResponse
-    }
+    // Fix stale closure for isMobile in map event handlers
+    const isMobileRef = useRef(isMobile)
+    useEffect(() => { isMobileRef.current = isMobile }, [isMobile])
 
+    // PAINT SELECTION REFS
+    const isPaintingRef = useRef(false)
+    const paintModeRef = useRef<"add" | "remove" | null>(null)
+    const paintCandidatesRef = useRef<Set<string>>(new Set())
+
+    // HELPERS
     const getTrendIcon = (trend: "up" | "down" | "stable" | undefined) => {
         if (trend === "up") return <TrendingUp className="h-3 w-3 text-green-500" />
         if (trend === "down") return <TrendingDown className="h-3 w-3 text-red-500" />
         return <Minus className="h-3 w-3 text-muted-foreground" />
     }
 
-    // TRACK SHIFT KEY & ESC TO EXIT LOCKED MODE
-    const lockedModeRef = useRef(lockedMode)
-    lockedModeRef.current = lockedMode // Keep ref in sync
 
-    useEffect(() => {
-        const handleDown = (e: KeyboardEvent) => {
-            if (e.key === "Shift") setIsShiftHeld(true)
-            if (e.key === "Escape" && lockedModeRef.current) {
-                setLockedMode(false)
-                setIsTooltipDragging(false)
-                setTooltipOffset({ x: 0, y: 0 })
-            }
-        }
-        const handleUp = (e: KeyboardEvent) => { if (e.key === "Shift") setIsShiftHeld(false) }
-        window.addEventListener("keydown", handleDown)
-        window.addEventListener("keyup", handleUp)
-        return () => {
-            window.removeEventListener("keydown", handleDown)
-            window.removeEventListener("keyup", handleUp)
-        }
-    }, []) // Empty deps - uses ref for latest lockedMode
-
-    // DESKTOP TOOLTIP DRAG: Global mouse move/up handlers
-    useEffect(() => {
-        if (!isTooltipDragging) return
-
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!dragStartRef.current) return
-            setTooltipOffset({
-                x: e.clientX - dragStartRef.current.x,
-                y: e.clientY - dragStartRef.current.y
-            })
-        }
-
-        const handleMouseUp = () => {
-            setIsTooltipDragging(false)
-        }
-
-        window.addEventListener("mousemove", handleMouseMove)
-        window.addEventListener("mouseup", handleMouseUp)
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove)
-            window.removeEventListener("mouseup", handleMouseUp)
-        }
-    }, [isTooltipDragging])
-
-    // SYNC LOCAL YEAR WITH PROP YEAR (when prop changes externally)
-    useEffect(() => {
-        setLocalYear(year)
-    }, [year])
 
     // INITIALIZE MAP (Read from URL for persistence across engine switches)
     useEffect(() => {
@@ -245,7 +157,7 @@ export function VectorMap({
                     type: "vector",
                     tiles: [`${window.location.origin}/api/tiles/{z}/{x}/{y}?year=${year}`],
                     minzoom: 2,
-                    maxzoom: 14,
+                    maxzoom: 16,
                     promoteId: "h3_id"
                 })
             }
@@ -278,10 +190,18 @@ export function VectorMap({
                     "source-layer": "default",
                     layout: { visibility: visible ? "visible" : "none" },
                     paint: {
-                        "line-color": "#f97316",
+                        "line-color": [
+                            "case",
+                            ["boolean", ["feature-state", "candidate"], false], "#d946ef", // Fuchsia for Candidate
+                            "#f97316" // Orange for Comparison
+                        ],
                         "line-width": 2.5,
                         "line-dasharray": [3, 2],
-                        "line-opacity": ["case", ["boolean", ["feature-state", "comparison"], false], 0.8, 0]
+                        "line-opacity": [
+                            "case",
+                            ["any", ["boolean", ["feature-state", "comparison"], false], ["boolean", ["feature-state", "candidate"], false]], 0.8,
+                            0
+                        ]
                     }
                 })
 
@@ -297,8 +217,8 @@ export function VectorMap({
                             "case",
                             ["boolean", ["feature-state", "primary"], false], "#14b8a6",
                             ["boolean", ["feature-state", "selected"], false], "#f97316",
-                            ["boolean", ["feature-state", "hover"], false], "#ffffff",
-                            "transparent"
+                            ["boolean", ["feature-state", "hover"], false], "#14b8a6", // Teal for Hover (Primary Candidate)
+                            "rgba(0,0,0,0)" // Transparent default
                         ],
                         "line-width": ["case", ["boolean", ["feature-state", "primary"], false], 4, 3],
                         "line-opacity": [
@@ -343,8 +263,42 @@ export function VectorMap({
             const feature = e.features?.[0]
             if (!feature) return
 
-            setMousePos({ x: e.point.x, y: e.point.y })
             const id = feature.properties?.h3_id as string
+
+            // PAINT SELECTION LOGIC
+            const isLeftButtonDown = (e.originalEvent.buttons & 1) === 1
+            const isShift = e.originalEvent.shiftKey
+            const isAlt = e.originalEvent.altKey
+
+            if (isLeftButtonDown && (isShift || isAlt)) {
+                // Determine Paint Mode
+                if (!isPaintingRef.current) {
+                    isPaintingRef.current = true
+                    paintModeRef.current = isAlt ? "remove" : "add"
+                    paintCandidatesRef.current.clear()
+                }
+
+                if (id) {
+                    paintCandidatesRef.current.add(id)
+                    // Visual Feedback
+                    const sources = ["h3-a", "h3-b"]
+                    sources.forEach(s => {
+                        try {
+                            map.setFeatureState(
+                                { source: s, sourceLayer: "default", id: id },
+                                { candidate: true }
+                            )
+                        } catch (err) { /* ignore */ }
+                    })
+                }
+                return // Skip standard hover while painting
+            }
+
+            // Standard Hover Logic (only if not painting)
+            if (isPaintingRef.current) return
+
+            setMousePos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY })
+
             if (!id) return
 
             // Map Vector Tile Props -> FeatureProperties
@@ -362,39 +316,78 @@ export function VectorMap({
                 med_predicted_value: p.val || 0
             })
 
-            if (hoveredHexRef.current !== id) {
-                const sources = ["h3-a", "h3-b"]
-                activeHoverIds.current.forEach(oldId => {
-                    sources.forEach(s => {
-                        try {
-                            map.setFeatureState(
-                                { source: s, sourceLayer: "default", id: oldId },
-                                { hover: false, comparison: false }
-                            )
-                        } catch (err) { /* ignore */ }
-                    })
-                })
-                activeHoverIds.current.clear()
-
-                hoveredHexRef.current = id
-                activeHoverIds.current.add(id)
-
-                setHoveredHex(id)
-
-                const isSelected = selectedHexesRef.current.includes(id)
-                const hasSelection = selectedHexesRef.current.length > 0
-
+            // RANGE PREVIEW & HOVER LOGIC
+            // Clear previous states
+            const sources = ["h3-a", "h3-b"]
+            activeHoverIds.current.forEach(oldId => {
                 sources.forEach(s => {
                     try {
                         map.setFeatureState(
-                            { source: s, sourceLayer: "default", id: id },
+                            { source: s, sourceLayer: "default", id: oldId },
+                            { hover: false, comparison: false, candidate: false }
+                        )
+                    } catch (err) { /* ignore */ }
+                })
+            })
+            activeHoverIds.current.clear()
+
+            // Update refs
+            hoveredHexRef.current = id
+
+            // Interaction State
+            const isSelected = selectedHexesRef.current.includes(id)
+            const hasSelection = selectedHexesRef.current.length > 0
+
+            let idsToHighlight = [id]
+            let isCandidate = false
+            let isComparison = false
+
+            if (isShift && hasSelection) {
+                // RANGE PREVIEW
+                const anchorId = selectedHexesRef.current[selectedHexesRef.current.length - 1]
+                const anchorCoords = cellToLatLng(anchorId)
+                const hoverCoords = cellToLatLng(id)
+
+                const p1 = map.project([anchorCoords[1], anchorCoords[0]])
+                const p2 = map.project([hoverCoords[1], hoverCoords[0]])
+
+                const minX = Math.min(p1.x, p2.x)
+                const maxX = Math.max(p1.x, p2.x)
+                const minY = Math.min(p1.y, p2.y)
+                const maxY = Math.max(p1.y, p2.y)
+
+                const features = map.queryRenderedFeatures(
+                    [[minX, minY], [maxX, maxY]],
+                    { layers: ["h3-fill-a", "h3-fill-b"] }
+                )
+
+                idsToHighlight = Array.from(new Set(features.map(f => f.properties?.h3_id).filter(Boolean) as string[]))
+                isCandidate = true
+            } else if (hasSelection && !isSelected) {
+                // COMPARISON PREVIEW
+                isComparison = true
+            }
+
+            // Apply New States
+            idsToHighlight.forEach(hId => {
+                activeHoverIds.current.add(hId)
+                sources.forEach(s => {
+                    try {
+                        map.setFeatureState(
+                            { source: s, sourceLayer: "default", id: hId },
                             {
-                                hover: !hasSelection,
-                                comparison: hasSelection && !isSelected
+                                hover: !hasSelection && hId === id, // Single hover only if no selection
+                                comparison: isComparison && hId === id, // Single comparison
+                                candidate: isCandidate // Range candidate
                             }
                         )
                     } catch (err) { /* ignore */ }
                 })
+            })
+
+            if (hoveredHexRef.current !== id || activeHoverIds.current.size > 1) {
+                // Trigger React Update for Tooltip (debounced/handled by hook mostly, but we set local state)
+                setHoveredHex(id)
                 onFeatureHover(id)
             }
         }
@@ -425,6 +418,7 @@ export function VectorMap({
 
         const handleClick = (e: maplibregl.MapLayerMouseEvent) => {
             if (!e.features || e.features.length === 0) {
+                // Clicked background -> Clear Selection
                 const sources = ["h3-a", "h3-b"]
                 selectedHexesRef.current.forEach(hId => {
                     sources.forEach(s => {
@@ -444,14 +438,64 @@ export function VectorMap({
 
             const id = e.features[0].properties?.h3_id as string
             if (!id) return
-            const isShift = (e.originalEvent as MouseEvent).shiftKey
-            const prev = selectedHexesRef.current
-            const next = isShift
-                ? (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-                : ((prev.length === 1 && prev[0] === id) ? [] : [id])
 
+            // Interaction Modes:
+            // Shift: Range (Bounding Box)
+            // Ctrl/Meta: Toggle (Add/Remove)
+            // None: Replace (Select Single)
+            const isShift = (e.originalEvent as MouseEvent).shiftKey
+            const isCtrl = (e.originalEvent as MouseEvent).ctrlKey || (e.originalEvent as MouseEvent).metaKey
+
+            const prev = selectedHexesRef.current
+            let next: string[] = []
+
+            if (isShift && prev.length > 0) {
+                // RANGE SELECTION using rendered features
+                const anchorId = prev[prev.length - 1] // Last selected is anchor
+
+                // Get coordinates for Anchor and Click
+                const anchorCoords = cellToLatLng(anchorId)
+                const clickCoords = cellToLatLng(id) // e.lngLat is also available but let's be consistent
+
+                // Project to pixels to get bounding box
+                const p1 = map.project([anchorCoords[1], anchorCoords[0]])
+                const p2 = map.project([clickCoords[1], clickCoords[0]])
+
+                // Construct Bounding Box (minX, minY, maxX, maxY)
+                const minX = Math.min(p1.x, p2.x)
+                const maxX = Math.max(p1.x, p2.x)
+                const minY = Math.min(p1.y, p2.y)
+                const maxY = Math.max(p1.y, p2.y)
+
+                // Query features in this box
+                // We must query both layers to be safe
+                const features = map.queryRenderedFeatures(
+                    [[minX, minY], [maxX, maxY]],
+                    { layers: ["h3-fill-a", "h3-fill-b"] }
+                )
+
+                const rangeIds = Array.from(new Set(features.map(f => f.properties?.h3_id).filter(Boolean) as string[]))
+
+                // Strategy: Union new range with existing selection (Add-Range)
+                // Or should we just select the range? 
+                // Legacy MapView: "Expand: add all hexes in range to existing selection"
+                // Let's Add-Range.
+                next = Array.from(new Set([...prev, ...rangeIds]))
+
+            } else if (isCtrl) {
+                // TOGGLE SELECTION
+                next = prev.includes(id)
+                    ? prev.filter(x => x !== id)
+                    : [...prev, id]
+            } else {
+                // REPLACE SELECTION
+                next = (prev.length === 1 && prev[0] === id) ? [] : [id]
+            }
+
+            // Sync visual state
             const sources = ["h3-a", "h3-b"]
-            prev.forEach(pId => {
+            // 1. Clear OLD states not in NEW
+            prev.filter(pId => !next.includes(pId)).forEach(pId => {
                 sources.forEach(s => {
                     try {
                         map.setFeatureState({ source: s, sourceLayer: "default", id: pId }, { selected: false, primary: false })
@@ -459,8 +503,11 @@ export function VectorMap({
                 })
             })
 
-            next.forEach((nId, idx) => {
+            // 2. Set NEW state
+            next.forEach(((nId, idx) => {
                 const isPrimary = idx === 0
+                // If it was already selected, we might update primary status?
+                // Just force set everyone
                 sources.forEach(s => {
                     try {
                         map.setFeatureState(
@@ -469,29 +516,13 @@ export function VectorMap({
                         )
                     } catch (err) { /* ignore */ }
                 })
-            })
-
-            // MOBILE: Gently pan map to center the selected tile on screen
-            const containerHeight = mapContainerRef.current?.clientHeight || window.innerHeight
-            const tapY = e.point.y
-            const isMobileDevice = window.innerWidth < 768
-            const isLowerScreen = tapY > containerHeight * 0.5 // Bottom half
-
-            if (isMobileDevice && isLowerScreen && next.length > 0) {
-                // Calculate how far from center the tap was, pan to center it
-                const distanceFromCenter = tapY - (containerHeight * 0.35) // Target 35% from top
-                map.panBy([0, distanceFromCenter], {
-                    duration: 800, // Slower, more obvious animation
-                    easing: (t) => 1 - Math.pow(1 - t, 3) // Ease out cubic for smooth deceleration
-                })
-            }
-
+            }))
 
             selectedHexesRef.current = next
             setSelectedHexes(next)
 
             // LOCKED MODE: Activate on selection, show drag hint once
-            if (next.length > 0 && !isMobileDevice) {
+            if (next.length > 0 && !isMobileRef.current) {
                 setLockedMode(true)
                 setTooltipOffset({ x: 0, y: 0 }) // Reset position
 
@@ -504,13 +535,96 @@ export function VectorMap({
                 }
             }
 
-            if (!isShift) {
+            // Update Parent
+            // Only fire select if not Ctrl/Shift? Or fire generally?
+            // Parent usually expects the PRIMARY ID or just "something selected".
+            // We pass the last selected (id) or the primary (next[0])?
+            // MapToolip uses next[0] as primary.
+            // onFeatureSelect(next.length > 0 ? id : null) // 'id' matches click.
+            // If we deselected 'id' (Ctrl click), we should pass null? Or the new primary?
+            // "onFeatureSelect" usually drives the sidebar.
+            // Let's pass the Clicked ID if it is IN the set, otherwise null or primary.
+            // Actually, for multi-select, the parent often cares about the *Primary* (first).
+            // But if we just clicked 'id', maybe that should be primary?
+            // Current list logic: new items appended.
+            // Let's stick to: if we have selection, notify.
+            if (!isShift && !isCtrl) {
                 onFeatureSelect(next.length > 0 ? id : null)
+            } else {
+                // For multi/range, we don't necessarily change the "active" sidebar context
+                // unless we switch primary.
+                // Let's just notify the parent if selection became empty.
+                if (next.length === 0) onFeatureSelect(null)
+                // If we have selection, maybe update to primary?
+                else if (prev.length === 0) onFeatureSelect(next[0])
             }
         }
 
-        map.on("click", "h3-fill-a", handleClick)
-        map.on("click", "h3-fill-b", handleClick)
+        const handleMouseUp = (e: maplibregl.MapMouseEvent) => {
+            if (isPaintingRef.current) {
+                // COMMIT PAINT
+                const painted = Array.from(paintCandidatesRef.current)
+                const prev = selectedHexesRef.current
+                const mode = paintModeRef.current
+
+                let next: string[] = []
+                if (mode === "add") {
+                    next = Array.from(new Set([...prev, ...painted]))
+                } else if (mode === "remove") {
+                    next = prev.filter(id => !painted.includes(id))
+                }
+
+                // Clear Paint State (Visuals)
+                const sources = ["h3-a", "h3-b"]
+                painted.forEach(id => {
+                    sources.forEach(s => {
+                        try {
+                            map.setFeatureState(
+                                { source: s, sourceLayer: "default", id: id },
+                                { candidate: false } // Clear candidate
+                            )
+                        } catch (err) { }
+                    })
+                })
+
+                // Update Selection with Visuals
+                // 1. Clear OLD
+                prev.filter(pId => !next.includes(pId)).forEach(pId => {
+                    sources.forEach(s => {
+                        try {
+                            map.setFeatureState({ source: s, sourceLayer: "default", id: pId }, { selected: false, primary: false })
+                        } catch (err) { /* ignore */ }
+                    })
+                })
+
+                // 2. Set NEW
+                next.forEach(((nId, idx) => {
+                    const isPrimary = idx === 0
+                    sources.forEach(s => {
+                        try {
+                            map.setFeatureState(
+                                { source: s, sourceLayer: "default", id: nId },
+                                { selected: true, primary: isPrimary }
+                            )
+                        } catch (err) { /* ignore */ }
+                    })
+                }))
+
+                selectedHexesRef.current = next
+                setSelectedHexes(next)
+
+                // Cleanup
+                isPaintingRef.current = false
+                paintCandidatesRef.current.clear()
+                paintModeRef.current = null
+
+                // Notify
+                if (next.length === 0) onFeatureSelect(null)
+                else if (prev.length === 0) onFeatureSelect(next[0])
+            }
+        }
+
+
 
             // Storage for toggle logic
             ; (map as any)._activeSuffix = "a";
@@ -603,75 +717,9 @@ export function VectorMap({
 
     }, [year, isLoaded, filters.colorMode])
 
-    // DATA FETCHING (Aggregation & Details)
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (selectedHexes.length === 0 && !hoveredHex) {
-                setHoveredDetails(null)
-                setSelectionDetails(null)
-                return
-            }
 
-            setIsLoadingDetails(true)
 
-            const fetchWithCache = async (id: string, y: number) => {
-                const key = `${id}-${y}`
-                if (detailsCache.current.has(key)) return detailsCache.current.get(key)!
-                const d = await getH3CellDetails(id, y)
-                if (d) detailsCache.current.set(key, d)
-                return d
-            }
 
-            const selectionPromise = selectedHexes.length > 0
-                ? Promise.all(selectedHexes.map(id => fetchWithCache(id, year)))
-                : Promise.resolve([])
-
-            const hoverPromise = hoveredHex
-                ? fetchWithCache(hoveredHex, year)
-                : Promise.resolve(null)
-
-            Promise.all([selectionPromise, hoverPromise])
-                .then(([selectionResults, hoverResult]) => {
-                    const validSelection = selectionResults.filter((d): d is DetailsResponse => d !== null)
-
-                    if (validSelection.length > 0) {
-                        setSelectionDetails(aggregateDetails(validSelection))
-                    } else {
-                        setSelectionDetails(null)
-                    }
-                    setHoveredDetails(hoverResult)
-                })
-                .finally(() => setIsLoadingDetails(false))
-        }, 150)
-        return () => clearTimeout(timer)
-    }, [selectedHexes, hoveredHex, year])
-
-    // COMPARISON & PREVIEW LOGIC
-    // (comparisonDetails is already declared above as state)
-    const computedPreviewDetails = useMemo(() => {
-        // Candidate Comparison (Preview) = Current Selection + New Candidate (if Shift held)
-        if (!selectionDetails || !hoveredDetails || !isShiftHeld) return null
-        if (selectedHexes.includes(hoveredHex!)) return null // Don't preview what is already selected for now (classic logic handles this specifically for removal but simplified here)
-
-        try {
-            return aggregateDetails([selectionDetails, hoveredDetails])
-        } catch { return null }
-    }, [selectionDetails, hoveredDetails, isShiftHeld, selectedHexes, hoveredHex])
-
-    useEffect(() => {
-        if (selectedHexes.length === 0) {
-            setComparisonHex(null)
-            setComparisonDetailsState(null)
-            return
-        }
-        if (hoveredHex && !selectedHexes.includes(hoveredHex)) {
-            setComparisonHex(hoveredHex)
-            setComparisonDetailsState(hoveredDetails)
-        } else {
-            setComparisonHex(null)
-            setComparisonDetailsState(null)
-        }
-    }, [hoveredHex, selectedHexes, hoveredDetails])
 
     useEffect(() => {
         if (!mapRef.current || !isLoaded || !comparisonHex) return
@@ -700,7 +748,50 @@ export function VectorMap({
         }
     }, [comparisonHex, isLoaded])
 
+    // SYNC CANDIDATE STATE WHEN SHIFT CHANGES
+    useEffect(() => {
+        if (!mapRef.current || !isLoaded) return
+        const map = mapRef.current
+
+        // Update state for currently hovered hex when Shift changes
+        if (hoveredHex && selectedHexes.length > 0 && !selectedHexes.includes(hoveredHex)) {
+            try {
+                const sources = ["h3-a", "h3-b"]
+                sources.forEach(s => {
+                    map.setFeatureState(
+                        { source: s, sourceLayer: "default", id: hoveredHex },
+                        {
+                            comparison: !isShiftHeld,
+                            candidate: isShiftHeld
+                        }
+                    )
+                })
+            } catch (e) { /* ignore */ }
+        }
+    }, [isShiftHeld, hoveredHex, selectedHexes, isLoaded])
+
     // DYNAMIC FILTERING (Disabled for Parity with MapView)
+    useEffect(() => {
+        if (!mapRef.current || !isLoaded) return
+        const map = mapRef.current
+
+        // Update state for currently hovered hex when Shift changes
+        if (hoveredHex && selectedHexes.length > 0 && !selectedHexes.includes(hoveredHex)) {
+            try {
+                const sources = ["h3-a", "h3-b"]
+                sources.forEach(s => {
+                    map.setFeatureState(
+                        { source: s, sourceLayer: "default", id: hoveredHex },
+                        {
+                            comparison: !isShiftHeld,
+                            candidate: isShiftHeld
+                        }
+                    )
+                })
+            } catch (e) { /* ignore */ }
+        }
+    }, [isShiftHeld, hoveredHex, selectedHexes, isLoaded])
+
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return
         const map = mapRef.current
@@ -812,10 +903,10 @@ export function VectorMap({
                         stability_flag: false, robustness_flag: false, has_data: false
                     }}
                     displayDetails={displayDetails}
-                    primaryDetails={selectedHexes.length > 0 ? selectionDetails : null}
-                    selectionDetails={selectionDetails}
+                    primaryDetails={primaryDetails}  // First hex's individual details (teal line)
+                    selectionDetails={selectionDetails}  // Aggregate of all selected (orange line)
                     comparisonDetails={comparisonDetails}
-                    previewDetails={computedPreviewDetails}
+                    previewDetails={previewDetails}
                     selectedHexes={selectedHexes}
                     hoveredDetails={hoveredDetails}
                     year={localYear}

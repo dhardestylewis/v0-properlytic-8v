@@ -15,6 +15,7 @@ import { getH3ChildTimelines } from "@/app/actions/h3-children"
 import { getH3DataBatch } from "@/app/actions/h3-data-batch"
 import { FanChart } from "./fan-chart"
 import { aggregateProperties, aggregateDetails } from "@/lib/utils/aggregation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 // Helper to get trend icon
 const getTrendIcon = (trend: "up" | "down" | "stable" | undefined) => {
@@ -451,6 +452,34 @@ export function MapView({
             }
         })
     }, [mapState.center, mapState.zoom, basemapCenter])
+
+    // SYNC URL WITH MAP POSITION (Legacy Engine)
+    const router = useRouter()
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const { zoom } = getZoomConstants(transform.scale)
+            // Reverse engineering center from offsets is complex in this custom engine.
+            // But we can approximate or use `canvasToLatLng` for the center point.
+            // Center of canvas (assuming 800x600 or current size)
+            // We need current canvas size. separate ref?
+            if (!containerRef.current) return
+            const width = containerRef.current.clientWidth || 800
+            const height = containerRef.current.clientHeight || 600
+
+            const center = canvasToLatLng(width / 2, height / 2, width, height, transform, basemapCenter)
+
+            const params = new URLSearchParams(searchParams.toString())
+            params.set("lat", center.lat.toFixed(5))
+            params.set("lng", center.lng.toFixed(5))
+            params.set("zoom", zoom.toFixed(2))
+
+            router.replace(`?${params.toString()}`, { scroll: false })
+        }, 500) // Debounce URL updates
+        return () => clearTimeout(timer)
+    }, [transform, searchParams, router, basemapCenter])
+
 
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
@@ -2039,7 +2068,7 @@ export function MapView({
                                         <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="w-3.5 h-3.5 text-primary" />
-                                                <span className="font-bold text-[10px] tracking-wide text-foreground uppercase">InvestMap</span>
+                                                <span className="font-bold text-[10px] tracking-wide text-foreground uppercase">Properlytic</span>
                                                 {lockedMode && (
                                                     <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[8px] font-semibold uppercase tracking-wider rounded">Locked</span>
                                                 )}

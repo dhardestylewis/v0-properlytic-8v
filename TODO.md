@@ -1,3 +1,34 @@
+# Refactoring Download Location
+
+The goal is to move the temporary download directory for HCAD data to a permanent, well-structured location within the project.
+
+## Proposed Changes
+
+### Directory Structure
+- Create `data/` at the project root if it doesn't exist.
+- Create `data/hcad/` to store HCAD specific data.
+- Move contents of `temp_test_downloads` (or `temp_downloads`) to `data/hcad/`.
+- Create `.meta/` directory.
+- Move `GUIDELINES.md`, `TODO.md`, `PROMPTS-LOG.md` into `.meta/`.
+
+### Code Changes
+- **scripts/hcad_downloader.py**: Update the default `download_dir`.
+- **pipeline_v14.py**: Rename and move to `scripts/h3_mvt_pipeline.py`.
+- **scripts/legacy_checks**: New folder for ephemeral validation scripts.
+- Move `check-*`, `*.txt` from `scripts/` to `scripts/legacy_checks/`.
+
+
+## Verification Plan
+### Automated Tests
+- Run `python scripts/hcad_downloader.py --help` to verify the default dir in output (if visible) or check the code.
+- Run a dry-run or check file existence in the new location.
+
+### Manual Verification
+- Check that files exist in `data/hcad`.
+- Check that `temp_test_downloads` is gone.
+
+---
+
 # Properlytic UI - TODO
 
 > **Updated**: 2026-01-21T20:31
@@ -6,6 +37,9 @@
 ---
 
 ## Remaining High Priority Items
+
+### P1 - AVM Vendor Compliance & Validation
+- [ ] **See**: [TODO_AVM_VENDOR_COMPLIANCE.md](./TODO_AVM_VENDOR_COMPLIANCE.md)  Full spec for legal positioning, regulatory requirements, validation framework, fan charts, drift monitoring, and deliverables [Added: 2026-02-06 21:57]
 
 ### P1 - Critical Bugs
 - [x] **Wrong DB table**: h3-data-v2.ts queried empty table → Fixed to use `h3_precomputed_hex_rows`
@@ -16,37 +50,40 @@
 - [/] **Migrate to Tile Server Architecture**: VectorMap component complete. Pending: user must run `get_tile.sql` in Supabase [Updated: 2026-01-21]
 - [x] **Mobile z-index**: Address suggestions dropdown fixed z-[200] [Added: 2026-01-17]
 
-### P1 - VectorMap Full Parity [Added: 2026-01-21]
-- [x] **URL Sync**: Both engines read/write lat/lng/zoom to URL for seamless switching
-- [x] **Shared Tooltip**: Extracted into `map-tooltip.tsx`
-- [x] **Mobile Pan-on-Select**: Centers tile with 800ms ease-out animation
-- [x] **Default Houston View**: Zoom 10 for first-time visitors
-- [x] **Shift Multi-Select**: Toggle hexes in/out of selection
-- [x] **Locked Tooltip Mode**: Activates on selection with first-time drag hint
-- [x] **ESC to Exit Locked**: Uses ref for stable deps
-- [x] **Draggable Tooltip (Desktop)**: Global mouse move/up handlers
-- [x] **Mobile Swipe Dismiss**: Touch handlers with 100px threshold
-- [x] **Timelapse from Tooltip**: localYear state with bidirectional sync
+### P1 - VectorMap Full Parity Checklist
+*Derived from comprehensive analysis of MapView logic.*
 
+**1. Interaction Logic**
+- [ ] **Hover State**: Highlight hex, show tooltip, fetch details (debounced).
+- [ ] **Click Selection (Single)**: Select/Deselect, lock tooltip, enable drag.
+- [ ] **Shift+Click (Multi-Select)**: [REQUESTED] Implement Bounding Box / Range selection (like MapView).
+- [ ] **Ctrl+Click (Multi-Select)**: [REQUESTED] Implement Toggle/Add Single selection.
+- [ ] **Mobile Touch**: Tap-to-select, auto-pan to center (bottom half), swipe-to-dismiss.
+- [ ] **Fix TS Errors**: Clear all lingering variable reference errors in vector-map.
 
-### P2 - Feature Gaps (Tooltip Lock & Comparison Mode) [Added: 2026-01-17]
-- [x] **Locked tooltip on click**: Clicking tile should lock tooltip to that hex, ignore hover [Added: 2026-01-17 15:27]
-- [x] **Yellow dashed connector line**: Line from fixed tooltip to selected hex [Added: 2026-01-17 15:27]
-- [x] **Yellow dashed hex border**: Selected hex has yellow dashed border [Added: 2026-01-17 15:27]
-- [x] **Draggable tooltip**: User can drag locked tooltip anywhere [Added: 2026-01-17 15:35]
-- [x] **ESC to unlock**: Pressing ESC exits static mode back to dynamic tooltip [Added: 2026-01-17 15:35]
-- [x] **First-time gesture hint**: Small animation to indicate tooltip is draggable [Added: 2026-01-17 15:35] - localStorage + animate-pulse
-- [x] **"Actual" vs "Predicted" label**: Show "Actual" for historical years ≤2025 [Added: 2026-01-17 15:28]
-- [x] **Resolution mismatch fix**: Selection clears when zoom changes resolution [Added: 2026-01-17 15:50]
-- [x] **Double-click to zoom**: Double-click zooms in centered on click point [Added: 2026-01-17 15:49]
-- [x] **Fan chart clipPath**: Lines no longer extend outside chart bounds [Added: 2026-01-17 15:49]
-- [x] **Homeowner-friendly legend**: "P10-P90" changed to "Likely Range" [Added: 2026-01-17 15:49]
-- [x] **Comparison fan chart**: Hovering another tile while one selected shows combined overlay [Added: 2026-01-17 15:34]
-- [x] **Visual Consistency**: Map highlights (Teal/Amber) match fan chart line colors for Primary/Comparison [Added: 2026-01-17 16:18]
-- [x] **Comparison Hex Logic**: Primary select is excluded from preview line when hovered. [Added: 2026-01-21]
-- [ ] **Multi-Select Aggregation**:
-  - [ ] Ctrl+Click/Shift+Click to select multiple comparisons.
-  - [ ] Chart displays ONE aggregate line (Avg/Median) for the entire comparison group.
+**2. Tooltip Behavior**
+- [ ] **Smart Docking**: Port `getSmartTooltipPos` logic to avoid screen edge/sidebar overlap.
+- [ ] **Draggable**: Locked mode allows dragging (Desktop).
+- [ ] **Content Parity**: Header (ID), Metrics, FanChart, Comparisons, Aggregates.
+- [ ] **Mobile Layout**: Compact view, side-by-side stats.
+
+**3. Comparison & Preview**
+- [ ] **Comparison State**: Hovering other hex while selected sets "Comparison" (Blue vs Orange).
+- [ ] **Freeze Mode**: Holding Shift prevents comparison hex updates.
+- [ ] **Preview Lines**: Shift-hover shows "Preview" aggregate (Green/Purple).
+
+**4. Visualization**
+- [x] **Color Modes**: Support "Growth" (Purple-White-Blue) and "Value" (Purple-Red-Yellow).
+- [x] **Layers**: H3 Fill, Outlines (Selected/Comparison/Hover), Parcels (>z14).
+- [x] **Timelines**: Seamless year transitions (Double Buffering).
+- [x] **Candidate Color**: Shift-hover shows Fuchsia line to match Fan Chart.
+
+**5. System & Data**
+- [ ] **Data Fetching**: Cached H3 details, Parcels on moveend (>z14).
+- [x] **URL Sync**: Update lat/lng/zoom params.
+- [ ] **Resize Handling**: Update canvas/map size.
+
+---
 
 ### P2 - Feature Gaps (Existing)
 - [ ] **Fan chart missing**: Investigate if DB has fan chart columns populated
@@ -60,7 +97,7 @@
 - [x] **Historical year colors**: Add color mode for raw dollar values
 - [ ] **Auto-scaling min accounts by zoom**: Consider adjusting threshold based on H3 resolution
 - [x] **Property lot lines at max zoom**: Implemented logic (requires `get_parcels_in_bounds` RPC to function)
-- [ ] **Label aggregated metrics**: At outer zoom levels, clarify that metrics are aggregated across properties in hex
+- [ ] **Label aggregated metrics**: outer zoom levels, clarify that metrics are aggregated across properties in hex
 - [x] **Mobile Tooltip Compaction**: Side-by-side layout (Stats + Chart), removed headers, swipe-to-minimize [Added: 2026-01-17]
 - [x] **Search Box Fix**: Prevent suggestions popup on map click [Added: 2026-01-17]
 - [x] **Mobile Time Controls**: Compact single-row layout [Added: 2026-01-17]
@@ -106,3 +143,25 @@
 > is "sample accuracy" intelligible to our end users? is that accuracy or error? ie is closer to 0 or closer to 100 better? use clearer terminology if keeping this metric at all
 
 **Status**: Added to P3 TODO. Need to investigate what this value represents (appears to be error rate ~23%, not accuracy).
+
+### [2026-01-26 20:39]
+
+> mv temp downloads into a better named and located actual final location for it considering the structure of this workspace
+> remove temp_test_downloads
+
+**Action**: Moved `temp_test_downloads` to `data/hcad/`. Updated `hcad_downloader.py`.
+
+### [2026-01-26 20:41]
+
+> better locate and more explicitly name pipeline v14 what kind of pipeline where in the pipeline? that should be in the name
+> perhaps the guidelines and todo belong in a .meta
+
+**Action**: Moved `pipeline_v14.py` to `scripts/h3_mvt_pipeline.py`. Created `.meta/` for `GUIDELINES.md`, `TODO.md`, `PROMPTS-LOG.md`.
+
+### [2026-01-26 20:43]
+
+> Are you or can you hook into My G Drive? It's on G: find ProFormaHouston-LeakageFree.ipynb and pull a copy into this workspace
+
+**Action**: Searching G: drive for file.
+-   [   ]   R e f a c t o r   n o t e b o o k s / P r o F o r m a H o u s t o n - L e a k a g e F r e e . i p y n b   i n t o   m o d u l a r   s c r i p t   f i l e s  
+ 
