@@ -57,18 +57,21 @@ export function ExplainerPopup() {
         <>
             {/* Full Modal */}
             <div
-                className={`fixed inset-0 z-[10000] flex items-center justify-center transition-all duration-500 ease-in-out ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black/60 backdrop-blur-sm p-4"
+                className={`fixed inset-0 z-[10000] flex items-center justify-center transition-colors duration-1000 ease-in-out ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black/60 backdrop-blur-sm p-4"
                     } ${!isOpen ? "hidden" : ""}`}
             >
                 <div
                     className={`
                         bg-[#0f172a] border border-border/50 text-foreground w-full rounded-2xl shadow-2xl overflow-hidden glass-panel 
-                        transition-all duration-500 ease-in-out
+                        transition-all duration-1000 ease-[cubic-bezier(0.4,0,0.2,1)]
                         ${isMinimized
-                            ? "fixed bottom-6 right-6 w-12 h-12 rounded-full opacity-0 scale-50 pointer-events-none translate-y-20"
-                            : "max-w-2xl opacity-100 scale-100 translate-y-0"
+                            ? "opacity-0 scale-[0.05]" // Shrink and fade
+                            : "max-w-2xl opacity-100 scale-100 translate-x-0 translate-y-0"
                         }
                     `}
+                    style={{
+                        transform: isMinimized ? "translate(calc(50vw - 3rem), calc(50vh - 3rem)) scale(0.05)" : undefined
+                    }}
                 >
                     {/* Header */}
                     <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-start">
