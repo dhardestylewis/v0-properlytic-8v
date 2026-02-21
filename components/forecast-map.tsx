@@ -565,6 +565,27 @@ export function ForecastMap({
             touchStartPos = null
         }, { passive: true })
 
+        // MOUSELEAVE: clear tooltip when cursor exits the map (unless locked)
+        map.getCanvas().addEventListener("mouseleave", () => {
+            if (!selectedIdRef.current) {
+                setTooltipData(null)
+            }
+            if (hoveredIdRef.current) {
+                const zoom = map.getZoom()
+                const sourceLayer = getSourceLayer(zoom)
+                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                        try {
+                            map.setFeatureState(
+                                { source: s, sourceLayer, id: hoveredIdRef.current! },
+                                { hover: false }
+                            )
+                        } catch { }
+                    })
+                hoveredIdRef.current = null
+                onFeatureHover(null)
+            }
+            map.getCanvas().style.cursor = ""
+        })
 
         // CLICK handling
         map.on("click", (e: maplibregl.MapMouseEvent) => {
@@ -750,10 +771,44 @@ export function ForecastMap({
             } else if (action === "fly_to_location" && params) {
                 const map = mapRef.current
                 if (map && params.lat && params.lng) {
+                    const targetZoom = params.zoom || 14
                     map.flyTo({
                         center: [params.lng, params.lat],
-                        zoom: params.zoom || 14,
+                        zoom: targetZoom,
                         duration: 2000,
+                    })
+                    // After fly completes, auto-select the feature at center
+                    map.once("moveend", () => {
+                        const zoom = map.getZoom()
+                        const sourceLayer = getSourceLayer(zoom)
+                        const activeSuffix = (map as any)._activeSuffix || "a"
+                        const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
+                        const center = map.project(map.getCenter())
+                        const features = map.getLayer(fillLayerId)
+                            ? map.queryRenderedFeatures(center, { layers: [fillLayerId] })
+                            : []
+                        if (features.length > 0) {
+                            const feature = features[0]
+                            const id = (feature.properties?.id || feature.id) as string
+                            if (id) {
+                                // Clear prev selection
+                                if (selectedIdRef.current) {
+                                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                                        try { map.setFeatureState({ source: s, sourceLayer, id: selectedIdRef.current! }, { selected: false }) } catch { }
+                                    })
+                                }
+                                // Set new selection
+                                selectedIdRef.current = id
+                                setSelectedId(id)
+                                setSelectedProps(feature.properties)
+                                setSelectedCoords([params.lat, params.lng])
+                                onFeatureSelect(id)
+                                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                                        try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
+                                    })
+                                fetchForecastDetail(id, sourceLayer)
+                            }
+                        }
                     })
                 }
             }
