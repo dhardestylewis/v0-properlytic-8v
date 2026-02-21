@@ -811,6 +811,49 @@ export function ForecastMap({
                         }
                     })
                 }
+            } else if (action === "location_to_area" || action === "add_location_to_selection" || action === "resolve_place" || action === "get_forecast_area") {
+                // All these return lat/lng — fly to it and auto-select the center feature
+                const result = (e as CustomEvent).detail?.result || params
+                const lat = result?.chosen?.lat || result?.location?.lat || result?.area?.location?.lat || params?.lat
+                const lng = result?.chosen?.lng || result?.location?.lng || result?.area?.location?.lng || params?.lng
+                const map = mapRef.current
+                if (map && lat && lng) {
+                    map.flyTo({
+                        center: [lng, lat],
+                        zoom: Math.max(map.getZoom(), 13),
+                        duration: 2000,
+                    })
+                    map.once("moveend", () => {
+                        const zoom = map.getZoom()
+                        const sourceLayer = getSourceLayer(zoom)
+                        const activeSuffix = (map as any)._activeSuffix || "a"
+                        const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
+                        const center = map.project(map.getCenter())
+                        const features = map.getLayer(fillLayerId)
+                            ? map.queryRenderedFeatures(center, { layers: [fillLayerId] })
+                            : []
+                        if (features.length > 0) {
+                            const feature = features[0]
+                            const id = (feature.properties?.id || feature.id) as string
+                            if (id) {
+                                if (selectedIdRef.current) {
+                                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                                        try { map.setFeatureState({ source: s, sourceLayer, id: selectedIdRef.current! }, { selected: false }) } catch { }
+                                    })
+                                }
+                                selectedIdRef.current = id
+                                setSelectedId(id)
+                                setSelectedProps(feature.properties)
+                                setSelectedCoords([lat, lng])
+                                onFeatureSelect(id)
+                                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                                        try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
+                                    })
+                                fetchForecastDetail(id, sourceLayer)
+                            }
+                        }
+                    })
+                }
             }
         }
         window.addEventListener("tavus-map-action", handleTavusAction)
