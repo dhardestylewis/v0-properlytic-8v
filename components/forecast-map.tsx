@@ -154,17 +154,17 @@ export function ForecastMap({
 
     // Reverse geocode when selection changes
     useEffect(() => {
-        if (!selectedId || !tooltipCoords) {
+        if (!selectedId || !selectedCoords) {
             setGeocodedName(null)
             return
         }
-        const cacheKey = `${tooltipCoords[0].toFixed(4)},${tooltipCoords[1].toFixed(4)}`
+        const cacheKey = `${selectedCoords[0].toFixed(4)},${selectedCoords[1].toFixed(4)}`
         if (geocodeCacheRef.current[cacheKey]) {
             setGeocodedName(geocodeCacheRef.current[cacheKey])
             return
         }
         setGeocodedName(null) // Show loading
-        const [lat, lng] = tooltipCoords
+        const [lat, lng] = selectedCoords
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
             headers: { 'User-Agent': 'HomecastrUI/1.0' }
         })
@@ -179,7 +179,7 @@ export function ForecastMap({
                 }
             })
             .catch(() => { })
-    }, [selectedId, tooltipCoords])
+    }, [selectedId, selectedCoords])
 
     // Fan chart detail state
     const [fanChartData, setFanChartData] = useState<FanChartData | null>(null)
