@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import * as h3 from "h3-js"
 import { executeTopLevelTool } from "@/app/actions/tools"
+import { executeTopLevelForecastTool } from "@/app/actions/tools-forecast"
+import { initLogger, wrapOpenAI, flush } from "braintrust"
+
+if (typeof process !== "undefined" && process.env.BRAINTRUST_API_KEY) {
+    initLogger({
+        projectName: "Homecastr",
+        apiKey: process.env.BRAINTRUST_API_KEY,
+    })
+}
 
 // Tool definitions from tavus-tool-definitions.json (inlined for the API route)
 const TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
@@ -211,6 +220,138 @@ const TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
     },
 ]
 
+// Forecast-mode tool definitions (geography-level, matching tavus.ts)
+const FORECAST_TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
+    {
+        type: "function",
+        function: {
+            name: "resolve_place",
+            description: "Resolve a free-text location into lat/lng results.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string" },
+                    city_hint: { type: "string" },
+                    max_candidates: { type: "integer" }
+                },
+                required: ["query", "city_hint", "max_candidates"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "location_to_area",
+            description: "Resolve text location -> determine geography -> return forecast metrics for that area. Use for initial one-shot lookups.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: "Location name or address" },
+                    level: { type: "string", enum: ["zcta", "tract", "tabblock", "parcel"], description: "Geography level" },
+                    area_id: { type: "string", description: "Specific area ID if known" },
+                    forecast_year: { type: "integer", description: "Forecast year (2026 for current, 2030 for trend)" },
+                    include_metrics: { type: "boolean" }
+                },
+                required: ["query", "forecast_year"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "get_forecast_area",
+            description: "Fetch forecast metrics for a specific geography unit (zip code, tract, block, or parcel).",
+            parameters: {
+                type: "object",
+                properties: {
+                    level: { type: "string", enum: ["zcta", "tract", "tabblock", "parcel"] },
+                    id: { type: "string", description: "Geography ID (e.g. 77079 for zcta)" },
+                    forecast_year: { type: "integer" },
+                    lat: { type: "number" },
+                    lng: { type: "number" }
+                },
+                required: ["level", "id", "forecast_year"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "rank_forecast_areas",
+            description: "Rank geography units by forecasted value or growth.",
+            parameters: {
+                type: "object",
+                properties: {
+                    level: { type: "string", enum: ["zcta", "tract", "tabblock", "parcel"] },
+                    forecast_year: { type: "integer" },
+                    objective: { type: "string", enum: ["value", "growth"] },
+                    limit: { type: "integer" }
+                },
+                required: ["objective"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "add_location_to_selection",
+            description: "Add a location to the current map selection for comparison. Use after initial search to compare areas.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: "Location name or address" },
+                    area_id: { type: "string" },
+                    level: { type: "string", enum: ["zcta", "tract", "tabblock", "parcel"] },
+                    forecast_year: { type: "integer" },
+                    include_metrics: { type: "boolean" }
+                },
+                required: ["query"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "fly_to_location",
+            description: "Pan and zoom the map to a specific location.",
+            parameters: {
+                type: "object",
+                properties: {
+                    lat: { type: "number" },
+                    lng: { type: "number" },
+                    zoom: { type: "integer" },
+                    area_id: { type: "string" },
+                    level: { type: "string" }
+                },
+                required: ["lat", "lng", "zoom"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "explain_metric",
+            description: "Explain a forecast metric in plain language.",
+            parameters: {
+                type: "object",
+                properties: {
+                    metric: { type: "string" },
+                    audience: { type: "string" }
+                },
+                required: ["metric"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "clear_selection",
+            description: "Clear all current map selections and reset the view.",
+            parameters: { type: "object", properties: {}, required: [] }
+        }
+    }
+]
+
 const SYSTEM_PROMPT = `You are Homecastr, a real estate analyst for Houston, TX.
 
 RULES:
@@ -224,6 +365,18 @@ RULES:
 5. FLY FIRST: Batch 'fly_to_location' with data tools.
 6. ANALYTICAL TONE: Be concise. Mention specific dollar values. Speak like a professional analyst, not a JSON parser. Use Markdown.`
 
+const FORECAST_SYSTEM_PROMPT = `You are Homecastr, a real estate forecast analyst for Houston, TX.
+
+RULES:
+1. PROACTIVITY: Report results immediately once a tool returns. Never say "I'm waiting."
+2. GEOGRAPHY: Data is organized at zip code (zcta), census tract, block, and parcel levels. Use 'location_to_area' for initial lookups.
+3. BASELINE (2026): If forecast_year is 2026, ONLY report the "Current Market Value (2026)".
+4. TREND (Post-2026): Always provide Current Value (2026), Predicted Value, and Avg Annual Change.
+5. TOOL EFFICIENCY: Use 'location_to_area' for one-shot lookups. Use 'add_location_to_selection' to compare areas.
+6. FLY + LOCK: Always batch 'fly_to_location' with 'location_to_area' so the map pans AND the tooltip locks.
+7. NEVER mention technical IDs. Say "this zip code" or "this neighborhood" instead.
+8. Use Markdown formatting. Be concise and analytical.`
+
 export async function POST(req: NextRequest) {
     try {
         const apiKey = process.env.OPENAI_API_KEY
@@ -234,8 +387,10 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const openai = new OpenAI({ apiKey })
-        const { messages } = await req.json()
+        const rawOpenai = new OpenAI({ apiKey })
+        const openai = process.env.BRAINTRUST_API_KEY ? wrapOpenAI(rawOpenai) : rawOpenai
+        const { messages, forecastMode } = await req.json()
+        console.log(`[Chat API] forecastMode=${forecastMode}, using ${forecastMode ? 'FORECAST' : 'H3'} tools`)
 
         if (!messages || !Array.isArray(messages)) {
             return NextResponse.json({ error: "messages array required" }, { status: 400 })
@@ -243,9 +398,12 @@ export async function POST(req: NextRequest) {
 
         // Prepend system prompt
         const conversationMessages: OpenAI.ChatCompletionMessageParam[] = [
-            { role: "system" as const, content: SYSTEM_PROMPT },
+            { role: "system" as const, content: forecastMode ? FORECAST_SYSTEM_PROMPT : SYSTEM_PROMPT },
             ...messages,
         ]
+
+        const activeToolDefs = forecastMode ? FORECAST_TOOL_DEFINITIONS : TOOL_DEFINITIONS
+        const executeTool = forecastMode ? executeTopLevelForecastTool : executeTopLevelTool
 
         const allMapActions: any[] = []
         const allToolsUsed: string[] = []
@@ -257,7 +415,7 @@ export async function POST(req: NextRequest) {
             const response = await openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: conversationMessages,
-                tools: TOOL_DEFINITIONS,
+                tools: activeToolDefs,
                 tool_choice: round < MAX_ROUNDS - 1 ? "auto" : "none", // Force text on last round
                 temperature: 0.7,
                 max_tokens: 1024,
@@ -309,8 +467,30 @@ export async function POST(req: NextRequest) {
                     allToolsUsed.push(toolFn.name)
                     try {
                         const args = JSON.parse(toolFn.arguments)
-                        const result = await executeTopLevelTool(toolFn.name, args)
-                        if (toolFn.name === "rank_h3_hexes") {
+                        const result = await executeTool(toolFn.name, args)
+
+                        // Auto-create map actions from location results
+                        if (forecastMode && (toolFn.name === "location_to_area" || toolFn.name === "add_location_to_selection")) {
+                            try {
+                                const resultObj = JSON.parse(result)
+                                if (resultObj.chosen?.lat) {
+                                    allMapActions.push({
+                                        lat: resultObj.chosen.lat,
+                                        lng: resultObj.chosen.lng,
+                                        zoom: 13,
+                                        area_id: resultObj.area?.id || args.area_id,
+                                        level: args.level || "zcta",
+                                    })
+                                }
+                            } catch (e) { }
+                        } else if (forecastMode && toolFn.name === "rank_forecast_areas") {
+                            try {
+                                const resultObj = JSON.parse(result)
+                                if (resultObj.areas?.length > 0) {
+                                    // TODO: fly to top area when we have lat/lng for ranked areas
+                                }
+                            } catch (e) { }
+                        } else if (toolFn.name === "rank_h3_hexes") {
                             try {
                                 const resultObj = JSON.parse(result)
                                 if (resultObj.hexes && resultObj.hexes.length > 0) {
@@ -375,6 +555,10 @@ export async function POST(req: NextRequest) {
             { error: error.message || "Chat request failed" },
             { status: 500 }
         )
+    } finally {
+        if (process.env.BRAINTRUST_API_KEY) {
+            await flush().catch(() => { })
+        }
     }
 }
 

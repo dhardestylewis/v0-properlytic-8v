@@ -150,6 +150,35 @@ export function ForecastMap({
         if (selectedId) setMobileMinimized(false)
     }, [selectedId])
 
+    // Reverse geocode when selection changes
+    useEffect(() => {
+        if (!selectedId || !tooltipCoords) {
+            setGeocodedName(null)
+            return
+        }
+        const cacheKey = `${tooltipCoords[0].toFixed(4)},${tooltipCoords[1].toFixed(4)}`
+        if (geocodeCacheRef.current[cacheKey]) {
+            setGeocodedName(geocodeCacheRef.current[cacheKey])
+            return
+        }
+        setGeocodedName(null) // Show loading
+        const [lng, lat] = tooltipCoords
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
+            headers: { 'User-Agent': 'HomecastrUI/1.0' }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return
+                const addr = data.address || {}
+                const name = addr.suburb || addr.neighbourhood || addr.city_district || addr.road || data.display_name?.split(',')[0] || null
+                if (name) {
+                    geocodeCacheRef.current[cacheKey] = name
+                    setGeocodedName(name)
+                }
+            })
+            .catch(() => { })
+    }, [selectedId, tooltipCoords])
+
     // Fan chart detail state
     const [fanChartData, setFanChartData] = useState<FanChartData | null>(null)
     const [historicalValues, setHistoricalValues] = useState<number[] | undefined>(undefined)
@@ -158,6 +187,10 @@ export function ForecastMap({
 
     // Selected feature's properties (locked when clicked)
     const [selectedProps, setSelectedProps] = useState<any>(null)
+
+    // Reverse geocoded name for tooltip header
+    const [geocodedName, setGeocodedName] = useState<string | null>(null)
+    const geocodeCacheRef = useRef<Record<string, string>>({})
 
     // Comparison state: hover overlay when a feature is selected
     const [comparisonData, setComparisonData] = useState<FanChartData | null>(null)
@@ -913,9 +946,14 @@ export function ForecastMap({
                                         {displayProps.n != null ? `${displayProps.n} Prop` : ""}
                                     </div>
                                 </div>
-                                <div className="font-mono text-xs text-muted-foreground truncate">
-                                    {displayProps.id}
+                                <div className="font-semibold text-xs text-foreground truncate">
+                                    {geocodedName || displayProps.id}
                                 </div>
+                                {geocodedName && (
+                                    <div className="font-mono text-[9px] text-muted-foreground/60 truncate">
+                                        {displayProps.id}
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}

@@ -10,6 +10,8 @@ export interface MapAction {
     zoom: number
     select_hex_id?: string
     highlighted_hex_ids?: string[]
+    area_id?: string
+    level?: string
 }
 
 interface ChatMessage {
@@ -23,9 +25,10 @@ interface ChatPanelProps {
     isOpen: boolean
     onClose: () => void
     onMapAction: (action: MapAction) => void
+    forecastMode?: boolean
 }
 
-export function ChatPanel({ isOpen, onClose, onMapAction }: ChatPanelProps) {
+export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPanelProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -62,6 +65,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction }: ChatPanelProps) {
                         role: m.role,
                         content: m.content,
                     })),
+                    forecastMode: forecastMode ?? false,
                 }),
             })
 

@@ -51,12 +51,29 @@ function DashboardContent() {
 
   // Handle map actions from chat (smooth fly-to)
   const handleChatMapAction = useCallback((action: MapAction) => {
+    // Use area_id for forecast mode, select_hex_id for H3 mode
+    const selectedId = action.area_id || action.select_hex_id || undefined
     setMapState({
       center: [action.lng, action.lat],
       zoom: action.zoom,
-      ...(action.select_hex_id ? { selectedId: action.select_hex_id } : {}),
+      ...(selectedId ? { selectedId } : {}),
       ...(action.highlighted_hex_ids ? { highlightedIds: action.highlighted_hex_ids } : {}),
     })
+
+    // Dispatch tavus-map-action so the forecast map handler picks it up
+    if (action.area_id) {
+      window.dispatchEvent(new CustomEvent("tavus-map-action", {
+        detail: {
+          action: "location_to_area",
+          params: { lat: action.lat, lng: action.lng, zoom: action.zoom },
+          result: {
+            chosen: { lat: action.lat, lng: action.lng, label: "" },
+            area: { id: action.area_id, level: action.level || "zcta" }
+          }
+        }
+      }))
+    }
+
     toast({
       title: "Map updated",
       description: `Navigating to ${action.lat.toFixed(4)}, ${action.lng.toFixed(4)}`,
@@ -453,6 +470,7 @@ function DashboardContent() {
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
           onMapAction={handleChatMapAction}
+          forecastMode={filters.useForecastMap ?? false}
         />
 
         {/* Unified Sidebar Container - Top Left */}

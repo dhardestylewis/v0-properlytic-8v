@@ -1,0 +1,31 @@
+Category,Technology
+Language,TypeScript
+Language,Python
+Language,SQL (PLpgSQL)
+Framework,Next.js 16 (App Router)
+Framework,React 19
+Styling,Tailwind CSS
+Mapping,MapLibre GL JS
+Mapping,DeckGL
+Mapping,Google Maps Platform (Street View Static API)
+Database,Supabase (PostgreSQL)
+Database,PostGIS
+AI/ML,OpenAI GPT-4o-mini (function-calling)
+AI/ML,Braintrust (LLM observability)
+AI/ML,Tavus CVI (conversational video agent)
+AI/ML,Modulate.ai (voice guardrails)
+Observability,Datadog RUM (browser performance)
+Observability,dd-trace (server-side APM)
+Observability,Braintrust (LLM trace logging)
+Cloud,Vercel (deployment + edge functions)
+Cloud,Google Cloud Platform (Maps APIs)
+Cloud,Supabase Cloud (managed Postgres)
+Data,U.S. Census TIGER/Line shapefiles
+Data,Harris County Appraisal District (HCAD)
+Data,OpenStreetMap / Nominatim (reverse geocoding)
+Charting,Recharts
+UI Components,shadcn/ui
+UI Components,Radix UI primitives
+UI Components,Lucide React (icons)
+Package Manager,npm
+Version Control,Git + GitHub
