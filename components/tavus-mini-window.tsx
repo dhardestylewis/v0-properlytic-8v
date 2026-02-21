@@ -243,11 +243,15 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
   return (
     <div
       className={cn(
-        "fixed z-[10000] transition-all duration-300 ease-in-out bottom-5",
-        chatOpen ? "left-[420px]" : "left-5",
+        "fixed z-[10000] transition-all duration-300 ease-in-out",
+        // Mobile: smaller, bottom-left
+        "bottom-3 left-3",
+        // Desktop: shift right when chat open
+        "md:bottom-5",
+        chatOpen ? "md:left-[420px]" : "md:left-5",
         isMinimized
-          ? "w-[280px] h-[56px]"
-          : "w-[340px] h-[520px]"
+          ? "w-[180px] h-[44px] md:w-[280px] md:h-[56px]"
+          : "w-[200px] h-[300px] md:w-[340px] md:h-[520px]"
       )}
     >
       <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0f0f14] flex flex-col">
@@ -330,7 +334,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
             <div className="h-[1px] bg-white/10 shrink-0" />
 
             {/* Bottom: Local participant (You) */}
-            <div className="h-[140px] relative bg-[#111118] overflow-hidden shrink-0">
+            <div className="h-[80px] md:h-[140px] relative bg-[#111118] overflow-hidden shrink-0">
               <video
                 ref={localVideoRef}
                 autoPlay
