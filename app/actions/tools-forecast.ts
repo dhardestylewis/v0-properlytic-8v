@@ -197,7 +197,13 @@ export async function executeTopLevelForecastTool(
         case "rank_forecast_areas": {
             try {
                 const supabase = await getSupabaseServerClient()
-                const level = args.level || "zcta"
+                // Parcel-level ranking is too slow (millions of rows) — fall back to tract
+                let level = args.level || "zcta"
+                let fallbackNote = ""
+                if (level === "parcel" || level === "tabblock") {
+                    fallbackNote = ` (auto-elevated from ${level} to tract for performance)`
+                    level = "tract"
+                }
                 const meta = LEVEL_META[level]
                 if (!meta) return JSON.stringify({ error: `Unknown level: ${level}` })
 
@@ -231,7 +237,7 @@ export async function executeTopLevelForecastTool(
                         horizon_m: row.horizon_m,
                     },
                     rank: i + 1,
-                    reason: `Rank #${i + 1} by ${objective}`,
+                    reason: `Rank #${i + 1} by ${objective}${fallbackNote}`,
                 }))
 
                 return JSON.stringify({ areas })
