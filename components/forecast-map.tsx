@@ -483,11 +483,9 @@ export function ForecastMap({
                     }
                 })
 
-            // Fetch fan chart detail for this feature (only if NOT locked to a selection)
-            if (!selectedIdRef.current) {
-                const hoverLevel = getSourceLayer(zoom)
-                fetchForecastDetail(id, hoverLevel)
-            }
+
+            // Fan chart detail is fetched only on CLICK, not on hover
+            // (fetching on every mousemove causes request spam)
 
             // Always update tooltipData with hovered feature's properties.
             // When locked, displayProps will use selectedProps instead,
