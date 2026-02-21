@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import { ChevronLeft, ChevronRight, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { getRepresentativeProperties, getStreetViewImageUrl, type PropertyLocation } from "@/lib/utils/street-view"
+import { getRepresentativeProperties, getStreetViewImageUrl, getSignedStreetViewUrl, type PropertyLocation } from "@/lib/utils/street-view"
 
 interface StreetViewCarouselProps {
     h3Ids: string[]
@@ -20,6 +20,7 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
     const [canScrollPrev, setCanScrollPrev] = useState(false)
     const [canScrollNext, setCanScrollNext] = useState(false)
     const [selectedIndex, setSelectedIndex] = useState(0)
+    const [signedUrls, setSignedUrls] = useState<Record<string, string>>({})
 
     useEffect(() => {
         if (coordinates) {
@@ -36,6 +37,22 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
             setLocations(getRepresentativeProperties(h3Ids))
         }
     }, [h3Ids, coordinates])
+
+    // Fetch signed URLs for all locations
+    useEffect(() => {
+        if (locations.length === 0) return
+        let cancelled = false
+        Promise.all(
+            locations.map(async (loc) => {
+                const key = `${loc.lat}-${loc.lng}`
+                const url = await getSignedStreetViewUrl(loc.lat, loc.lng)
+                return [key, url] as [string, string]
+            })
+        ).then((entries) => {
+            if (!cancelled) setSignedUrls(Object.fromEntries(entries))
+        })
+        return () => { cancelled = true }
+    }, [locations])
 
     const onSelect = React.useCallback(() => {
         if (!emblaApi) return
@@ -61,7 +78,7 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
                         <div key={`${loc.lat}-${loc.lng}-${index}`} className="flex-[0_0_100%] min-w-0 relative h-[180px]">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src={getStreetViewImageUrl(loc.lat, loc.lng, apiKey)}
+                                src={signedUrls[`${loc.lat}-${loc.lng}`] || getStreetViewImageUrl(loc.lat, loc.lng, apiKey)}
                                 alt={loc.label || "Property View"}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
