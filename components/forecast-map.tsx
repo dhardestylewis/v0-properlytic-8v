@@ -130,6 +130,8 @@ export function ForecastMap({
 
     // Geographic coordinates for StreetView (from MapLibre events)
     const [tooltipCoords, setTooltipCoords] = useState<[number, number] | null>(null)
+    // Coordinates locked to the selected area (for StreetView — doesn't follow hover)
+    const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(null)
 
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
@@ -529,6 +531,7 @@ export function ForecastMap({
                     setSelectedId(null)
                     setSelectedProps(null)
                     setFixedTooltipPos(null)
+                    setSelectedCoords(null)
                     setComparisonData(null)
                     setComparisonHistoricalValues(undefined)
                     comparisonFetchRef.current = null
@@ -561,6 +564,7 @@ export function ForecastMap({
                 setSelectedId(null)
                 setSelectedProps(null)
                 setFixedTooltipPos(null)
+                setSelectedCoords(null)
                 setComparisonData(null)
                 setComparisonHistoricalValues(undefined)
                 comparisonFetchRef.current = null
@@ -606,6 +610,7 @@ export function ForecastMap({
                 properties: feature.properties,
             })
             setTooltipCoords([e.lngLat.lat, e.lngLat.lng])
+            setSelectedCoords([e.lngLat.lat, e.lngLat.lng])
         })
 
             // Store refs
@@ -963,11 +968,11 @@ export function ForecastMap({
                     )}
 
                     {/* Street View Carousel */}
-                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && tooltipCoords && (
+                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
                         <StreetViewCarousel
                             h3Ids={[]}
                             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
-                            coordinates={tooltipCoords}
+                            coordinates={(selectedId ? selectedCoords : tooltipCoords)!}
                         />
                     )}
 
