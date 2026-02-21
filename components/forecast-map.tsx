@@ -164,7 +164,7 @@ export function ForecastMap({
             return
         }
         setGeocodedName(null) // Show loading
-        const [lng, lat] = tooltipCoords
+        const [lat, lng] = tooltipCoords
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
             headers: { 'User-Agent': 'HomecastrUI/1.0' }
         })
