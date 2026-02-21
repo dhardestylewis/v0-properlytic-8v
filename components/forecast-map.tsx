@@ -506,6 +506,66 @@ export function ForecastMap({
             setTooltipCoords([e.lngLat.lat, e.lngLat.lng])
         })
 
+        // MOBILE LONG-PRESS HOVER: simulate hover/comparison on touch hold
+        let longPressTimer: ReturnType<typeof setTimeout> | null = null
+        let longPressActive = false
+        let touchStartPos: { x: number; y: number } | null = null
+
+        const simulateHoverAtPoint = (clientX: number, clientY: number) => {
+            if (!selectedIdRef.current) return
+            const point = map.project(map.unproject([clientX - map.getCanvas().getBoundingClientRect().left, clientY - map.getCanvas().getBoundingClientRect().top]))
+            const zoom = map.getZoom()
+            const sourceLayer = getSourceLayer(zoom)
+            const activeSuffix = (map as any)._activeSuffix || "a"
+            const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
+            const features = map.getLayer(fillLayerId)
+                ? map.queryRenderedFeatures(point, { layers: [fillLayerId] })
+                : []
+            if (features.length === 0) return
+            const feature = features[0]
+            const id = (feature.properties?.id || feature.id) as string
+            if (!id || id === selectedIdRef.current) return
+            // Update hover state for comparison
+            hoveredIdRef.current = id
+            onFeatureHover(id)
+            setTooltipData(prev => prev ? { ...prev, properties: feature.properties } : prev)
+        }
+
+        map.getCanvas().addEventListener("touchstart", (e: TouchEvent) => {
+            if (!selectedIdRef.current) return
+            const touch = e.touches[0]
+            touchStartPos = { x: touch.clientX, y: touch.clientY }
+            longPressActive = false
+            longPressTimer = setTimeout(() => {
+                longPressActive = true
+                simulateHoverAtPoint(touch.clientX, touch.clientY)
+            }, 400)
+        }, { passive: true })
+
+        map.getCanvas().addEventListener("touchmove", (e: TouchEvent) => {
+            const touch = e.touches[0]
+            if (touchStartPos) {
+                const dx = touch.clientX - touchStartPos.x
+                const dy = touch.clientY - touchStartPos.y
+                if (Math.sqrt(dx * dx + dy * dy) > 10 && !longPressActive) {
+                    // Moved too much before long-press activated — cancel
+                    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+                    return
+                }
+            }
+            if (longPressActive) {
+                e.preventDefault()
+                simulateHoverAtPoint(touch.clientX, touch.clientY)
+            }
+        })
+
+        map.getCanvas().addEventListener("touchend", () => {
+            if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null }
+            longPressActive = false
+            touchStartPos = null
+        }, { passive: true })
+
+
         // CLICK handling
         map.on("click", (e: maplibregl.MapMouseEvent) => {
             const zoom = map.getZoom()
