@@ -576,6 +576,10 @@ export function ForecastMap({
             comparisonFetchRef.current = null
             onFeatureSelect(id)
 
+            // Fetch fan chart detail for newly selected area (critical on mobile where hover doesn't fire)
+            const clickLevel = getSourceLayer(zoom)
+            fetchForecastDetail(id, clickLevel)
+
                 // Set selected state
                 ;["forecast-a", "forecast-b"].forEach((s) => {
                     try {
@@ -979,7 +983,7 @@ export function ForecastMap({
                                     <>
                                         <div className="flex items-stretch gap-1">
                                             {/* Left: Current value */}
-                                            <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center">
+                                            <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
                                                 <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">2026</div>
                                                 <div className="text-xs font-bold text-foreground">{formatValue(currentVal)}</div>
                                             </div>
@@ -994,7 +998,7 @@ export function ForecastMap({
                                                 ) : null}
                                             </div>
                                             {/* Right: Forecast value + % change */}
-                                            <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center">
+                                            <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
                                                 <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">{year}</div>
                                                 <div className="text-xs font-bold text-foreground">{formatValue(forecastVal)}</div>
                                                 {pctChange != null && (
