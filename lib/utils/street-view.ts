@@ -42,8 +42,26 @@ export function getRepresentativeProperties(h3Ids: string[]): PropertyLocation[]
 
 /**
  * Constructs a Google Street View Static API URL for a given location.
- * Omitting heading allows Google to auto-orient to the target coordinate.
+ * Returns an unsigned URL (for use when signing is handled separately or not needed).
  */
 export function getStreetViewImageUrl(lat: number, lng: number, apiKey: string, width = 400, height = 300): string {
     return `https://maps.googleapis.com/maps/api/streetview?size=${width}x${height}&location=${lat},${lng}&key=${apiKey}`
+}
+
+/**
+ * Fetches a signed Street View URL from the server-side signing endpoint.
+ * Falls back to unsigned URL if signing fails.
+ */
+export async function getSignedStreetViewUrl(lat: number, lng: number, width = 400, height = 300): Promise<string> {
+    try {
+        const res = await fetch(`/api/streetview-sign?lat=${lat}&lng=${lng}&w=${width}&h=${height}`)
+        if (res.ok) {
+            const data = await res.json()
+            return data.url
+        }
+    } catch {
+        // Fall back to unsigned
+    }
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ""
+    return getStreetViewImageUrl(lat, lng, apiKey, width, height)
 }
