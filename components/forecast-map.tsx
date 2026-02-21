@@ -717,6 +717,51 @@ export function ForecastMap({
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [onFeatureSelect])
 
+    // Tavus map-action handler: clear_selection, fly_to_location
+    useEffect(() => {
+        const handleTavusAction = (e: Event) => {
+            const { action, params } = (e as CustomEvent).detail || {}
+            if (action === "clear_selection") {
+                const map = mapRef.current
+                if (map && selectedIdRef.current) {
+                    const zoom = map.getZoom()
+                    const sourceLayer = getSourceLayer(zoom)
+                        ;["forecast-a", "forecast-b"].forEach((s) => {
+                            try {
+                                map.setFeatureState(
+                                    { source: s, sourceLayer, id: selectedIdRef.current! },
+                                    { selected: false }
+                                )
+                            } catch (err) { /* ignore */ }
+                        })
+                }
+                selectedIdRef.current = null
+                setSelectedId(null)
+                setSelectedProps(null)
+                setFixedTooltipPos(null)
+                setSelectedCoords(null)
+                setFanChartData(null)
+                setHistoricalValues(undefined)
+                setComparisonData(null)
+                setComparisonHistoricalValues(undefined)
+                comparisonFetchRef.current = null
+                detailFetchRef.current = null
+                onFeatureSelect(null)
+            } else if (action === "fly_to_location" && params) {
+                const map = mapRef.current
+                if (map && params.lat && params.lng) {
+                    map.flyTo({
+                        center: [params.lng, params.lat],
+                        zoom: params.zoom || 14,
+                        duration: 2000,
+                    })
+                }
+            }
+        }
+        window.addEventListener("tavus-map-action", handleTavusAction)
+        return () => window.removeEventListener("tavus-map-action", handleTavusAction)
+    }, [onFeatureSelect])
+
     // UPDATE MODE — reactive fill-color paint
     useEffect(() => {
         if (!isLoaded || !mapRef.current) return
