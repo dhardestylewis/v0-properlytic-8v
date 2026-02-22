@@ -291,33 +291,40 @@ export function ForecastMap({
 
 
 
-    // Color ramp: growth mode uses growth_pct (% change from baseline),
-    // value mode uses absolute p50 with data-driven percentile breakpoints.
-    // Present year (2026): growth is zero by definition → flat neutral.
-    const buildFillColor = (colorMode?: string): any =>
-        colorMode === "growth"
-            ? (year === originYear + 1
-                ? "#e5e5e5"   // Present year (2026): growth is zero → flat neutral
-                : [
-                    "interpolate",
-                    ["linear"],
-                    ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                    -15, "#3b82f6",     // p5  → blue (declining)
-                    0, "#93c5fd",     // 0%  → light blue (flat)
-                    15, "#f8f8f8",     // p25 → neutral white
-                    30, "#f59e0b",     // p50 → amber (median growth)
-                    60, "#ef4444",     // high → red (hot growth)
-                ])
-            : [
+    // Color ramp: growth mode uses growth_pct (% change from baseline).
+    // The neutral point scales with the horizon using Houston's ~4% annual HPI.
+    //   year=2026 (now): growth=0 by definition → flat grey
+    //   year=2027 (1yr): neutral ~4%, year=2030 (5yr): neutral ~20%
+    // Value mode uses absolute p50 with fixed percentile breakpoints.
+    const ANNUAL_HPI = 4 // Houston ~4%/yr expected appreciation
+    const buildFillColor = (colorMode?: string): any => {
+        if (colorMode === "growth") {
+            const yearsAhead = Math.max(year - (originYear + 1), 0)
+            if (yearsAhead === 0) return "#e5e5e5" // Present year: growth=0 → flat neutral
+
+            const neutral = yearsAhead * ANNUAL_HPI  // expected growth for this horizon
+            return [
                 "interpolate",
                 ["linear"],
-                ["coalesce", ["get", "p50"], ["get", "value"], 0],
-                150000, "#1e1b4b",   // p5
-                235000, "#4c1d95",   // p25
-                335000, "#7c3aed",   // p50
-                525000, "#db2777",   // p75
-                1000000, "#fbbf24",  // p95
+                ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
+                neutral - 15, "#3b82f6",    // well below expected → blue (declining)
+                neutral - 5, "#93c5fd",    // slightly below → light blue
+                neutral, "#f8f8f8",    // expected growth → neutral white
+                neutral + 10, "#f59e0b",    // above expected → amber
+                neutral + 30, "#ef4444",    // far above → red (hot growth)
             ]
+        }
+        return [
+            "interpolate",
+            ["linear"],
+            ["coalesce", ["get", "p50"], ["get", "value"], 0],
+            150000, "#1e1b4b",   // p5
+            235000, "#4c1d95",   // p25
+            335000, "#7c3aed",   // p50
+            525000, "#db2777",   // p75
+            1000000, "#fbbf24",  // p95
+        ]
+    }
 
     // INITIALIZE MAP
     useEffect(() => {
