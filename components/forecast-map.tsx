@@ -1252,7 +1252,7 @@ export function ForecastMap({
                                         <div className="flex items-stretch gap-1">
                                             {/* Left: Current value */}
                                             <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
-                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">2026</div>
+                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">Now</div>
                                                 <div className="text-xs font-bold text-foreground">{formatValue(currentVal)}</div>
                                             </div>
                                             {/* Center: FanChart */}
@@ -1291,7 +1291,7 @@ export function ForecastMap({
                                 return (
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="text-center flex-1">
-                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">2026</div>
+                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Now</div>
                                             <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(currentVal)}</div>
                                         </div>
                                         <div className="text-center shrink-0">
