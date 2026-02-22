@@ -173,27 +173,48 @@ export function ForecastMap({
         if (selectedId) setMobileMinimized(false)
     }, [selectedId])
 
-    // Reverse geocode when selection changes
+    // Reverse geocode when selection changes — adapt to geography scale
     useEffect(() => {
         if (!selectedId || !selectedCoords) {
             setGeocodedName(null)
             return
         }
-        const cacheKey = `${selectedCoords[0].toFixed(4)},${selectedCoords[1].toFixed(4)}`
+        const map = mapRef.current
+        const zoom = map?.getZoom() || 10
+        const geoLevel = getSourceLayer(zoom)
+
+        // At ZIP Code scale, just show the ZIP code from the feature ID
+        if (geoLevel === "zcta") {
+            // ZCTA5 IDs are 5-digit ZIP codes
+            const zip = selectedId?.length === 5 ? selectedId : selectedId?.slice(-5)
+            setGeocodedName(`ZIP ${zip}`)
+            return
+        }
+
+        const cacheKey = `${geoLevel}:${selectedCoords[0].toFixed(4)},${selectedCoords[1].toFixed(4)}`
         if (geocodeCacheRef.current[cacheKey]) {
             setGeocodedName(geocodeCacheRef.current[cacheKey])
             return
         }
         setGeocodedName(null) // Show loading
         const [lat, lng] = selectedCoords
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
+        // Adjust Nominatim zoom to match geography scale
+        const nominatimZoom = geoLevel === "tract" ? 12 : 16
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=${nominatimZoom}&format=json`, {
             headers: { 'User-Agent': 'HomecastrUI/1.0' }
         })
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (!data) return
                 const addr = data.address || {}
-                const name = addr.suburb || addr.neighbourhood || addr.city_district || addr.road || data.display_name?.split(',')[0] || null
+                let name: string | null = null
+                if (geoLevel === "tract") {
+                    // Tract: show suburb/neighborhood + city
+                    name = addr.suburb || addr.neighbourhood || addr.city_district || addr.county || null
+                } else {
+                    // Block/Parcel: show street address
+                    name = addr.road || addr.suburb || addr.neighbourhood || data.display_name?.split(',')[0] || null
+                }
                 if (name) {
                     geocodeCacheRef.current[cacheKey] = name
                     setGeocodedName(name)
