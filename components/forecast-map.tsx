@@ -287,18 +287,21 @@ export function ForecastMap({
 
     // Color ramp: growth mode uses growth_pct (% change from baseline),
     // value mode uses absolute p50 with data-driven percentile breakpoints.
+    // Present year (2026): growth is zero by definition → flat neutral.
     const buildFillColor = (colorMode?: string): any =>
         colorMode === "growth"
-            ? [
-                "interpolate",
-                ["linear"],
-                ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                -20, "#3b82f6",     // -20% → blue (cool / declining)
-                -5, "#93c5fd",     // -5%  → light blue
-                0, "#f8f8f8",     //  0%  → neutral white (no change)
-                10, "#f59e0b",     // +10% → amber
-                30, "#ef4444",     // +30% → red (hot / high growth)
-            ]
+            ? (year <= originYear + 1
+                ? "#e5e5e5"   // Present/past: no growth to show, flat neutral
+                : [
+                    "interpolate",
+                    ["linear"],
+                    ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
+                    -20, "#3b82f6",     // -20% → blue (cool / declining)
+                    -5, "#93c5fd",      // -5%  → light blue
+                    0, "#f8f8f8",       //  0%  → neutral white (no change)
+                    10, "#f59e0b",      // +10% → amber
+                    30, "#ef4444",      // +30% → red (hot / high growth)
+                ])
             : [
                 "interpolate",
                 ["linear"],
