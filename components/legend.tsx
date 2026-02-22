@@ -11,7 +11,7 @@ const OPPORTUNITY_GRADIENT = "linear-gradient(to right, #3b82f6, #93c5fd 30%, #f
 // Magma-like: Deep Purple -> Red -> Orange -> Yellow
 const VALUE_GRADIENT = "linear-gradient(to right, oklch(0.25 0.10 280), oklch(0.60 0.20 30), oklch(0.95 0.15 80))"
 
-const OPPORTUNITY_LABELS = ["$150k", "$335k", "$1M+"]
+const OPPORTUNITY_LABELS = ["-20%", "0%", "+30%"]
 const VALUE_LABELS = ["$150k", "$525k", "$1M+"]
 
 interface LegendProps {

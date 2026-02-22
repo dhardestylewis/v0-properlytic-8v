@@ -285,19 +285,19 @@ export function ForecastMap({
 
 
 
-    // Color ramp breakpoints derived from actual tract-level forecast p50 distribution:
-    // p5≈$150k  p25≈$235k  p50≈$335k  p75≈$525k  p95≈$1M
+    // Color ramp: growth mode uses growth_pct (% change from baseline),
+    // value mode uses absolute p50 with data-driven percentile breakpoints.
     const buildFillColor = (colorMode?: string): any =>
         colorMode === "growth"
             ? [
                 "interpolate",
                 ["linear"],
-                ["coalesce", ["get", "p50"], ["get", "value"], 0],
-                150000, "#3b82f6",   // p5  → blue (cool)
-                235000, "#93c5fd",   // p25 → light blue
-                335000, "#f8f8f8",   // p50 → neutral white
-                525000, "#f59e0b",   // p75 → amber
-                1000000, "#ef4444",  // p95 → red (hot)
+                ["coalesce", ["get", "growth_pct"], 0],
+                -20, "#3b82f6",     // -20% → blue (cool / declining)
+                -5, "#93c5fd",     // -5%  → light blue
+                0, "#f8f8f8",     //  0%  → neutral white (no change)
+                10, "#f59e0b",     // +10% → amber
+                30, "#ef4444",     // +30% → red (hot / high growth)
             ]
             : [
                 "interpolate",
