@@ -296,11 +296,11 @@ export function ForecastMap({
                     "interpolate",
                     ["linear"],
                     ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                    -20, "#3b82f6",     // -20% → blue (cool / declining)
-                    -5, "#93c5fd",      // -5%  → light blue
-                    0, "#f8f8f8",       //  0%  → neutral white (no change)
-                    10, "#f59e0b",      // +10% → amber
-                    30, "#ef4444",      // +30% → red (hot / high growth)
+                    -15, "#3b82f6",     // p5  → blue (declining)
+                    0, "#93c5fd",     // 0%  → light blue (flat)
+                    15, "#f8f8f8",     // p25 → neutral white
+                    30, "#f59e0b",     // p50 → amber (median growth)
+                    60, "#ef4444",     // high → red (hot growth)
                 ])
             : [
                 "interpolate",
