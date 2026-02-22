@@ -258,10 +258,12 @@ function DashboardContent() {
         } else {
           ;[lat, lng] = cellToLatLng(mapState.selectedId!)
         }
-        // Always request max detail from Nominatim (zoom=18) so we get
-        // street-level addresses. The display formatting in reverseGeocode
-        // will tailor the output based on the actual map zoom.
-        const displayZoom = Math.max(Math.round(mapState.zoom), 16)
+        // In forecast mode, pass the actual zoom so lower zoom levels get
+        // appropriate labels (ZIP Code, Tract) instead of street addresses.
+        const actualZoom = Math.round(mapState.zoom)
+        const displayZoom = filters.useForecastMap
+          ? actualZoom  // Let reverseGeocode handle zoom-appropriate labels
+          : Math.max(actualZoom, 16)  // H3 mode: always street-level
         const address = await reverseGeocode(lat, lng, displayZoom)
         if (address) {
           setSearchBarValue(address)

@@ -1248,6 +1248,15 @@ export function ForecastMap({
                         maxHeight: 'calc(100vh - 40px)',
                         overflowY: 'auto',
                     }}
+                    onMouseDown={!isMobile && selectedId ? (e) => {
+                        // Don't drag when clicking interactive elements
+                        const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
+                        if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select') return
+                        e.preventDefault()
+                        if (fixedTooltipPos) {
+                            dragRef.current = { startX: e.clientX, startY: e.clientY, origX: fixedTooltipPos.globalX, origY: fixedTooltipPos.globalY }
+                        }
+                    } : undefined}
                     onTouchStart={isMobile ? (e) => setSwipeTouchStart(e.touches[0].clientY) : undefined}
                     onTouchMove={isMobile ? (e) => {
                         if (swipeTouchStart === null) return
@@ -1281,13 +1290,7 @@ export function ForecastMap({
                     {!isMobile && (
                         <>
                             <div
-                                className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md cursor-grab active:cursor-grabbing select-none"
-                                onMouseDown={selectedId ? (e) => {
-                                    e.preventDefault()
-                                    if (fixedTooltipPos) {
-                                        dragRef.current = { startX: e.clientX, startY: e.clientY, origX: fixedTooltipPos.globalX, origY: fixedTooltipPos.globalY }
-                                    }
-                                } : undefined}
+                                className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md select-none"
                             >
                                 <div className="flex items-center gap-2">
                                     <HomecastrLogo size={18} />
@@ -1313,7 +1316,7 @@ export function ForecastMap({
                                 <div className="font-semibold text-xs text-foreground truncate">
                                     {geocodedName || displayProps.id}
                                 </div>
-                                {geocodedName && (
+                                {geocodedName && !geocodedName.startsWith('ZIP') && (
                                     <div className="font-mono text-[9px] text-muted-foreground/60 truncate">
                                         {displayProps.id}
                                     </div>
