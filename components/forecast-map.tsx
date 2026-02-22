@@ -154,6 +154,7 @@ export function ForecastMap({
 
     // Desktop drag-to-reposition state (locked tooltip)
     const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
+    const userDraggedRef = useRef(false) // true once user has manually repositioned
 
     useEffect(() => {
         const onMouseMove = (e: MouseEvent) => {
@@ -161,6 +162,7 @@ export function ForecastMap({
             const dx = e.clientX - dragRef.current.startX
             const dy = e.clientY - dragRef.current.startY
             setFixedTooltipPos({ globalX: dragRef.current.origX + dx, globalY: dragRef.current.origY + dy })
+            userDraggedRef.current = true // user chose this position
         }
         const onMouseUp = () => { dragRef.current = null }
         window.addEventListener('mousemove', onMouseMove)
@@ -724,6 +726,7 @@ export function ForecastMap({
                     setSelectedId(null)
                     setSelectedProps(null)
                     setFixedTooltipPos(null)
+                    userDraggedRef.current = false // reset for next lock
                     setSelectedCoords(null)
                     setComparisonData(null)
                     setComparisonHistoricalValues(undefined)
@@ -796,7 +799,11 @@ export function ForecastMap({
                 window.innerWidth,
                 window.innerHeight
             )
-            setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
+            // If user has manually dragged the tooltip, keep it at that position.
+            // Otherwise, position it near the new click.
+            if (!userDraggedRef.current) {
+                setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
+            }
             setTooltipData({
                 globalX: smartPos.x,
                 globalY: smartPos.y,
@@ -1098,27 +1105,23 @@ export function ForecastMap({
     // When locked, show the SELECTED feature's properties (not hover)
     const displayProps = selectedId && selectedProps ? selectedProps : tooltipData?.properties
 
-    // Effective y-domain: extend viewport range when selected/hovered feature exceeds it
+    // Effective y-domain: extend viewport range ONLY when selected/hovered
+    // feature's P50 median or historical values fall outside. P10/P90 uncertainty
+    // bands are allowed to clip — they shouldn't drive the axis scale.
     const effectiveYDomain = useMemo<[number, number] | null>(() => {
         if (!viewportYDomain) return null
-        let [lo, hi] = viewportYDomain
-        // Gather all values from selected feature's fan chart + comparison
+        const [lo, hi] = viewportYDomain
+        // Only gather P50 (median) and historical — NOT P10/P90 extremes
         const vals: number[] = []
-        if (fanChartData) {
-            if (fanChartData.p10) vals.push(...fanChartData.p10.filter(v => Number.isFinite(v)))
-            if (fanChartData.p90) vals.push(...fanChartData.p90.filter(v => Number.isFinite(v)))
-            if (fanChartData.p50) vals.push(...fanChartData.p50.filter(v => Number.isFinite(v)))
-        }
+        if (fanChartData?.p50) vals.push(...fanChartData.p50.filter(v => Number.isFinite(v)))
         if (historicalValues) vals.push(...historicalValues.filter(v => Number.isFinite(v)))
-        if (comparisonData) {
-            if (comparisonData.p10) vals.push(...comparisonData.p10.filter(v => Number.isFinite(v)))
-            if (comparisonData.p90) vals.push(...comparisonData.p90.filter(v => Number.isFinite(v)))
-        }
+        if (comparisonData?.p50) vals.push(...comparisonData.p50.filter(v => Number.isFinite(v)))
         if (comparisonHistoricalValues) vals.push(...comparisonHistoricalValues.filter(v => Number.isFinite(v)))
         if (vals.length === 0) return viewportYDomain
         const dataMin = Math.min(...vals)
         const dataMax = Math.max(...vals)
-        // Only extend, never shrink
+        // Only extend, never shrink from viewport range
+        if (dataMin >= lo && dataMax <= hi) return viewportYDomain // no extension needed
         return [Math.min(lo, dataMin), Math.max(hi, dataMax)]
     }, [viewportYDomain, fanChartData, historicalValues, comparisonData, comparisonHistoricalValues])
 
