@@ -864,6 +864,7 @@ def _recompute_forecast_aggregates_exact_for_run(
                   AND mp.origin_year = %s
                   AND mp.series_kind = %s
                   AND mp.variant_id = %s
+                  AND coalesce(mp.is_outlier, false) = false
                   AND pl.{_q_ident(ladder_col)} IS NOT NULL
                 GROUP BY pl.{_q_ident(ladder_col)}, mp.origin_year, mp.horizon_m, mp.forecast_year
                 """,
