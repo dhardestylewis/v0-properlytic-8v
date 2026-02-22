@@ -22,6 +22,7 @@ YEARS = list(range(2015, 2026))  # adjust range as needed
 # ── Load owner files from zips ────────────────────────────────────
 print("� Loading Real_acct_owner.zip for each year...")
 owner_frames = []
+acct_frames = []  # For mailing addresses from real_acct.txt
 
 for yr in YEARS:
     zip_path = HCAD_BASE / str(yr) / "Real_acct_owner.zip"
@@ -31,9 +32,11 @@ for yr in YEARS:
 
     try:
         with zipfile.ZipFile(str(zip_path), 'r') as zf:
-            # List files in the zip to find the owner file
             names = zf.namelist()
-            # Find the owner txt/csv file
+            # Show what's inside (first year only)
+            if yr == YEARS[0]:
+                print(f"\n    📦 Files inside {yr} zip: {names}")
+            # Find the owner txt file (owners.txt)
             owner_file = None
             for n in names:
                 if 'owner' in n.lower() and n.endswith('.txt'):
@@ -64,6 +67,27 @@ for yr in YEARS:
 
             owner_frames.append(df)
             print(f"  {yr}: ✅ {owner_file} → {len(df):,} rows, cols={df.columns[:5]}...")
+
+            # Also try to load real_acct.txt for mailing addresses
+            acct_file = None
+            for n in names:
+                if n.lower() in ['real_acct.txt', 'acct.txt']:
+                    acct_file = n
+                    break
+            if acct_file and yr == max(YEARS):
+                try:
+                    with zf.open(acct_file) as af:
+                        raw_a = af.read().decode('latin-1').encode('utf-8')
+                        adf = pl.read_csv(io.BytesIO(raw_a), separator="\t",
+                                         infer_schema_length=10000,
+                                         ignore_errors=True,
+                                         truncate_ragged_lines=True,
+                                         quote_char=None)
+                    adf = adf.rename({c: c.strip().lower().replace(' ', '_') for c in adf.columns})
+                    acct_frames.append(adf)
+                    print(f"         + {acct_file} → {len(adf):,} rows, cols={adf.columns[:8]}...")
+                except Exception as e2:
+                    print(f"         + {acct_file}: ⚠ {e2}")
 
     except Exception as e:
         print(f"  {yr}: ⚠ Error: {e}")
@@ -202,18 +226,18 @@ print("📊 NET ENTITY ACTIVITY (buys - sells)")
 print("="*60)
 all_buys = (
     transactions.filter(entity_filter)
-    .group_by(name_col).agg(pl.len().alias("buys"))
+    .group_by(name_col).agg(pl.len().cast(pl.Int64).alias("buys"))
     .rename({name_col: "entity"})
 )
 all_sells = (
     transactions
     .filter(pl.col("prev_owner").str.to_uppercase().str.contains("|".join(entity_keywords)))
-    .group_by("prev_owner").agg(pl.len().alias("sells"))
+    .group_by("prev_owner").agg(pl.len().cast(pl.Int64).alias("sells"))
     .rename({"prev_owner": "entity"})
 )
 net = (
     all_buys.join(all_sells, on="entity", how="full")
-    .with_columns(pl.col("buys").fill_null(0), pl.col("sells").fill_null(0))
+    .with_columns(pl.col("buys").fill_null(0).cast(pl.Int64), pl.col("sells").fill_null(0).cast(pl.Int64))
     .with_columns((pl.col("buys") - pl.col("sells")).alias("net"))
 )
 print("\n  📈 TOP 15 NET ACCUMULATORS:")
@@ -262,12 +286,54 @@ growth = (
         pl.col("parcels").filter(pl.col("year") == latest_yr).first().alias("end"),
     ])
     .filter(pl.col("start").is_not_null() & pl.col("end").is_not_null())
-    .with_columns((pl.col("end") - pl.col("start")).alias("growth"))
+    .with_columns((pl.col("end").cast(pl.Int64) - pl.col("start").cast(pl.Int64)).alias("growth"))
     .filter(pl.col("start") >= 10)  # min 10 parcels at start
     .sort("growth", descending=True)
     .head(5)
 )
 for i, row in enumerate(growth.iter_rows(named=True), 1):
     print(f"  {i}. {row[name_col]}: {row['start']} → {row['end']} parcels (+{row['growth']})")
+
+# ── 8. Mailing addresses for top entities ─────────────────────────
+if acct_frames:
+    print("\n" + "="*60)
+    print("📬 MAILING ADDRESSES FOR TOP 20 ENTITIES")
+    print("="*60)
+    acct_df = acct_frames[0]
+    print(f"  real_acct.txt columns: {acct_df.columns}")
+    # Auto-detect address columns
+    addr_cols = [c for c in acct_df.columns
+                 if any(kw in c for kw in ['mail', 'addr', 'city', 'state', 'zip', 'str_'])]
+    acct_id = [c for c in acct_df.columns if 'acct' in c][0] if any('acct' in c for c in acct_df.columns) else acct_df.columns[0]
+    print(f"  Address columns found: {addr_cols}")
+    print(f"  Account column: {acct_id}")
+    if addr_cols:
+        # Get one acct per top entity
+        top_names = portfolios.head(20)
+        for row in top_names.iter_rows(named=True):
+            entity_name = row[name_col]
+            # Get one acct for this entity from latest year
+            sample_acct = (
+                latest_entities
+                .filter(pl.col(name_col) == entity_name)
+                .select(acct_col).head(1)
+            )
+            if len(sample_acct) == 0:
+                continue
+            acct_val = str(sample_acct.item())
+            # Look up mailing address
+            match = acct_df.filter(pl.col(acct_id).cast(pl.Utf8) == acct_val)
+            if len(match) > 0:
+                addr_parts = [str(match[c].item()) for c in addr_cols if match[c].item() is not None]
+                addr_str = ", ".join(addr_parts)
+                print(f"  {entity_name}: {addr_str}")
+            else:
+                print(f"  {entity_name}: (no address match)")
+else:
+    print("\n📬 No real_acct.txt loaded — mailing addresses not available.")
+    print("   Note: HCAD public data does NOT include phone/email.")
+    print("   Available contact info: owner name + mailing address (from real_acct.txt).")
+    print("   For LLCs, you can look up registered agents via TX SOS:")
+    print("     https://www.sos.state.tx.us/corp/sosda/index.shtml")
 
 print("\n✅ Done!")
