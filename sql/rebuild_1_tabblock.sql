@@ -1,4 +1,7 @@
 -- TABBLOCK aggregate rebuild (run alone)
+-- Extend timeout for large JOIN+GROUP BY
+SET statement_timeout = '300s';
+
 DELETE FROM forecast_20260220_7f31c6e4.metrics_tabblock_forecast
 WHERE series_kind = 'forecast' AND variant_id = '__forecast__';
 
@@ -19,3 +22,5 @@ WHERE mp.series_kind = 'forecast' AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
   AND pl.tabblock_geoid20 IS NOT NULL
 GROUP BY pl.tabblock_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year;
+
+RESET statement_timeout;
