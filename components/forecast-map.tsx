@@ -217,10 +217,11 @@ export function ForecastMap({
         return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up) }
     }, [])
 
-    // Compute origin year and horizon from the "year" slider
     // origin_year is always 2025, horizon_m is (year - 2025) * 12
+    // Negative horizon_m = past years (historical), positive = future (forecast)
+    // year 2025 (origin) → horizon_m=0, year 2026 → 12, year 2020 → -60
     const originYear = 2025
-    const horizonM = Math.max(0, (year - originYear) * 12) || 12
+    const horizonM = (year - originYear) * 12 || 12  // 0 (year=2025) falls back to 12
 
     // Fetch all horizons for a given feature to build FanChart data
     const fetchForecastDetail = useCallback(async (featureId: string, level: string) => {
@@ -290,8 +291,8 @@ export function ForecastMap({
     // Present year (2026): growth is zero by definition → flat neutral.
     const buildFillColor = (colorMode?: string): any =>
         colorMode === "growth"
-            ? (year <= originYear + 1
-                ? "#e5e5e5"   // Present/past: no growth to show, flat neutral
+            ? (year === originYear + 1
+                ? "#e5e5e5"   // Present year (2026): growth is zero → flat neutral
                 : [
                     "interpolate",
                     ["linear"],
