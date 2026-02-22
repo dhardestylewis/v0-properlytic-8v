@@ -296,6 +296,13 @@ function DashboardContent() {
           center: [result.lng, result.lat],
           zoom: 14
         })
+        // Dispatch fly_to_location so forecast-map auto-selects the center feature
+        window.dispatchEvent(new CustomEvent("tavus-map-action", {
+          detail: {
+            action: "fly_to_location",
+            params: { lat: result.lat, lng: result.lng, zoom: 14 }
+          }
+        }))
         toast({ title: "Found Address", description: result.displayName })
       } else {
         handleSearchError(`Address not found: ${query}`)

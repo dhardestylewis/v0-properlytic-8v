@@ -441,6 +441,15 @@ export function ForecastMap({
             addLayersForSource("forecast-b", "b", false)
         })
 
+        // Suppress MapLibre tile loading error events (e.g. transient 500s from Supabase)
+        map.on("error", (e: any) => {
+            if (e?.error?.message?.includes("status") || e?.error?.message?.includes("AJAXError")) {
+                // Silently ignore tile fetch errors — the retry + empty tile fallback handles these
+                return
+            }
+            console.error("[MapLibre] Error:", e?.error?.message || e)
+        })
+
         // HOVER handling
         map.on("mousemove", (e: maplibregl.MapMouseEvent) => {
             const zoom = map.getZoom()
