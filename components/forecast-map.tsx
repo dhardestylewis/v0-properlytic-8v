@@ -292,7 +292,7 @@ export function ForecastMap({
             ? [
                 "interpolate",
                 ["linear"],
-                ["coalesce", ["get", "growth_pct"], 0],
+                ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
                 -20, "#3b82f6",     // -20% → blue (cool / declining)
                 -5, "#93c5fd",     // -5%  → light blue
                 0, "#f8f8f8",     //  0%  → neutral white (no change)
