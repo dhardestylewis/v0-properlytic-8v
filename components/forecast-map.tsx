@@ -198,9 +198,9 @@ export function ForecastMap({
         }
         setGeocodedName(null) // Show loading
         const [lat, lng] = selectedCoords
-        // Adjust Nominatim zoom to match geography scale
-        const nominatimZoom = geoLevel === "tract" ? 12 : 16
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=${nominatimZoom}&format=json`, {
+        // Always request max detail from Nominatim (zoom=16) so we get
+        // suburb/neighbourhood/road data. We pick the right field below.
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
             headers: { 'User-Agent': 'HomecastrUI/1.0' }
         })
             .then(r => r.ok ? r.json() : null)
@@ -209,10 +209,10 @@ export function ForecastMap({
                 const addr = data.address || {}
                 let name: string | null = null
                 if (geoLevel === "tract") {
-                    // Tract: show suburb/neighborhood + city
-                    name = addr.suburb || addr.neighbourhood || addr.city_district || addr.county || null
+                    // Tract: show suburb/neighborhood
+                    name = addr.suburb || addr.neighbourhood || addr.city_district || null
                 } else {
-                    // Block/Parcel: show street address
+                    // Block/Parcel: show street/road
                     name = addr.road || addr.suburb || addr.neighbourhood || data.display_name?.split(',')[0] || null
                 }
                 if (name) {
