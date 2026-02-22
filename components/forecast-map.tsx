@@ -507,7 +507,7 @@ export function ForecastMap({
                     const hoverZoom = map.getZoom()
                     const hoverLevel = getSourceLayer(hoverZoom)
                     fetchForecastDetail(id, hoverLevel)
-                }, 300)
+                }, 500)
             }
 
             // Always update tooltip position (follows cursor)

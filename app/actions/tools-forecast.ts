@@ -61,68 +61,103 @@ export async function executeTopLevelForecastTool(
         case "get_forecast_area": {
             try {
                 const supabase = await getSupabaseServerClient()
-                const level = args.level || "zcta"
-                const meta = LEVEL_META[level]
-                if (!meta) return JSON.stringify({ error: `Unknown level: ${level}` })
-
                 const forecastYear = args.forecast_year || 2029
                 const originYear = 2025
                 const horizonM = (forecastYear - originYear) * 12
 
-                const { data, error } = await (supabase as any)
-                    .schema(FORECAST_SCHEMA)
-                    .from(meta.table)
-                    .select("p10, p25, p50, p75, p90, horizon_m, origin_year")
-                    .eq(meta.key, args.id)
-                    .eq("origin_year", originYear)
-                    .order("horizon_m", { ascending: true })
+                // Level fallback order: requested → tract → zcta
+                const requestedLevel = args.level || "zcta"
+                const levelOrder = [requestedLevel, ...["tabblock", "tract", "zcta"].filter(l => l !== requestedLevel)]
 
-                if (error) return JSON.stringify({ error: error.message })
-                if (!data || data.length === 0) return JSON.stringify({ area: null, error: "No forecast data found" })
+                let resolvedId = args.id
+                let resolvedLevel = requestedLevel
 
-                // Find the closest horizon to the requested forecast year
-                const target = data.reduce((best: any, row: any) =>
-                    Math.abs(row.horizon_m - horizonM) < Math.abs(best.horizon_m - horizonM) ? row : best
-                )
+                for (const level of levelOrder) {
+                    const meta = LEVEL_META[level]
+                    if (!meta) continue
 
-                // Reverse-geocode to get a friendly name
-                let locationName = args.id
-                if (args.lat && args.lng) {
-                    try {
-                        const revRes = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?lat=${args.lat}&lon=${args.lng}&zoom=16&format=json`,
-                            { headers: { "User-Agent": "HomecastrUI/1.0" } }
-                        )
-                        if (revRes.ok) {
-                            const revData = await revRes.json()
-                            const addr = revData.address || {}
-                            locationName = addr.suburb || addr.neighbourhood || addr.road || revData.display_name?.split(",")[0] || locationName
+                    let featureId = (level === requestedLevel) ? resolvedId : null
+
+                    // If no id, try to find nearest geometry by lat/lng
+                    if ((!featureId || featureId === "") && args.lat && args.lng) {
+                        try {
+                            const { data: nearest } = await (supabase as any)
+                                .schema(FORECAST_SCHEMA)
+                                .rpc("nearest_geography", {
+                                    p_lat: args.lat,
+                                    p_lng: args.lng,
+                                    p_level: level,
+                                })
+                            if (nearest && nearest.length > 0) {
+                                featureId = nearest[0].id
+                            }
+                        } catch {
+                            // RPC might not exist — skip this level
+                            continue
                         }
-                    } catch { }
+                    }
+
+                    if (!featureId || featureId === "") continue
+
+                    const { data, error } = await (supabase as any)
+                        .schema(FORECAST_SCHEMA)
+                        .from(meta.table)
+                        .select("p10, p25, p50, p75, p90, horizon_m, origin_year")
+                        .eq(meta.key, featureId)
+                        .eq("origin_year", originYear)
+                        .order("horizon_m", { ascending: true })
+
+                    if (error || !data || data.length === 0) continue
+
+                    resolvedId = featureId
+                    resolvedLevel = level
+
+                    // Find the closest horizon to the requested forecast year
+                    const target = data.reduce((best: any, row: any) =>
+                        Math.abs(row.horizon_m - horizonM) < Math.abs(best.horizon_m - horizonM) ? row : best
+                    )
+
+                    // Reverse-geocode to get a friendly name
+                    let locationName = resolvedId
+                    if (args.lat && args.lng) {
+                        try {
+                            const revRes = await fetch(
+                                `https://nominatim.openstreetmap.org/reverse?lat=${args.lat}&lon=${args.lng}&zoom=16&format=json`,
+                                { headers: { "User-Agent": "HomecastrUI/1.0" } }
+                            )
+                            if (revRes.ok) {
+                                const revData = await revRes.json()
+                                const addr = revData.address || {}
+                                locationName = addr.suburb || addr.neighbourhood || addr.road || revData.display_name?.split(",")[0] || locationName
+                            }
+                        } catch { }
+                    }
+
+                    return JSON.stringify({
+                        area: {
+                            level: resolvedLevel,
+                            id: resolvedId,
+                            origin_year: originYear,
+                            forecast_year: forecastYear,
+                            location: { name: locationName, lat: args.lat, lng: args.lng },
+                            metrics: {
+                                predicted_value: target.p50,
+                                p10: target.p10,
+                                p25: target.p25,
+                                p50: target.p50,
+                                p75: target.p75,
+                                p90: target.p90,
+                                horizon_m: target.horizon_m,
+                            },
+                            all_horizons: data.map((r: any) => ({
+                                horizon_m: r.horizon_m,
+                                p50: r.p50,
+                            })),
+                        },
+                    })
                 }
 
-                return JSON.stringify({
-                    area: {
-                        level,
-                        id: args.id,
-                        origin_year: originYear,
-                        forecast_year: forecastYear,
-                        location: { name: locationName, lat: args.lat, lng: args.lng },
-                        metrics: {
-                            predicted_value: target.p50,
-                            p10: target.p10,
-                            p25: target.p25,
-                            p50: target.p50,
-                            p75: target.p75,
-                            p90: target.p90,
-                            horizon_m: target.horizon_m,
-                        },
-                        all_horizons: data.map((r: any) => ({
-                            horizon_m: r.horizon_m,
-                            p50: r.p50,
-                        })),
-                    },
-                })
+                return JSON.stringify({ area: null, error: "No forecast data found for any geography level" })
             } catch (e: any) {
                 return JSON.stringify({ area: null, error: e.message })
             }
