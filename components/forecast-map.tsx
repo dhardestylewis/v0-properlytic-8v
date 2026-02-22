@@ -301,15 +301,16 @@ export function ForecastMap({
     // Value mode uses absolute p50 with fixed percentile breakpoints.
     const buildFillColor = (colorMode?: string): any => {
         if (colorMode === "growth") {
-            const yearsAhead = Math.max(year - (originYear + 1), 0)
-            if (yearsAhead === 0) return "#e5e5e5" // Present year: growth=0 → flat neutral
+            const presentYear = originYear + 1  // 2026
+            if (year === presentYear) return "#e5e5e5" // Present year: growth=0 → flat neutral
+            const yrsFromPresent = Math.max(Math.abs(year - presentYear), 1)
 
             // Empirical percentile fits from Houston parcel history
-            const p05 = -5 - 4 * yearsAhead   // 1yr≈-9, 3yr≈-17, 5yr≈-25
-            const p25 = 0                       // ~0% across all horizons
-            const med = 5 * yearsAhead          // 1yr≈5, 3yr≈15, 5yr≈25
-            const p75 = 10 * yearsAhead         // 1yr≈10, 3yr≈30, 5yr≈50
-            const p95 = 30 * yearsAhead         // 1yr≈30, 3yr≈90, 5yr≈150
+            const p05 = -5 - 4 * yrsFromPresent   // 1yr≈-9, 3yr≈-17, 5yr≈-25
+            const p25 = 0                           // ~0% across all horizons
+            const med = 5 * yrsFromPresent          // 1yr≈5, 3yr≈15, 5yr≈25
+            const p75 = 10 * yrsFromPresent         // 1yr≈10, 3yr≈30, 5yr≈50
+            const p95 = 30 * yrsFromPresent         // 1yr≈30, 3yr≈90, 5yr≈150
             return [
                 "interpolate",
                 ["linear"],

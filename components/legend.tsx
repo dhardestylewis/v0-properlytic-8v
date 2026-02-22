@@ -18,15 +18,18 @@ interface LegendProps {
 
 export function Legend({ className, colorMode = "growth", onColorModeChange, year = 2027, originYear = 2025 }: LegendProps) {
   // Compute horizon-aware labels from empirical percentile fits
-  const yearsAhead = Math.max((year ?? 2027) - ((originYear ?? 2025) + 1), 0)
-  const p05 = yearsAhead > 0 ? -5 - 4 * yearsAhead : -5
-  const med = yearsAhead > 0 ? 5 * yearsAhead : 0
-  const p95 = yearsAhead > 0 ? 30 * yearsAhead : 30
+  const presentYear = (originYear ?? 2025) + 1
+  const yrsFromPresent = Math.max(Math.abs((year ?? 2027) - presentYear), 1)
+  // Round to nearest 5 for clean labels
+  const round5 = (n: number) => Math.round(n / 5) * 5
+  const p05 = round5(-5 - 4 * yrsFromPresent)   // 1yr≈-10, 3yr≈-15, 5yr≈-25
+  const med = round5(5 * yrsFromPresent)          // 1yr≈5, 3yr≈15, 5yr≈25
+  const p95 = round5(30 * yrsFromPresent)         // 1yr≈30, 3yr≈90, 5yr≈150
 
   const growthLabels = [
     `${p05 > 0 ? "+" : ""}${p05}%`,
     `${med > 0 ? "+" : ""}${med}%`,
-    `${p95 > 0 ? "+" : ""}${p95}%+`,
+    `+${p95}%+`,
   ]
 
   // Growth gradient: same colors as buildFillColor ramp
