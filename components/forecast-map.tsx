@@ -1246,14 +1246,22 @@ export function ForecastMap({
                             {(() => {
                                 const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
                                 const forecastVal = displayProps.p50 ?? displayProps.value ?? null
-                                const pctChange = currentVal && forecastVal ? ((forecastVal - currentVal) / currentVal * 100) : null
+                                const isPast = year < originYear + 1
+                                const isPresent = year === originYear + 1 // 2026 = "now"
+                                const leftLabel = isPresent ? "Now" : isPast ? String(year) : "Now"
+                                const leftVal = isPresent ? currentVal : isPast ? forecastVal : currentVal
+                                const rightLabel = isPresent ? String(year) : isPast ? "Now" : String(year)
+                                const rightVal = isPresent ? currentVal : isPast ? currentVal : forecastVal
+                                const pctBase = isPresent ? null : isPast ? forecastVal : currentVal
+                                const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
+                                const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
                                 return (
                                     <>
                                         <div className="flex items-stretch gap-1">
-                                            {/* Left: Current value */}
+                                            {/* Left */}
                                             <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
-                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">Now</div>
-                                                <div className="text-xs font-bold text-foreground">{formatValue(currentVal)}</div>
+                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">{leftLabel}</div>
+                                                <div className="text-xs font-bold text-foreground">{formatValue(leftVal)}</div>
                                             </div>
                                             {/* Center: FanChart */}
                                             <div className="flex-1 min-w-0 h-[150px]">
@@ -1265,10 +1273,10 @@ export function ForecastMap({
                                                     </div>
                                                 ) : null}
                                             </div>
-                                            {/* Right: Forecast value + % change */}
+                                            {/* Right */}
                                             <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
-                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">{year}</div>
-                                                <div className="text-xs font-bold text-foreground">{formatValue(forecastVal)}</div>
+                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">{rightLabel}</div>
+                                                <div className="text-xs font-bold text-foreground">{formatValue(rightVal)}</div>
                                                 {pctChange != null && (
                                                     <div className={`text-[9px] font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                         {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
@@ -1287,12 +1295,20 @@ export function ForecastMap({
                             {(() => {
                                 const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
                                 const forecastVal = displayProps.p50 ?? displayProps.value ?? null
-                                const pctChange = currentVal && forecastVal ? ((forecastVal - currentVal) / currentVal * 100) : null
+                                const isPast = year < originYear + 1
+                                const isPresent = year === originYear + 1 // 2026 = "now"
+                                const leftLabel = isPresent ? "Now" : isPast ? String(year) : "Now"
+                                const leftVal = isPresent ? currentVal : isPast ? forecastVal : currentVal
+                                const rightLabel = isPresent ? String(year) : isPast ? "Now" : String(year)
+                                const rightVal = isPresent ? currentVal : isPast ? currentVal : forecastVal
+                                const pctBase = isPresent ? null : isPast ? forecastVal : currentVal
+                                const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
+                                const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
                                 return (
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="text-center flex-1">
-                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Now</div>
-                                            <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(currentVal)}</div>
+                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{leftLabel}</div>
+                                            <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(leftVal)}</div>
                                         </div>
                                         <div className="text-center shrink-0">
                                             {pctChange != null && (
@@ -1300,11 +1316,11 @@ export function ForecastMap({
                                                     {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
                                                 </div>
                                             )}
-                                            <div className="text-[9px] text-muted-foreground">→ {year}</div>
+                                            <div className="text-[9px] text-muted-foreground">→ {rightLabel}</div>
                                         </div>
                                         <div className="text-center flex-1">
-                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{year}</div>
-                                            <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(forecastVal)}</div>
+                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{rightLabel}</div>
+                                            <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(rightVal)}</div>
                                         </div>
                                     </div>
                                 )
