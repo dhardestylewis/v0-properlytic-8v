@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState, useCallback } from "react"
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import maplibregl from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
@@ -1028,6 +1028,7 @@ export function ForecastMap({
             if (latestTarget !== year) return
 
             // Show next, hide current — for all geo levels
+            if (!map.getStyle?.()) return // guard against hot-reload race
             for (const lvl of GEO_LEVELS) {
                 const fillNext = `forecast-fill-${lvl.name}-${nextSuffix}`
                 const outlineNext = `forecast-outline-${lvl.name}-${nextSuffix}`
@@ -1096,6 +1097,30 @@ export function ForecastMap({
     const displayPos = selectedId && fixedTooltipPos ? fixedTooltipPos : tooltipData
     // When locked, show the SELECTED feature's properties (not hover)
     const displayProps = selectedId && selectedProps ? selectedProps : tooltipData?.properties
+
+    // Effective y-domain: extend viewport range when selected/hovered feature exceeds it
+    const effectiveYDomain = useMemo<[number, number] | null>(() => {
+        if (!viewportYDomain) return null
+        let [lo, hi] = viewportYDomain
+        // Gather all values from selected feature's fan chart + comparison
+        const vals: number[] = []
+        if (fanChartData) {
+            if (fanChartData.p10) vals.push(...fanChartData.p10.filter(v => Number.isFinite(v)))
+            if (fanChartData.p90) vals.push(...fanChartData.p90.filter(v => Number.isFinite(v)))
+            if (fanChartData.p50) vals.push(...fanChartData.p50.filter(v => Number.isFinite(v)))
+        }
+        if (historicalValues) vals.push(...historicalValues.filter(v => Number.isFinite(v)))
+        if (comparisonData) {
+            if (comparisonData.p10) vals.push(...comparisonData.p10.filter(v => Number.isFinite(v)))
+            if (comparisonData.p90) vals.push(...comparisonData.p90.filter(v => Number.isFinite(v)))
+        }
+        if (comparisonHistoricalValues) vals.push(...comparisonHistoricalValues.filter(v => Number.isFinite(v)))
+        if (vals.length === 0) return viewportYDomain
+        const dataMin = Math.min(...vals)
+        const dataMax = Math.max(...vals)
+        // Only extend, never shrink
+        return [Math.min(lo, dataMin), Math.max(hi, dataMax)]
+    }, [viewportYDomain, fanChartData, historicalValues, comparisonData, comparisonHistoricalValues])
 
     // Comparison: when locked, fetch comparison detail for hovered feature
     // Skip updates when Shift is held (freeze current comparison)
@@ -1361,7 +1386,7 @@ export function ForecastMap({
                                             {/* Center: FanChart */}
                                             <div className="flex-1 min-w-0 h-[150px]">
                                                 {fanChartData ? (
-                                                    <FanChart data={fanChartData} currentYear={year} height={150} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={viewportYDomain} />
+                                                    <FanChart data={fanChartData} currentYear={year} height={150} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
                                                 ) : isLoadingDetail ? (
                                                     <div className="h-full flex items-center justify-center">
                                                         <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -1431,7 +1456,7 @@ export function ForecastMap({
                                         historicalValues={historicalValues}
                                         comparisonData={comparisonData}
                                         comparisonHistoricalValues={comparisonHistoricalValues}
-                                        yDomain={viewportYDomain}
+                                        yDomain={effectiveYDomain}
                                     />
                                 ) : isLoadingDetail ? (
                                     <div className="h-full flex items-center justify-center">
