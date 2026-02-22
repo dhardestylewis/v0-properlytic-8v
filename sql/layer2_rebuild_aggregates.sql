@@ -4,20 +4,13 @@
 -- Run each level separately if timeout occurs.
 -- =============================================================================
 
--- ─── Find the current run_id, origin_year, etc. ─────────────────────────────
--- (Uncomment and run this first to get the values to plug in below)
--- SELECT DISTINCT run_id, origin_year, series_kind, variant_id
--- FROM forecast_20260220_7f31c6e4.metrics_parcel_forecast
--- WHERE series_kind = 'forecast' AND variant_id = '__forecast__'
--- LIMIT 5;
-
 -- ─── TABBLOCK aggregates ─────────────────────────────────────────────────────
 DELETE FROM forecast_20260220_7f31c6e4.metrics_tabblock_forecast
 WHERE series_kind = 'forecast' AND variant_id = '__forecast__';
 
 INSERT INTO forecast_20260220_7f31c6e4.metrics_tabblock_forecast
 (
-    tabblock_geoid,
+    tabblock_geoid20,
     origin_year, horizon_m, forecast_year,
     value, p10, p25, p50, p75, p90, n,
     run_id, backtest_id, variant_id, model_version, as_of_date, n_scenarios,
@@ -25,7 +18,7 @@ INSERT INTO forecast_20260220_7f31c6e4.metrics_tabblock_forecast
     inserted_at, updated_at
 )
 SELECT
-    pl.tabblock_geoid,
+    pl.tabblock_geoid20,
     mp.origin_year, mp.horizon_m, mp.forecast_year,
     AVG(mp.value)::float8,
     AVG(mp.p10)::float8,
@@ -48,8 +41,8 @@ JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
 WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
-  AND pl.tabblock_geoid IS NOT NULL
-GROUP BY pl.tabblock_geoid, mp.origin_year, mp.horizon_m, mp.forecast_year,
+  AND pl.tabblock_geoid20 IS NOT NULL
+GROUP BY pl.tabblock_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year,
          mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
          mp.as_of_date, mp.is_backtest, mp.series_kind;
 
@@ -60,7 +53,7 @@ WHERE series_kind = 'forecast' AND variant_id = '__forecast__';
 
 INSERT INTO forecast_20260220_7f31c6e4.metrics_tract_forecast
 (
-    tract_geoid,
+    tract_geoid20,
     origin_year, horizon_m, forecast_year,
     value, p10, p25, p50, p75, p90, n,
     run_id, backtest_id, variant_id, model_version, as_of_date, n_scenarios,
@@ -68,7 +61,7 @@ INSERT INTO forecast_20260220_7f31c6e4.metrics_tract_forecast
     inserted_at, updated_at
 )
 SELECT
-    pl.tract_geoid,
+    pl.tract_geoid20,
     mp.origin_year, mp.horizon_m, mp.forecast_year,
     AVG(mp.value)::float8,
     AVG(mp.p10)::float8,
@@ -91,8 +84,8 @@ JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
 WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
-  AND pl.tract_geoid IS NOT NULL
-GROUP BY pl.tract_geoid, mp.origin_year, mp.horizon_m, mp.forecast_year,
+  AND pl.tract_geoid20 IS NOT NULL
+GROUP BY pl.tract_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year,
          mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
          mp.as_of_date, mp.is_backtest, mp.series_kind;
 
@@ -103,7 +96,7 @@ WHERE series_kind = 'forecast' AND variant_id = '__forecast__';
 
 INSERT INTO forecast_20260220_7f31c6e4.metrics_zcta_forecast
 (
-    zcta_geoid,
+    zcta5,
     origin_year, horizon_m, forecast_year,
     value, p10, p25, p50, p75, p90, n,
     run_id, backtest_id, variant_id, model_version, as_of_date, n_scenarios,
@@ -111,7 +104,7 @@ INSERT INTO forecast_20260220_7f31c6e4.metrics_zcta_forecast
     inserted_at, updated_at
 )
 SELECT
-    pl.zcta_geoid,
+    pl.zcta5,
     mp.origin_year, mp.horizon_m, mp.forecast_year,
     AVG(mp.value)::float8,
     AVG(mp.p10)::float8,
@@ -134,8 +127,8 @@ JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
 WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
-  AND pl.zcta_geoid IS NOT NULL
-GROUP BY pl.zcta_geoid, mp.origin_year, mp.horizon_m, mp.forecast_year,
+  AND pl.zcta5 IS NOT NULL
+GROUP BY pl.zcta5, mp.origin_year, mp.horizon_m, mp.forecast_year,
          mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
          mp.as_of_date, mp.is_backtest, mp.series_kind;
 
@@ -227,7 +220,6 @@ GROUP BY pl.neighborhood_id, mp.origin_year, mp.horizon_m, mp.forecast_year,
 
 
 -- ─── VERIFICATION ────────────────────────────────────────────────────────────
--- Run after rebuild to verify:
 SELECT 'tabblock' AS level, count(*) FROM forecast_20260220_7f31c6e4.metrics_tabblock_forecast WHERE series_kind='forecast'
 UNION ALL
 SELECT 'tract', count(*) FROM forecast_20260220_7f31c6e4.metrics_tract_forecast WHERE series_kind='forecast'
