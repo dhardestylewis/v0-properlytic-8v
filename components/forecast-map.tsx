@@ -292,28 +292,33 @@ export function ForecastMap({
 
 
     // Color ramp: growth mode uses growth_pct (% change from baseline).
-    // The neutral point scales with the horizon using Houston's ~4% annual HPI.
-    //   year=2026 (now): growth=0 by definition → flat grey
-    //   year=2027 (1yr): neutral ~4%, year=2030 (5yr): neutral ~20%
+    // Breakpoints are fitted from HISTORICAL parcel-level percentiles:
+    //   p05 (deep blue) | p25 (light blue) | median (neutral) | p75 (amber) | p95 (red)
+    //   1yr: -9 | 0 | 2.5 | 10 | 28
+    //   3yr: -18 | 0 | 14.5 | 33 | 88
+    //   5yr: -22 | 1 | 27 | 51 | 163
+    // Ramp is asymmetric because the underlying distribution is right-skewed.
     // Value mode uses absolute p50 with fixed percentile breakpoints.
-    const ANNUAL_HPI = 4 // Houston ~4%/yr expected appreciation
     const buildFillColor = (colorMode?: string): any => {
         if (colorMode === "growth") {
             const yearsAhead = Math.max(year - (originYear + 1), 0)
             if (yearsAhead === 0) return "#e5e5e5" // Present year: growth=0 → flat neutral
 
-            const neutral = yearsAhead * ANNUAL_HPI  // expected growth for this horizon
-            // Spread widens with horizon — variance grows over longer timeframes
-            const spread = 5 + yearsAhead * 2  // 1yr→7%, 3yr→11%, 5yr→15%
+            // Empirical percentile fits from Houston parcel history
+            const p05 = -5 - 4 * yearsAhead   // 1yr≈-9, 3yr≈-17, 5yr≈-25
+            const p25 = 0                       // ~0% across all horizons
+            const med = 5 * yearsAhead          // 1yr≈5, 3yr≈15, 5yr≈25
+            const p75 = 10 * yearsAhead         // 1yr≈10, 3yr≈30, 5yr≈50
+            const p95 = 30 * yearsAhead         // 1yr≈30, 3yr≈90, 5yr≈150
             return [
                 "interpolate",
                 ["linear"],
                 ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                neutral - spread * 3, "#3b82f6",    // well below expected → blue
-                neutral - spread, "#93c5fd",    // slightly below → light blue
-                neutral, "#f8f8f8",    // expected growth → neutral white
-                neutral + spread * 2, "#f59e0b",    // above expected → amber
-                neutral + spread * 4, "#ef4444",    // far above → red (hot)
+                p05, "#3b82f6",    // p5  — rare decline → deep blue
+                p25, "#93c5fd",    // p25 — below average → light blue
+                med, "#f8f8f8",    // p50 — median expected → neutral white
+                p75, "#f59e0b",    // p75 — above average → amber
+                p95, "#ef4444",    // p95 — rare hot growth → deep red
             ]
         }
         return [
