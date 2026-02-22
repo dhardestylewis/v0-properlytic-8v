@@ -38,7 +38,7 @@ function DashboardContent() {
   const { filters, setFilters, resetFilters } = useFilters()
   const { mapState, setMapState, selectFeature, hoverFeature } = useMapState()
   const [forecastData, setForecastData] = useState<{ acct: string; data: PropertyForecast[] } | null>(null)
-  const [currentYear, setCurrentYear] = useState(2026)
+  const [currentYear, setCurrentYear] = useState(2027)
   const [isUsingMockData, setIsUsingMockData] = useState(false)
   const [searchBarValue, setSearchBarValue] = useState<string>("")
   const [mobileSelectionMode, setMobileSelectionMode] = useState<'replace' | 'add' | 'range'>('replace')

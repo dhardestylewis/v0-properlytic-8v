@@ -285,29 +285,29 @@ export function ForecastMap({
 
 
 
-    // Color ramp used for fill layers
+    // Color ramp breakpoints derived from actual tract-level forecast p50 distribution:
+    // p5≈$150k  p25≈$235k  p50≈$335k  p75≈$525k  p95≈$1M
     const buildFillColor = (colorMode?: string): any =>
         colorMode === "growth"
             ? [
                 "interpolate",
                 ["linear"],
                 ["coalesce", ["get", "p50"], ["get", "value"], 0],
-                100000, "#ef4444",   // Low-value areas → red
-                200000, "#f59e0b",   // Below median → amber
-                300000, "#f8f8f8",   // Median (~$300k) → neutral white
-                450000, "#60a5fa",   // Above median → light blue
-                700000, "#3b82f6",   // High-value areas → blue
+                150000, "#3b82f6",   // p5  → blue (cool)
+                235000, "#93c5fd",   // p25 → light blue
+                335000, "#f8f8f8",   // p50 → neutral white
+                525000, "#f59e0b",   // p75 → amber
+                1000000, "#ef4444",  // p95 → red (hot)
             ]
             : [
                 "interpolate",
                 ["linear"],
                 ["coalesce", ["get", "p50"], ["get", "value"], 0],
-                50000, "#1e1b4b",
-                150000, "#4c1d95",
-                300000, "#7c3aed",
-                500000, "#db2777",
-                800000, "#f59e0b",
-                1500000, "#fbbf24",
+                150000, "#1e1b4b",   // p5
+                235000, "#4c1d95",   // p25
+                335000, "#7c3aed",   // p50
+                525000, "#db2777",   // p75
+                1000000, "#fbbf24",  // p95
             ]
 
     // INITIALIZE MAP

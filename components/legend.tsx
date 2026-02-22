@@ -5,14 +5,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 
 // Continuous legend gradient
-// Growth mode: red-amber-white-blue (diverging around median)
-const OPPORTUNITY_GRADIENT = "linear-gradient(to right, #ef4444, #f59e0b 30%, #f8f8f8 50%, #60a5fa 70%, #3b82f6)"
+// Growth mode: blue-white-red (cool→hot, diverging around median)
+const OPPORTUNITY_GRADIENT = "linear-gradient(to right, #3b82f6, #93c5fd 30%, #f8f8f8 50%, #f59e0b 70%, #ef4444)"
 
 // Magma-like: Deep Purple -> Red -> Orange -> Yellow
 const VALUE_GRADIENT = "linear-gradient(to right, oklch(0.25 0.10 280), oklch(0.60 0.20 30), oklch(0.95 0.15 80))"
 
-const OPPORTUNITY_LABELS = ["-50%", "0%", "+50%"]
-const VALUE_LABELS = ["$100k", "$800k", "$1.5M+"]
+const OPPORTUNITY_LABELS = ["$150k", "$335k", "$1M+"]
+const VALUE_LABELS = ["$150k", "$525k", "$1M+"]
 
 interface LegendProps {
   className?: string
