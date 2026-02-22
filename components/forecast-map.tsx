@@ -86,6 +86,7 @@ interface ForecastMapProps {
     mapState: MapState
     onFeatureSelect: (id: string | null) => void
     onFeatureHover: (id: string | null) => void
+    onCoordsChange?: (coords: [number, number] | null) => void
     year: number
     className?: string
     onConsultAI?: (details: {
@@ -104,6 +105,7 @@ export function ForecastMap({
     year,
     onFeatureSelect,
     onFeatureHover,
+    onCoordsChange,
     className,
     onConsultAI,
 }: ForecastMapProps) {
@@ -132,6 +134,9 @@ export function ForecastMap({
     const [tooltipCoords, setTooltipCoords] = useState<[number, number] | null>(null)
     // Coordinates locked to the selected area (for StreetView — doesn't follow hover)
     const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(null)
+
+    // Notify parent of coordinate changes (for search bar geocoding)
+    useEffect(() => { onCoordsChange?.(selectedCoords) }, [selectedCoords, onCoordsChange])
 
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)

@@ -235,8 +235,10 @@ function DashboardContent() {
     return () => window.removeEventListener("tavus-map-action", handleTavusAction)
   }, [setMapState, toast])
 
+  // Click coordinates from ForecastMap (actual feature location, not viewport center)
+  const [clickCoords, setClickCoords] = useState<[number, number] | null>(null)
+
   // Reverse Geocode Effect
-  const centerKey = `${mapState.center?.[0]?.toFixed(4)},${mapState.center?.[1]?.toFixed(4)}`
   useEffect(() => {
     if (!mapState.selectedId) {
       setSearchBarValue("")
@@ -250,11 +252,9 @@ function DashboardContent() {
       try {
         let lat: number, lng: number
         if (filters.useForecastMap) {
-          // Forecast mode: selectedId is a census ID, not H3 hex.
-          // Use the map center for reverse geocoding.
-          const center = mapState.center as [number, number]
-          lng = center[0]
-          lat = center[1]
+          // Forecast mode: use actual click coordinates from ForecastMap
+          if (!clickCoords) return
+            ;[lat, lng] = clickCoords
         } else {
           ;[lat, lng] = cellToLatLng(mapState.selectedId!)
         }
@@ -271,7 +271,7 @@ function DashboardContent() {
     }
     fetchAddress()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapState.selectedId, centerKey])
+  }, [mapState.selectedId, clickCoords])
 
   const handleSearchError = useCallback(
     (error: string) => {
@@ -441,6 +441,7 @@ function DashboardContent() {
             mapState={mapState}
             onFeatureSelect={selectFeature}
             onFeatureHover={hoverFeature}
+            onCoordsChange={setClickCoords}
             year={currentYear}
             className="absolute inset-0 z-0"
             onConsultAI={handleConsultAI}
