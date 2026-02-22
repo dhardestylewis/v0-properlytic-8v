@@ -258,8 +258,11 @@ function DashboardContent() {
         } else {
           ;[lat, lng] = cellToLatLng(mapState.selectedId!)
         }
-        const zoom = Math.round(mapState.zoom)
-        const address = await reverseGeocode(lat, lng, zoom)
+        // Always request max detail from Nominatim (zoom=18) so we get
+        // street-level addresses. The display formatting in reverseGeocode
+        // will tailor the output based on the actual map zoom.
+        const displayZoom = Math.max(Math.round(mapState.zoom), 16)
+        const address = await reverseGeocode(lat, lng, displayZoom)
         if (address) {
           setSearchBarValue(address)
         } else {
