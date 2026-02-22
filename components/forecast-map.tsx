@@ -303,15 +303,17 @@ export function ForecastMap({
             if (yearsAhead === 0) return "#e5e5e5" // Present year: growth=0 → flat neutral
 
             const neutral = yearsAhead * ANNUAL_HPI  // expected growth for this horizon
+            // Spread widens with horizon — variance grows over longer timeframes
+            const spread = 5 + yearsAhead * 2  // 1yr→7%, 3yr→11%, 5yr→15%
             return [
                 "interpolate",
                 ["linear"],
                 ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                neutral - 15, "#3b82f6",    // well below expected → blue (declining)
-                neutral - 5, "#93c5fd",    // slightly below → light blue
+                neutral - spread * 3, "#3b82f6",    // well below expected → blue
+                neutral - spread, "#93c5fd",    // slightly below → light blue
                 neutral, "#f8f8f8",    // expected growth → neutral white
-                neutral + 10, "#f59e0b",    // above expected → amber
-                neutral + 30, "#ef4444",    // far above → red (hot growth)
+                neutral + spread * 2, "#f59e0b",    // above expected → amber
+                neutral + spread * 4, "#ef4444",    // far above → red (hot)
             ]
         }
         return [
