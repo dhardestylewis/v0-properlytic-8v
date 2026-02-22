@@ -221,7 +221,7 @@ export function ForecastMap({
     // Negative horizon_m = past years (historical), positive = future (forecast)
     // year 2025 (origin) → horizon_m=0, year 2026 → 12, year 2020 → -60
     const originYear = 2025
-    const horizonM = (year - originYear) * 12 || 12  // 0 (year=2025) falls back to 12
+    const horizonM = (year - originYear) * 12
 
     // Fetch all horizons for a given feature to build FanChart data
     const fetchForecastDetail = useCallback(async (featureId: string, level: string) => {
@@ -359,7 +359,8 @@ export function ForecastMap({
                 map.addSource(id, {
                     type: "vector",
                     tiles: [
-                        `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?originYear=${originYear}&horizonM=${horizonM}`,
+                        `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?originYear=${originYear}&horizonM=${horizonM}&v=2`,
+                        // v=2 cache-buster to force fresh tiles after SQL function updates
                     ],
                     minzoom: 0,
                     maxzoom: 18,
@@ -921,7 +922,7 @@ export function ForecastMap({
         const source = map.getSource(nextSource)
         if (source && source.type === "vector") {
             ; (source as any).setTiles([
-                `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?originYear=${originYear}&horizonM=${horizonM}`,
+                `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?originYear=${originYear}&horizonM=${horizonM}&v=2`,
             ])
         }
 
