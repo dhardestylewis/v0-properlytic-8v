@@ -258,7 +258,8 @@ function DashboardContent() {
         } else {
           ;[lat, lng] = cellToLatLng(mapState.selectedId!)
         }
-        const address = await reverseGeocode(lat, lng)
+        const zoom = Math.round(mapState.zoom)
+        const address = await reverseGeocode(lat, lng, zoom)
         if (address) {
           setSearchBarValue(address)
         } else {
@@ -271,7 +272,7 @@ function DashboardContent() {
     }
     fetchAddress()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapState.selectedId, clickCoords])
+  }, [mapState.selectedId, clickCoords, mapState.zoom])
 
   const handleSearchError = useCallback(
     (error: string) => {
