@@ -69,6 +69,11 @@ PROP_BATCH_SIZE_MIN = int(globals().get("PROP_BATCH_SIZE_MIN", 64))
 ACCT_BATCH_SIZE_OUTER = 5000
 PG_BATCH_ROWS = 5000
 
+# Timeout / Retry
+PG_STATEMENT_TIMEOUT_MS = 300_000   # 5 minutes per SQL statement
+PG_TX_MAX_RETRIES = 3               # retries on transient DB errors
+PG_TX_BACKOFF_BASE = 5              # base seconds for exponential backoff
+
 # Schema compatibility:
 # Set this True only if <schema>.metrics_parcel_forecast has a column named "n".
 # Many DDLs keep only "n_scenarios" on parcel forecast rows.
@@ -87,13 +92,9 @@ RUN_FINAL_EXACT_AGG_REFRESH = True
 # The script will query Supabase for accounts already written under that run_id
 # and skip them.  Everything else (upserts, aggregates, final refresh) is
 # idempotent so this is safe.
-RESUME_MODE = False
-
-# Paste from the previous run's log output, e.g.:
-#   RESUME_PROD_RUN_ID = "forecast_2025_20260221T050431Z_8cdcf33c7b7d4ee6a948ecc6bccca160"
-#   RESUME_SUITE_ID    = "suite_20260221T050431Z_5b263b4bbbc344fa998999209fc58549"
-RESUME_PROD_RUN_ID = None   # production forecast run_id to resume
-RESUME_SUITE_ID    = None   # suite_id to resume (reuses the Google Drive output dir)
+RESUME_MODE = True
+RESUME_PROD_RUN_ID = "forecast_2025_20260221T050431Z_8cdcf33c7b7d4ee6a948ecc6bccca160"
+RESUME_SUITE_ID    = "suite_20260221T050431Z_5b263b4bbbc344fa998999209fc58549"
 
 # For backtest resume — dict of { origin_year: (run_id, variant_id, backtest_id) }
 # Leave as None to skip backtest resume.  Example:
@@ -206,32 +207,79 @@ def _pg_connect():
         raise RuntimeError("SUPABASE_DB_URL is required for this pipeline.")
     conn = psycopg2.connect(SUPABASE_DB_URL)
     conn.autocommit = False
+    # Set a generous statement timeout so long-running queries fail fast
+    # rather than holding a connection indefinitely.
+    with conn.cursor() as cur:
+        cur.execute(f"SET statement_timeout = {int(PG_STATEMENT_TIMEOUT_MS)}")
+    conn.commit()   # apply the SET outside a transaction block
     return conn
 
+
+def _is_transient_pg_error(exc):
+    """Return True if the exception looks like a retryable transient error."""
+    import psycopg2.errors
+    # Statement timeout, query canceled, connection errors
+    if isinstance(exc, (psycopg2.OperationalError, psycopg2.InterfaceError)):
+        return True
+    # Specific error codes: query_canceled, statement_timeout
+    code = getattr(exc, 'pgcode', None)
+    if code in ('57014', '57P01', '57P02', '57P03', '08000', '08003', '08006'):
+        return True
+    return False
+
+
 @contextmanager
-def _pg_tx():
+def _pg_tx(retries=None, label=""):
     """
     Open a short-lived connection only for DB writes, then close immediately.
     Prevents Supabase pooler idle disconnects during long GPU sampling.
+
+    Retries up to `retries` times on transient errors with exponential backoff.
     """
-    conn = None
-    try:
-        conn = _pg_connect()
-        yield conn
-        conn.commit()
-    except Exception:
-        if conn is not None:
-            try:
-                conn.rollback()
-            except Exception:
-                pass
-        raise
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:
-                pass
+    if retries is None:
+        retries = PG_TX_MAX_RETRIES
+
+    last_exc = None
+    for attempt in range(retries + 1):
+        conn = None
+        try:
+            conn = _pg_connect()
+            yield conn
+            conn.commit()
+            return  # success
+        except GeneratorExit:
+            # The caller broke out of the with-block (e.g. via return/break).
+            # Commit whatever was done and exit without retrying.
+            if conn is not None:
+                try:
+                    conn.commit()
+                except Exception:
+                    pass
+            return
+        except Exception as exc:
+            last_exc = exc
+            if conn is not None:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            if attempt < retries and _is_transient_pg_error(exc):
+                wait = PG_TX_BACKOFF_BASE * (2 ** attempt)
+                print(f"[{_ts()}] _pg_tx{' (' + label + ')' if label else ''}: "
+                      f"transient error (attempt {attempt+1}/{retries+1}), "
+                      f"retrying in {wait}s: {exc}")
+                time.sleep(wait)
+            else:
+                raise
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+    # Should not reach here, but just in case
+    if last_exc is not None:
+        raise last_exc
 
 def _upsert_df_pg(conn, schema: str, table: str, df: pd.DataFrame, conflict_cols, update_cols):
     """
@@ -1045,7 +1093,12 @@ def _run_one_origin(
         done_accts = _get_completed_accts_from_db(schema, run_id, "metrics_parcel_forecast")
         n_already = len(done_accts)
         all_accts_prod = [a for a in all_accts_prod if a not in done_accts]
-        print(f"[{_ts()}] RESUME: {n_already} accounts already done, {len(all_accts_prod)} remaining")
+        # Shuffle remaining accounts so chunks get a random mix of forecastable/non-forecastable
+        # (avoids runs of empty chunks when accounts are sorted by type)
+        import random as _rng
+        _rng.seed(42)  # fixed seed for reproducibility across restarts
+        _rng.shuffle(all_accts_prod)
+        print(f"[{_ts()}] RESUME: {n_already} accounts already done, {len(all_accts_prod)} remaining (shuffled)")
         if not all_accts_prod:
             print(f"[{_ts()}] RESUME: nothing left to do for this run, skipping.")
             return {
@@ -1134,7 +1187,102 @@ def _run_one_origin(
     progress_csv = os.path.join(run_root, "progress_log.csv")
     eval_csv = os.path.join(run_root, "backtest_eval_summary.csv")
 
-    for chunk_idx, acct_chunk in enumerate(_chunk_list(all_accts_prod, int(ACCT_BATCH_SIZE_OUTER)), start=1):
+    # Resume-safe chunk numbering: continue from where previous run left off
+    chunk_start = 1
+    if resume_run_id:
+        fc_dir = os.path.join(run_root, "forecast_chunks")
+        hist_dir = os.path.join(run_root, "history_chunks")
+        existing_fc = len([f for f in os.listdir(fc_dir) if f.endswith(('.parquet', '.csv.gz'))]) if os.path.isdir(fc_dir) else 0
+        existing_hist = len([f for f in os.listdir(hist_dir) if f.endswith(('.parquet', '.csv.gz'))]) if os.path.isdir(hist_dir) else 0
+        chunk_start = max(existing_fc, existing_hist) + 1
+        print(f"[{_ts()}] RESUME: continuing chunk numbering from {chunk_start} (found {existing_fc} fc, {existing_hist} hist chunks)")
+
+        # ── SPOT CHECK: test 5 random future chunks before committing ──
+        import random as _rng
+
+        all_chunks = list(_chunk_list(all_accts_prod, int(ACCT_BATCH_SIZE_OUTER)))
+        n_chunks = len(all_chunks)
+        n_spot = min(5, n_chunks)
+        spot_idxs = sorted(_rng.sample(range(n_chunks), n_spot))
+
+        # ── Diagnostic context ──
+        print(f"[{_ts()}] SPOT CHECK diag: origin_year={origin_year} (type={type(origin_year).__name__})")
+        print(f"[{_ts()}] SPOT CHECK diag: global_medians keys={len(global_medians)}, "
+              f"sample_keys={list(global_medians.keys())[:5]}")
+        print(f"[{_ts()}] SPOT CHECK diag: all_accts_prod len={len(all_accts_prod)}, "
+              f"type={type(all_accts_prod[0]).__name__} sample={all_accts_prod[:3]}")
+        print(f"[{_ts()}] SPOT CHECK diag: n_chunks={n_chunks}, "
+              f"ACCT_BATCH_SIZE_OUTER={ACCT_BATCH_SIZE_OUTER}")
+        print(f"[{_ts()}] SPOT CHECK: testing {n_spot} random chunks "
+              f"(chunk indices {spot_idxs}) ...")
+
+        def _test_chunk_diag(ci):
+            """Test a single chunk with full diagnostics."""
+            raw_chunk = all_chunks[ci]
+            chunk = [str(a) for a in raw_chunk]
+            n_chunk = len(chunk)
+            print(f"[{_ts()}] SPOT chunk {ci}: n_accts={n_chunk}, "
+                  f"acct_range=[{chunk[0]}..{chunk[-1]}], "
+                  f"sample_accts={chunk[:3]}, type={type(chunk[0]).__name__}")
+
+            t0 = time.time()
+            try:
+                ctx = _build_inference_for_accounts_at_origin(
+                    accts_batch=chunk,
+                    origin=int(origin_year),
+                    global_medians=global_medians,
+                )
+                dt = time.time() - t0
+
+                if ctx is None:
+                    print(f"[{_ts()}] SPOT chunk {ci}: returned None ({dt:.1f}s)")
+                    return ci, 0, n_chunk, dt
+                elif not isinstance(ctx, dict):
+                    print(f"[{_ts()}] SPOT chunk {ci}: unexpected type={type(ctx).__name__} ({dt:.1f}s)")
+                    return ci, 0, n_chunk, dt
+                elif "acct" not in ctx:
+                    print(f"[{_ts()}] SPOT chunk {ci}: dict has no 'acct' key, keys={list(ctx.keys())} ({dt:.1f}s)")
+                    return ci, 0, n_chunk, dt
+                else:
+                    n_valid = len(ctx["acct"])
+                    print(f"[{_ts()}] SPOT chunk {ci}: {n_valid}/{n_chunk} valid anchors "
+                          f"({100.0*n_valid/n_chunk:.0f}%) ({dt:.1f}s)")
+                    if n_valid > 0:
+                        print(f"[{_ts()}] SPOT chunk {ci}: valid acct_sample={ctx['acct'][:3]}")
+                    return ci, n_valid, n_chunk, dt
+            except Exception as e:
+                dt = time.time() - t0
+                import traceback
+                print(f"[{_ts()}] SPOT chunk {ci}: EXCEPTION ({dt:.1f}s): {e}")
+                traceback.print_exc()
+                return ci, 0, n_chunk, dt
+
+        spot_results = []
+        for ci in spot_idxs:
+            spot_results.append(_test_chunk_diag(ci))
+
+        n_chunks_with_data = 0
+        total_valid = 0
+        total_tested = 0
+        for ci, nv, nt, dt in spot_results:
+            total_valid += nv
+            total_tested += nt
+            if nv > 0:
+                n_chunks_with_data += 1
+
+        pct = 100.0 * total_valid / max(total_tested, 1)
+        print(f"[{_ts()}] SPOT CHECK summary: {n_chunks_with_data}/{n_spot} chunks have data, "
+              f"{total_valid}/{total_tested} accounts valid ({pct:.0f}%)")
+
+        if n_chunks_with_data == 0:
+            print(f"[{_ts()}] ⚠️  ALL {n_spot} spot-check chunks produced ZERO forecasts!")
+            print(f"[{_ts()}] ⚠️  Resume may not produce new forecasts. Continuing anyway...")
+        else:
+            est_new = int(pct / 100.0 * n_total)
+            print(f"[{_ts()}] ✅ Spot check passed: expect ~{est_new:,} new forecasts")
+        # ── end spot check ──
+
+    for chunk_idx, acct_chunk in enumerate(_chunk_list(all_accts_prod, int(ACCT_BATCH_SIZE_OUTER)), start=chunk_start):
         t0 = time.time()
         acct_chunk = [str(a) for a in acct_chunk]
         used_prop_batch_size = None
@@ -1164,30 +1312,35 @@ def _run_one_origin(
             print(f"[{_ts()}] Chunk {chunk_idx}: wrote history chunk rows={len(hist_chunk_df)} -> {hist_fp}")
 
             if not hist_chunk_df.empty:
-                with _pg_tx() as conn:
-                    hist_rows_upserted = _upsert_df_pg(
-                        conn=conn,
-                        schema=schema,
-                        table="metrics_parcel_history",
-                        df=hist_chunk_df,
-                        conflict_cols=["acct", "year", "series_kind", "variant_id"],
-                        update_cols=[
-                            "value", "p50", "n",
-                            "run_id", "backtest_id", "model_version", "as_of_date",
-                            "updated_at"
-                        ],
-                    )
+                try:
+                    with _pg_tx(label=f"hist_chunk_{chunk_idx}") as conn:
+                        hist_rows_upserted = _upsert_df_pg(
+                            conn=conn,
+                            schema=schema,
+                            table="metrics_parcel_history",
+                            df=hist_chunk_df,
+                            conflict_cols=["acct", "year", "series_kind", "variant_id"],
+                            update_cols=[
+                                "value", "p50", "n",
+                                "run_id", "backtest_id", "model_version", "as_of_date",
+                                "updated_at"
+                            ],
+                        )
 
-                    hist_agg_rows_upserted = _aggregate_history_levels_for_chunk(
-                        conn=conn,
-                        schema=schema,
-                        acct_chunk=acct_chunk,
-                        run_id=run_id,
-                        series_kind=series_kind_history,
-                        variant_id=(hist_variant_id if hist_variant_id is not None else "__history__"),
-                        backtest_id=hist_backtest_id,
-                        as_of_date=as_of_date,
-                    )
+                        hist_agg_rows_upserted = _aggregate_history_levels_for_chunk(
+                            conn=conn,
+                            schema=schema,
+                            acct_chunk=acct_chunk,
+                            run_id=run_id,
+                            series_kind=series_kind_history,
+                            variant_id=(hist_variant_id if hist_variant_id is not None else "__history__"),
+                            backtest_id=hist_backtest_id,
+                            as_of_date=as_of_date,
+                        )
+                except Exception as exc:
+                    print(f"[{_ts()}] Chunk {chunk_idx}: ⚠️  HISTORY DB write failed after retries, SKIPPING: {exc}")
+                    hist_rows_upserted = 0
+                    hist_agg_rows_upserted = 0
 
                 history_rows_total += int(hist_rows_upserted)
                 history_agg_rows_total += int(hist_agg_rows_upserted)
@@ -1195,13 +1348,28 @@ def _run_one_origin(
         # ---------------------------------------------------------------------
         # 2) Build inference context (no DB connection held)
         # ---------------------------------------------------------------------
+        print(f"[{_ts()}] Chunk {chunk_idx}: building inference context for {len(acct_chunk)} accts "
+              f"[{acct_chunk[0]}..{acct_chunk[-1]}] origin={origin_year}")
         ctx = _build_inference_for_accounts_at_origin(
             accts_batch=acct_chunk,
             origin=int(origin_year),
             global_medians=global_medians,
         )
 
-        if ctx is None or len(ctx["acct"]) == 0:
+        # Detailed diagnostic on the return value
+        if ctx is None:
+            _ctx_reason = "ctx=None"
+        elif not isinstance(ctx, dict):
+            _ctx_reason = f"ctx type={type(ctx).__name__} (expected dict)"
+        elif "acct" not in ctx:
+            _ctx_reason = f"ctx missing 'acct' key, keys={list(ctx.keys())}"
+        elif len(ctx["acct"]) == 0:
+            _ctx_reason = f"ctx['acct'] is empty (len=0), keys={list(ctx.keys())}"
+        else:
+            _ctx_reason = None
+
+        if _ctx_reason:
+            print(f"[{_ts()}] Chunk {chunk_idx}: ⚠️  no valid inference rows — {_ctx_reason}")
             n_done += len(acct_chunk)
 
             with _pg_tx() as conn:
@@ -1245,6 +1413,10 @@ def _run_one_origin(
             print(f"[{_ts()}] Chunk {chunk_idx}: no valid inference rows | elapsed={time.time()-t0:.1f}s")
             continue
 
+        # Inference context is valid — print diagnostic
+        n_ctx = len(ctx["acct"])
+        print(f"[{_ts()}] Chunk {chunk_idx}: ✅ {n_ctx}/{len(acct_chunk)} valid anchors, "
+              f"sample_valid={ctx['acct'][:3]}")
         # ---------------------------------------------------------------------
         # 3) Sample scenarios (adaptive backoff)
         # ---------------------------------------------------------------------
@@ -1321,59 +1493,63 @@ def _run_one_origin(
         parcel_rows_upserted = 0
         agg_rows_upserted = 0
 
-        with _pg_tx() as conn:
-            if not forecast_chunk_df.empty:
-                parcel_forecast_update_cols = [
-                    "forecast_year", "value", "p10", "p25", "p50", "p75", "p90",
-                    "run_id", "backtest_id", "model_version", "as_of_date", "n_scenarios",
-                    "is_backtest", "updated_at"
-                ]
-                if PARCEL_FORECAST_HAS_N_COL:
-                    parcel_forecast_update_cols.insert(7, "n")
+        try:
+            with _pg_tx(label=f"forecast_chunk_{chunk_idx}") as conn:
+                if not forecast_chunk_df.empty:
+                    parcel_forecast_update_cols = [
+                        "forecast_year", "value", "p10", "p25", "p50", "p75", "p90",
+                        "run_id", "backtest_id", "model_version", "as_of_date", "n_scenarios",
+                        "is_backtest", "updated_at"
+                    ]
+                    if PARCEL_FORECAST_HAS_N_COL:
+                        parcel_forecast_update_cols.insert(7, "n")
 
-                parcel_rows_upserted = _upsert_df_pg(
+                    parcel_rows_upserted = _upsert_df_pg(
+                        conn=conn,
+                        schema=schema,
+                        table="metrics_parcel_forecast",
+                        df=forecast_chunk_df,
+                        conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id"],
+                        update_cols=parcel_forecast_update_cols,
+                    )
+
+                    agg_rows_upserted = _aggregate_forecast_levels_for_chunk(
+                        conn=conn,
+                        schema=schema,
+                        acct_chunk=acct_chunk,
+                        run_id=run_id,
+                        origin_year=int(origin_year),
+                        series_kind=series_kind_forecast,
+                        variant_id=variant_id,
+                        backtest_id=backtest_id,
+                        as_of_date=as_of_date,
+                    )
+
+                parcel_rows_total += int(parcel_rows_upserted)
+                agg_rows_total += int(agg_rows_upserted)
+
+                n_done += len(acct_chunk)
+
+                _run_progress_upsert(
                     conn=conn,
                     schema=schema,
-                    table="metrics_parcel_forecast",
-                    df=forecast_chunk_df,
-                    conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id"],
-                    update_cols=parcel_forecast_update_cols,
-                )
-
-                agg_rows_upserted = _aggregate_forecast_levels_for_chunk(
-                    conn=conn,
-                    schema=schema,
-                    acct_chunk=acct_chunk,
                     run_id=run_id,
-                    origin_year=int(origin_year),
+                    chunk_seq=chunk_idx,
+                    level_name="parcel",
+                    status="running",
                     series_kind=series_kind_forecast,
                     variant_id=variant_id,
-                    backtest_id=backtest_id,
-                    as_of_date=as_of_date,
+                    origin_year=int(origin_year),
+                    chunk_rows=int((len(hist_chunk_df) if do_hist_this_run else 0) + len(forecast_chunk_df)),
+                    chunk_keys=int(len(acct_chunk)),
+                    rows_upserted_total=int(parcel_rows_total + agg_rows_total + history_rows_total + history_agg_rows_total),
+                    keys_upserted_total=int(n_done),
+                    min_key=min(acct_chunk) if acct_chunk else None,
+                    max_key=max(acct_chunk) if acct_chunk else None,
                 )
-
-            parcel_rows_total += int(parcel_rows_upserted)
-            agg_rows_total += int(agg_rows_upserted)
-
-            n_done += len(acct_chunk)
-
-            _run_progress_upsert(
-                conn=conn,
-                schema=schema,
-                run_id=run_id,
-                chunk_seq=chunk_idx,
-                level_name="parcel",
-                status="running",
-                series_kind=series_kind_forecast,
-                variant_id=variant_id,
-                origin_year=int(origin_year),
-                chunk_rows=int((len(hist_chunk_df) if do_hist_this_run else 0) + len(forecast_chunk_df)),
-                chunk_keys=int(len(acct_chunk)),
-                rows_upserted_total=int(parcel_rows_total + agg_rows_total + history_rows_total + history_agg_rows_total),
-                keys_upserted_total=int(n_done),
-                min_key=min(acct_chunk) if acct_chunk else None,
-                max_key=max(acct_chunk) if acct_chunk else None,
-            )
+        except Exception as exc:
+            print(f"[{_ts()}] Chunk {chunk_idx}: ⚠️  FORECAST DB write failed after retries, SKIPPING: {exc}")
+            n_done += len(acct_chunk)  # still count as processed so we don't retry forever
 
         # ---------------------------------------------------------------------
         # 6) Optional local backtest scoring summary (no DB)
@@ -1421,31 +1597,41 @@ def _run_one_origin(
     # -------------------------------------------------------------------------
     # 7) Final exact aggregate refresh + finalize run status
     # -------------------------------------------------------------------------
-    with _pg_tx() as conn:
-        if RUN_FINAL_EXACT_AGG_REFRESH:
-            _recompute_forecast_aggregates_exact_for_run(
-                conn=conn,
-                schema=schema,
-                run_id=run_id,
-                origin_year=int(origin_year),
-                series_kind=series_kind_forecast,
-                variant_id=variant_id,
-                backtest_id=backtest_id,
-                as_of_date=as_of_date,
-            )
-
-            if (mode == "forecast" and write_history_series) or (mode == "backtest" and WRITE_BACKTEST_HISTORY_VARIANTS):
-                _recompute_history_aggregates_exact_for_run(
+    try:
+        with _pg_tx(retries=5, label="final_agg_refresh") as conn:
+            if RUN_FINAL_EXACT_AGG_REFRESH:
+                _recompute_forecast_aggregates_exact_for_run(
                     conn=conn,
                     schema=schema,
                     run_id=run_id,
-                    series_kind=series_kind_history,
-                    variant_id=(hist_variant_id if hist_variant_id is not None else "__history__"),
-                    backtest_id=hist_backtest_id,
+                    origin_year=int(origin_year),
+                    series_kind=series_kind_forecast,
+                    variant_id=variant_id,
+                    backtest_id=backtest_id,
                     as_of_date=as_of_date,
                 )
 
-        _run_update_status(conn, schema, run_id, "completed")
+                if (mode == "forecast" and write_history_series) or (mode == "backtest" and WRITE_BACKTEST_HISTORY_VARIANTS):
+                    _recompute_history_aggregates_exact_for_run(
+                        conn=conn,
+                        schema=schema,
+                        run_id=run_id,
+                        series_kind=series_kind_history,
+                        variant_id=(hist_variant_id if hist_variant_id is not None else "__history__"),
+                        backtest_id=hist_backtest_id,
+                        as_of_date=as_of_date,
+                    )
+
+            _run_update_status(conn, schema, run_id, "completed")
+    except Exception as exc:
+        print(f"[{_ts()}] ⚠️  Final aggregate refresh FAILED after retries: {exc}")
+        print(f"[{_ts()}]    The parcel-level data is safe. Re-run the final refresh separately.")
+        # Still try to mark the run as completed
+        try:
+            with _pg_tx(retries=2, label="mark_completed_fallback") as conn:
+                _run_update_status(conn, schema, run_id, "completed")
+        except Exception:
+            print(f"[{_ts()}]    Could not mark run as completed either.")
 
     manifest["finished_at_utc"] = datetime.utcnow().isoformat()
     manifest["elapsed_run_sec"] = float(time.time() - t_run0)
