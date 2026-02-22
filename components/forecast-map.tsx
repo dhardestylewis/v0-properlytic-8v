@@ -19,7 +19,7 @@ const TOOLTIP_HEIGHT = 620
 
 // Geography level definitions — zoom breakpoints must match the SQL router
 const GEO_LEVELS = [
-    { name: "zcta", minzoom: 0, maxzoom: 7.99, label: "ZCTA" },
+    { name: "zcta", minzoom: 0, maxzoom: 7.99, label: "ZIP Code" },
     { name: "tract", minzoom: 8, maxzoom: 11.99, label: "Tract" },
     { name: "tabblock", minzoom: 12, maxzoom: 16.99, label: "Block" },
     { name: "parcel", minzoom: 17, maxzoom: 22, label: "Parcel" },
@@ -544,7 +544,14 @@ export function ForecastMap({
                 }, 500)
             }
 
-            // Always update tooltip position (follows cursor)
+            if (selectedIdRef.current) {
+                // Locked mode: DON'T move tooltip (it stays pinned), just update
+                // the hover highlight for visual comparison. Tooltip position comes
+                // from fixedTooltipPos set at click time.
+                return
+            }
+
+            // Unlocked: tooltip follows cursor
             const smartPos = getSmartTooltipPos(
                 e.originalEvent.clientX,
                 e.originalEvent.clientY,
@@ -641,6 +648,12 @@ export function ForecastMap({
                     })
                 hoveredIdRef.current = null
                 onFeatureHover(null)
+                // Clear comparison data when mouse leaves (locked mode)
+                if (selectedIdRef.current) {
+                    setComparisonData(null)
+                    setComparisonHistoricalValues(undefined)
+                    comparisonFetchRef.current = null
+                }
             }
             map.getCanvas().style.cursor = ""
         })
