@@ -186,6 +186,9 @@ export function ForecastMap({
     const [historicalValues, setHistoricalValues] = useState<number[] | undefined>(undefined)
     const [isLoadingDetail, setIsLoadingDetail] = useState(false)
     const detailFetchRef = useRef<string | null>(null)
+    // LRU cache for forecast detail responses (key: "level:featureId", value: {fanChart, historicalValues})
+    const detailCacheRef = useRef<Map<string, { fanChart: FanChartData | null; historicalValues: number[] | undefined }>>(new Map())
+    const DETAIL_CACHE_MAX = 1000
 
     // Selected feature's properties (locked when clicked)
     const [selectedProps, setSelectedProps] = useState<any>(null)
@@ -199,6 +202,7 @@ export function ForecastMap({
     const [comparisonHistoricalValues, setComparisonHistoricalValues] = useState<number[] | undefined>(undefined)
     const comparisonFetchRef = useRef<string | null>(null)
     const comparisonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const hoverDetailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     // Viewport y-axis domain: fixed range from visible features
     const [viewportYDomain, setViewportYDomain] = useState<[number, number] | null>(null)
@@ -221,23 +225,34 @@ export function ForecastMap({
     // Fetch all horizons for a given feature to build FanChart data
     const fetchForecastDetail = useCallback(async (featureId: string, level: string) => {
         const cacheKey = `${level}:${featureId}`
-        if (detailFetchRef.current === cacheKey) return // already fetching or fetched
+        // Check cache first — instant re-hover
+        const cached = detailCacheRef.current.get(cacheKey)
+        if (cached) {
+            // Move to end for LRU freshness
+            detailCacheRef.current.delete(cacheKey)
+            detailCacheRef.current.set(cacheKey, cached)
+            setFanChartData(cached.fanChart)
+            setHistoricalValues(cached.historicalValues)
+            detailFetchRef.current = cacheKey
+            return
+        }
+        if (detailFetchRef.current === cacheKey) return // already fetching
         detailFetchRef.current = cacheKey
         setIsLoadingDetail(true)
         try {
             const res = await fetch(`/api/forecast-detail?level=${level}&id=${encodeURIComponent(featureId)}&originYear=${originYear}`)
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const json = await res.json()
-            if (json.years?.length > 0) {
-                setFanChartData(json as FanChartData)
-            } else {
-                setFanChartData(null)
-            }
-            // Store historical values if present
-            if (json.historicalValues && json.historicalValues.some((v: any) => v != null)) {
-                setHistoricalValues(json.historicalValues)
-            } else {
-                setHistoricalValues(undefined)
+            const fanChart = json.years?.length > 0 ? (json as FanChartData) : null
+            const histVals = json.historicalValues?.some((v: any) => v != null) ? json.historicalValues : undefined
+            setFanChartData(fanChart)
+            setHistoricalValues(histVals)
+            // Store in cache with LRU eviction
+            detailCacheRef.current.set(cacheKey, { fanChart, historicalValues: histVals })
+            if (detailCacheRef.current.size > DETAIL_CACHE_MAX) {
+                // Delete oldest entry (first key in Map iteration order)
+                const oldest = detailCacheRef.current.keys().next().value
+                if (oldest) detailCacheRef.current.delete(oldest)
             }
         } catch (err) {
             console.error('[FORECAST-DETAIL] fetch error:', err)
@@ -455,7 +470,8 @@ export function ForecastMap({
             if (!id) return
 
             // Clear previous hover
-            if (hoveredIdRef.current && hoveredIdRef.current !== id) {
+            const isNewFeature = hoveredIdRef.current !== id
+            if (hoveredIdRef.current && isNewFeature) {
                 ;["forecast-a", "forecast-b"].forEach((s) => {
                     try {
                         map.setFeatureState(
@@ -484,12 +500,17 @@ export function ForecastMap({
                 })
 
 
-            // Fan chart detail is fetched only on CLICK, not on hover
-            // (fetching on every mousemove causes request spam)
+            // Debounced fan chart fetch on hover (only when NOT locked, only on new feature)
+            if (!selectedIdRef.current && isNewFeature) {
+                if (hoverDetailTimerRef.current) clearTimeout(hoverDetailTimerRef.current)
+                hoverDetailTimerRef.current = setTimeout(() => {
+                    const hoverZoom = map.getZoom()
+                    const hoverLevel = getSourceLayer(hoverZoom)
+                    fetchForecastDetail(id, hoverLevel)
+                }, 300)
+            }
 
-            // Always update tooltipData with hovered feature's properties.
-            // When locked, displayProps will use selectedProps instead,
-            // but tooltipData.properties.id is needed for comparison tracking.
+            // Always update tooltip position (follows cursor)
             const smartPos = getSmartTooltipPos(
                 e.originalEvent.clientX,
                 e.originalEvent.clientY,
@@ -501,7 +522,10 @@ export function ForecastMap({
                 globalY: smartPos.y,
                 properties: feature.properties,
             })
-            setTooltipCoords([e.lngLat.lat, e.lngLat.lng])
+            // Only update coords (used for StreetView) when the feature changes, not every pixel
+            if (isNewFeature) {
+                setTooltipCoords([e.lngLat.lat, e.lngLat.lng])
+            }
         })
 
         // MOBILE LONG-PRESS HOVER: simulate hover/comparison on touch hold
@@ -565,8 +589,10 @@ export function ForecastMap({
 
         // MOUSELEAVE: clear tooltip when cursor exits the map (unless locked)
         map.getCanvas().addEventListener("mouseleave", () => {
+            if (hoverDetailTimerRef.current) { clearTimeout(hoverDetailTimerRef.current); hoverDetailTimerRef.current = null }
             if (!selectedIdRef.current) {
                 setTooltipData(null)
+                detailFetchRef.current = null // allow re-fetch on re-hover
             }
             if (hoveredIdRef.current) {
                 const zoom = map.getZoom()
@@ -595,6 +621,10 @@ export function ForecastMap({
             const features = map.getLayer(fillLayerId)
                 ? map.queryRenderedFeatures(e.point, { layers: [fillLayerId] })
                 : []
+
+            // Clear hover detail timer so click fetch takes precedence
+            if (hoverDetailTimerRef.current) { clearTimeout(hoverDetailTimerRef.current); hoverDetailTimerRef.current = null }
+            detailFetchRef.current = null // allow click to re-fetch even if same id
 
             if (features.length === 0) {
                 // Clear selection
@@ -719,6 +749,7 @@ export function ForecastMap({
                             } catch (err) { /* ignore */ }
                         })
                 }
+                if (hoverDetailTimerRef.current) { clearTimeout(hoverDetailTimerRef.current); hoverDetailTimerRef.current = null }
                 selectedIdRef.current = null
                 setSelectedId(null)
                 setSelectedProps(null)
@@ -775,8 +806,8 @@ export function ForecastMap({
                         zoom: targetZoom,
                         duration: 2000,
                     })
-                    // After fly completes, auto-select the feature at center
-                    map.once("moveend", () => {
+                    // After fly completes AND tiles load, auto-select the feature at center
+                    map.once("idle", () => {
                         const zoom = map.getZoom()
                         const sourceLayer = getSourceLayer(zoom)
                         const activeSuffix = (map as any)._activeSuffix || "a"
@@ -821,7 +852,7 @@ export function ForecastMap({
                         zoom: Math.max(map.getZoom(), 13),
                         duration: 2000,
                     })
-                    map.once("moveend", () => {
+                    map.once("idle", () => {
                         const zoom = map.getZoom()
                         const sourceLayer = getSourceLayer(zoom)
                         const activeSuffix = (map as any)._activeSuffix || "a"
@@ -1009,19 +1040,28 @@ export function ForecastMap({
             const cacheKey = `${level}:${hoveredId}`
             if (comparisonFetchRef.current === cacheKey) return
             comparisonFetchRef.current = cacheKey
+            // Check shared cache first
+            const cached = detailCacheRef.current.get(cacheKey)
+            if (cached) {
+                detailCacheRef.current.delete(cacheKey)
+                detailCacheRef.current.set(cacheKey, cached)
+                setComparisonData(cached.fanChart)
+                setComparisonHistoricalValues(cached.historicalValues)
+                return
+            }
             try {
                 const res = await fetch(`/api/forecast-detail?level=${level}&id=${encodeURIComponent(hoveredId)}&originYear=${originYear}`)
                 if (!res.ok) return
                 const json = await res.json()
-                if (json.years?.length > 0) {
-                    setComparisonData(json as FanChartData)
-                } else {
-                    setComparisonData(null)
-                }
-                if (json.historicalValues?.some((v: any) => v != null)) {
-                    setComparisonHistoricalValues(json.historicalValues)
-                } else {
-                    setComparisonHistoricalValues(undefined)
+                const fanChart = json.years?.length > 0 ? (json as FanChartData) : null
+                const histVals = json.historicalValues?.some((v: any) => v != null) ? json.historicalValues : undefined
+                setComparisonData(fanChart)
+                setComparisonHistoricalValues(histVals)
+                // Store in shared cache
+                detailCacheRef.current.set(cacheKey, { fanChart, historicalValues: histVals })
+                if (detailCacheRef.current.size > DETAIL_CACHE_MAX) {
+                    const oldest = detailCacheRef.current.keys().next().value
+                    if (oldest) detailCacheRef.current.delete(oldest)
                 }
             } catch {
                 setComparisonData(null)
@@ -1033,7 +1073,7 @@ export function ForecastMap({
         }
     }, [selectedId, tooltipData?.properties?.id, originYear, isShiftHeld])
 
-    // Viewport Y domain: compute from visible features on moveend
+    // Viewport Y domain: compute from visible features on moveend + after initial tile load
     useEffect(() => {
         if (!mapRef.current || !isLoaded) return
         const map = mapRef.current
@@ -1042,9 +1082,9 @@ export function ForecastMap({
             const sourceLayer = getSourceLayer(zoom)
             const activeSuffix = (map as any)._activeSuffix || 'a'
             const layerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
-            if (!map.getLayer(layerId)) return
+            if (!map.getLayer(layerId)) return false
             const features = map.queryRenderedFeatures(undefined, { layers: [layerId] })
-            if (features.length === 0) return
+            if (features.length === 0) return false
             const allVals: number[] = []
             for (const f of features) {
                 const p = f.properties
@@ -1052,17 +1092,39 @@ export function ForecastMap({
                 if (p?.p10 != null && Number.isFinite(p.p10)) allVals.push(p.p10)
                 if (p?.p90 != null && Number.isFinite(p.p90)) allVals.push(p.p90)
             }
-            if (allVals.length < 2) return
+            if (allVals.length < 2) return false
             allVals.sort((a, b) => a - b)
             // Use P10/P90 of visible values to exclude outliers
             const lo = allVals[Math.floor(allVals.length * 0.1)]
             const hi = allVals[Math.ceil(allVals.length * 0.9) - 1]
             if (lo < hi) {
                 setViewportYDomain([lo, hi])
+                return true
+            }
+            return false
+        }
+
+        map.on('moveend', computeYDomain)
+
+        // Initial tile load: tiles may not be rendered when isLoaded fires.
+        // Listen for 'idle' (fires after all tiles painted) to catch initial load.
+        let initialDone = computeYDomain()
+        if (!initialDone) {
+            const onIdle = () => {
+                if (computeYDomain()) {
+                    map.off('idle', onIdle) // success — stop listening
+                }
+            }
+            map.on('idle', onIdle)
+            // Safety: remove after 10s to avoid leaking
+            const safetyTimer = setTimeout(() => map.off('idle', onIdle), 10000)
+            return () => {
+                map.off('moveend', computeYDomain)
+                map.off('idle', onIdle)
+                clearTimeout(safetyTimer)
             }
         }
-        map.on('moveend', computeYDomain)
-        computeYDomain() // compute initial
+
         return () => { map.off('moveend', computeYDomain) }
     }, [isLoaded])
 

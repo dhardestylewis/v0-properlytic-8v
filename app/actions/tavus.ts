@@ -57,7 +57,9 @@ export async function createTavusConversation({
     3. NEVER mention technical IDs. Say "this neighborhood" or "this zip code" instead.
     4. Speak naturally like a human. Report 1-2 metrics max per turn.
     5. CONCISE: Report only predicted value (p50) and horizon. Wait for the user to ask for prediction intervals.
-    6. To compare locations, use 'add_location_to_selection'. To reset, use 'clear_selection'.`
+    6. To compare locations, use 'add_location_to_selection'. To reset, use 'clear_selection'.
+    7. BIAS TO ACTION: If the user says "select something", "show me anything", or gives a vague request, IMMEDIATELY pick a popular Houston neighborhood (e.g. Montrose, Heights, River Oaks, EaDo, Midtown) and call 'location_to_area'. NEVER ask the user to be more specific — just pick and go.
+    8. When calling 'location_to_area', the map will automatically fly there and select the area. You do NOT need to call 'fly_to_location' separately.`
       : `The user is exploring properties ${locationContext} in Houston, TX. 
     IMPORTANT: You have zero initial metrics. You MUST call 'location_to_hex' or 'get_h3_hex' immediately to find the real market data for the current selection.
     

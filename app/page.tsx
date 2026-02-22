@@ -60,7 +60,7 @@ function DashboardContent() {
       ...(action.highlighted_hex_ids ? { highlightedIds: action.highlighted_hex_ids } : {}),
     })
 
-    // Dispatch tavus-map-action so the forecast map handler picks it up
+    // Always dispatch tavus-map-action so the forecast map auto-selects on idle
     if (action.area_id) {
       window.dispatchEvent(new CustomEvent("tavus-map-action", {
         detail: {
@@ -70,6 +70,14 @@ function DashboardContent() {
             chosen: { lat: action.lat, lng: action.lng, label: "" },
             area: { id: action.area_id, level: action.level || "zcta" }
           }
+        }
+      }))
+    } else {
+      // Fallback: fly_to_location also auto-selects the feature at center on idle
+      window.dispatchEvent(new CustomEvent("tavus-map-action", {
+        detail: {
+          action: "fly_to_location",
+          params: { lat: action.lat, lng: action.lng, zoom: action.zoom }
         }
       }))
     }
