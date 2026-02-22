@@ -541,6 +541,8 @@ function DashboardContent() {
               className="flex-1"
               colorMode={filters.colorMode}
               onColorModeChange={handleColorModeChange}
+              year={currentYear}
+              originYear={2025}
             />
 
             {/* Controls Column: Grid on Mobile, Flex Col on Desktop */}

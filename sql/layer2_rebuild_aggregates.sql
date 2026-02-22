@@ -1,7 +1,7 @@
 -- =============================================================================
 -- LAYER 2 STEP 3: Rebuild aggregates excluding outliers
 -- Run AFTER layer2_flag_outliers.sql has been executed.
--- Run each level separately if timeout occurs.
+-- Run each DELETE+INSERT pair separately if timeout occurs.
 -- =============================================================================
 
 -- ─── TABBLOCK aggregates ─────────────────────────────────────────────────────
@@ -27,14 +27,14 @@ SELECT
     AVG(mp.p75)::float8,
     AVG(mp.p90)::float8,
     COUNT(*)::int AS n,
-    mp.run_id,
-    mp.backtest_id,
-    mp.variant_id,
-    mp.model_version,
-    mp.as_of_date,
+    MAX(mp.run_id),
+    MAX(mp.backtest_id),
+    '__forecast__',
+    MAX(mp.model_version),
+    MAX(mp.as_of_date),
     MAX(mp.n_scenarios)::int,
-    mp.is_backtest,
-    mp.series_kind,
+    false,
+    'forecast',
     now(), now()
 FROM forecast_20260220_7f31c6e4.metrics_parcel_forecast mp
 JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
@@ -42,9 +42,7 @@ WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
   AND pl.tabblock_geoid20 IS NOT NULL
-GROUP BY pl.tabblock_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year,
-         mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
-         mp.as_of_date, mp.is_backtest, mp.series_kind;
+GROUP BY pl.tabblock_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year;
 
 
 -- ─── TRACT aggregates ────────────────────────────────────────────────────────
@@ -70,14 +68,14 @@ SELECT
     AVG(mp.p75)::float8,
     AVG(mp.p90)::float8,
     COUNT(*)::int AS n,
-    mp.run_id,
-    mp.backtest_id,
-    mp.variant_id,
-    mp.model_version,
-    mp.as_of_date,
+    MAX(mp.run_id),
+    MAX(mp.backtest_id),
+    '__forecast__',
+    MAX(mp.model_version),
+    MAX(mp.as_of_date),
     MAX(mp.n_scenarios)::int,
-    mp.is_backtest,
-    mp.series_kind,
+    false,
+    'forecast',
     now(), now()
 FROM forecast_20260220_7f31c6e4.metrics_parcel_forecast mp
 JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
@@ -85,9 +83,7 @@ WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
   AND pl.tract_geoid20 IS NOT NULL
-GROUP BY pl.tract_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year,
-         mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
-         mp.as_of_date, mp.is_backtest, mp.series_kind;
+GROUP BY pl.tract_geoid20, mp.origin_year, mp.horizon_m, mp.forecast_year;
 
 
 -- ─── ZCTA aggregates ─────────────────────────────────────────────────────────
@@ -113,14 +109,14 @@ SELECT
     AVG(mp.p75)::float8,
     AVG(mp.p90)::float8,
     COUNT(*)::int AS n,
-    mp.run_id,
-    mp.backtest_id,
-    mp.variant_id,
-    mp.model_version,
-    mp.as_of_date,
+    MAX(mp.run_id),
+    MAX(mp.backtest_id),
+    '__forecast__',
+    MAX(mp.model_version),
+    MAX(mp.as_of_date),
     MAX(mp.n_scenarios)::int,
-    mp.is_backtest,
-    mp.series_kind,
+    false,
+    'forecast',
     now(), now()
 FROM forecast_20260220_7f31c6e4.metrics_parcel_forecast mp
 JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
@@ -128,9 +124,7 @@ WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
   AND pl.zcta5 IS NOT NULL
-GROUP BY pl.zcta5, mp.origin_year, mp.horizon_m, mp.forecast_year,
-         mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
-         mp.as_of_date, mp.is_backtest, mp.series_kind;
+GROUP BY pl.zcta5, mp.origin_year, mp.horizon_m, mp.forecast_year;
 
 
 -- ─── UNSD aggregates ─────────────────────────────────────────────────────────
@@ -156,14 +150,14 @@ SELECT
     AVG(mp.p75)::float8,
     AVG(mp.p90)::float8,
     COUNT(*)::int AS n,
-    mp.run_id,
-    mp.backtest_id,
-    mp.variant_id,
-    mp.model_version,
-    mp.as_of_date,
+    MAX(mp.run_id),
+    MAX(mp.backtest_id),
+    '__forecast__',
+    MAX(mp.model_version),
+    MAX(mp.as_of_date),
     MAX(mp.n_scenarios)::int,
-    mp.is_backtest,
-    mp.series_kind,
+    false,
+    'forecast',
     now(), now()
 FROM forecast_20260220_7f31c6e4.metrics_parcel_forecast mp
 JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
@@ -171,9 +165,7 @@ WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
   AND pl.unsd_geoid IS NOT NULL
-GROUP BY pl.unsd_geoid, mp.origin_year, mp.horizon_m, mp.forecast_year,
-         mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
-         mp.as_of_date, mp.is_backtest, mp.series_kind;
+GROUP BY pl.unsd_geoid, mp.origin_year, mp.horizon_m, mp.forecast_year;
 
 
 -- ─── NEIGHBORHOOD aggregates ─────────────────────────────────────────────────
@@ -199,14 +191,14 @@ SELECT
     AVG(mp.p75)::float8,
     AVG(mp.p90)::float8,
     COUNT(*)::int AS n,
-    mp.run_id,
-    mp.backtest_id,
-    mp.variant_id,
-    mp.model_version,
-    mp.as_of_date,
+    MAX(mp.run_id),
+    MAX(mp.backtest_id),
+    '__forecast__',
+    MAX(mp.model_version),
+    MAX(mp.as_of_date),
     MAX(mp.n_scenarios)::int,
-    mp.is_backtest,
-    mp.series_kind,
+    false,
+    'forecast',
     now(), now()
 FROM forecast_20260220_7f31c6e4.metrics_parcel_forecast mp
 JOIN public.parcel_ladder_v1 pl ON pl.acct = mp.acct
@@ -214,9 +206,7 @@ WHERE mp.series_kind = 'forecast'
   AND mp.variant_id = '__forecast__'
   AND coalesce(mp.is_outlier, false) = false
   AND pl.neighborhood_id IS NOT NULL
-GROUP BY pl.neighborhood_id, mp.origin_year, mp.horizon_m, mp.forecast_year,
-         mp.run_id, mp.backtest_id, mp.variant_id, mp.model_version,
-         mp.as_of_date, mp.is_backtest, mp.series_kind;
+GROUP BY pl.neighborhood_id, mp.origin_year, mp.horizon_m, mp.forecast_year;
 
 
 -- ─── VERIFICATION ────────────────────────────────────────────────────────────

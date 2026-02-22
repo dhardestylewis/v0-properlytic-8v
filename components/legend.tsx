@@ -4,23 +4,34 @@ import { Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-// Continuous legend gradient
-// Growth mode: blue-white-red (cool→hot, diverging around median)
-const OPPORTUNITY_GRADIENT = "linear-gradient(to right, #3b82f6, #93c5fd 30%, #f8f8f8 50%, #f59e0b 70%, #ef4444)"
-
-// Magma-like: Deep Purple -> Red -> Orange -> Yellow
+// Value mode gradient (unchanged)
 const VALUE_GRADIENT = "linear-gradient(to right, oklch(0.25 0.10 280), oklch(0.60 0.20 30), oklch(0.95 0.15 80))"
-
-const OPPORTUNITY_LABELS = ["-15%", "15%", "60%+"]
 const VALUE_LABELS = ["$150k", "$525k", "$1M+"]
 
 interface LegendProps {
   className?: string
   colorMode?: "growth" | "value"
   onColorModeChange?: (mode: "growth" | "value") => void
+  year?: number
+  originYear?: number
 }
 
-export function Legend({ className, colorMode = "growth", onColorModeChange }: LegendProps) {
+export function Legend({ className, colorMode = "growth", onColorModeChange, year = 2027, originYear = 2025 }: LegendProps) {
+  // Compute horizon-aware labels from empirical percentile fits
+  const yearsAhead = Math.max((year ?? 2027) - ((originYear ?? 2025) + 1), 0)
+  const p05 = yearsAhead > 0 ? -5 - 4 * yearsAhead : -5
+  const med = yearsAhead > 0 ? 5 * yearsAhead : 0
+  const p95 = yearsAhead > 0 ? 30 * yearsAhead : 30
+
+  const growthLabels = [
+    `${p05 > 0 ? "+" : ""}${p05}%`,
+    `${med > 0 ? "+" : ""}${med}%`,
+    `${p95 > 0 ? "+" : ""}${p95}%+`,
+  ]
+
+  // Growth gradient: same colors as buildFillColor ramp
+  const OPPORTUNITY_GRADIENT = "linear-gradient(to right, #3b82f6, #93c5fd 30%, #f8f8f8 50%, #f59e0b 70%, #ef4444)"
+
   return (
     <div className={cn("glass-panel rounded-lg p-3 space-y-1 text-xs", className)}>
       {/* Color Scale */}
@@ -56,9 +67,9 @@ export function Legend({ className, colorMode = "growth", onColorModeChange }: L
               </>
             ) : (
               <>
-                <span>{OPPORTUNITY_LABELS[0]}</span>
-                <span>{OPPORTUNITY_LABELS[1]}</span>
-                <span>{OPPORTUNITY_LABELS[2]}</span>
+                <span>{growthLabels[0]}</span>
+                <span>{growthLabels[1]}</span>
+                <span>{growthLabels[2]}</span>
               </>
             )}
           </div>
