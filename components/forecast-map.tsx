@@ -582,9 +582,9 @@ export function ForecastMap({
             }
 
             if (selectedIdRef.current) {
-                // Locked mode: DON'T move tooltip (it stays pinned), just update
-                // the hover highlight for visual comparison. Tooltip position comes
-                // from fixedTooltipPos set at click time.
+                // Locked mode: DON'T move tooltip (it stays pinned), but DO update
+                // tooltipData.properties with the hovered feature so comparison works.
+                setTooltipData(prev => prev ? { ...prev, properties: feature.properties } : prev)
                 return
             }
 
