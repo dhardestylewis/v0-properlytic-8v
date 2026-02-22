@@ -1190,6 +1190,8 @@ export function ForecastMap({
         if (!mapRef.current || !isLoaded) return
         const map = mapRef.current
         const computeYDomain = () => {
+            // Freeze y-range while tooltip is locked — prevents jumps on pan
+            if (selectedIdRef.current) return false
             const zoom = map.getZoom()
             const sourceLayer = getSourceLayer(zoom)
             const activeSuffix = (map as any)._activeSuffix || 'a'
