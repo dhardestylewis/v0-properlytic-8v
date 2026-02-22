@@ -152,6 +152,22 @@ export function ForecastMap({
     const [swipeTouchStart, setSwipeTouchStart] = useState<number | null>(null)
     const [swipeDragOffset, setSwipeDragOffset] = useState(0)
 
+    // Desktop drag-to-reposition state (locked tooltip)
+    const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
+
+    useEffect(() => {
+        const onMouseMove = (e: MouseEvent) => {
+            if (!dragRef.current) return
+            const dx = e.clientX - dragRef.current.startX
+            const dy = e.clientY - dragRef.current.startY
+            setFixedTooltipPos({ globalX: dragRef.current.origX + dx, globalY: dragRef.current.origY + dy })
+        }
+        const onMouseUp = () => { dragRef.current = null }
+        window.addEventListener('mousemove', onMouseMove)
+        window.addEventListener('mouseup', onMouseUp)
+        return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp) }
+    }, [])
+
     // Reset minimize when selection changes
     useEffect(() => {
         if (selectedId) setMobileMinimized(false)
@@ -1243,7 +1259,15 @@ export function ForecastMap({
                     {/* Header - matching MapTooltip (hidden on mobile) */}
                     {!isMobile && (
                         <>
-                            <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md">
+                            <div
+                                className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md cursor-grab active:cursor-grabbing select-none"
+                                onMouseDown={selectedId ? (e) => {
+                                    e.preventDefault()
+                                    if (fixedTooltipPos) {
+                                        dragRef.current = { startX: e.clientX, startY: e.clientY, origX: fixedTooltipPos.globalX, origY: fixedTooltipPos.globalY }
+                                    }
+                                } : undefined}
+                            >
                                 <div className="flex items-center gap-2">
                                     <HomecastrLogo size={18} />
                                     <span className="font-bold text-[10px] tracking-wide text-foreground uppercase">Homecastr</span>
