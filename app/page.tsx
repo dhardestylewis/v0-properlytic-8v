@@ -236,6 +236,7 @@ function DashboardContent() {
   }, [setMapState, toast])
 
   // Reverse Geocode Effect
+  const centerKey = `${mapState.center?.[0]?.toFixed(4)},${mapState.center?.[1]?.toFixed(4)}`
   useEffect(() => {
     if (!mapState.selectedId) {
       setSearchBarValue("")
@@ -270,7 +271,7 @@ function DashboardContent() {
     }
     fetchAddress()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapState.selectedId])
+  }, [mapState.selectedId, centerKey])
 
   const handleSearchError = useCallback(
     (error: string) => {
