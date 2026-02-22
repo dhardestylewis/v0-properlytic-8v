@@ -48,16 +48,39 @@ export function getStreetViewImageUrl(lat: number, lng: number, apiKey: string, 
     return `https://maps.googleapis.com/maps/api/streetview?size=${width}x${height}&location=${lat},${lng}&key=${apiKey}`
 }
 
+// Module-level cache for signed Street View URLs (key: "lat,lng,w,h")
+const streetViewCache = new Map<string, string>()
+const STREETVIEW_CACHE_MAX = 500
+
 /**
  * Fetches a signed Street View URL from the server-side signing endpoint.
  * Falls back to unsigned URL if signing fails.
+ * Results are cached so revisiting the same location is instant.
  */
 export async function getSignedStreetViewUrl(lat: number, lng: number, width = 400, height = 300): Promise<string> {
+    const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)},${width},${height}`
+
+    // Check cache first
+    const cached = streetViewCache.get(cacheKey)
+    if (cached) {
+        // LRU: move to end
+        streetViewCache.delete(cacheKey)
+        streetViewCache.set(cacheKey, cached)
+        return cached
+    }
+
     try {
         const res = await fetch(`/api/streetview-sign?lat=${lat}&lng=${lng}&w=${width}&h=${height}`)
         if (res.ok) {
             const data = await res.json()
-            return data.url
+            const url = data.url
+            // Store in cache with LRU eviction
+            streetViewCache.set(cacheKey, url)
+            if (streetViewCache.size > STREETVIEW_CACHE_MAX) {
+                const oldest = streetViewCache.keys().next().value
+                if (oldest) streetViewCache.delete(oldest)
+            }
+            return url
         }
     } catch {
         // Fall back to unsigned
