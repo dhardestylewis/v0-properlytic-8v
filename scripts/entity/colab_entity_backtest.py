@@ -14,14 +14,47 @@ Computes:
 Requires: Google Drive mounted at /content/drive/
 """
 
-# !pip install polars pyarrow -q  # Uncomment if needed
+!pip install polars pyarrow -q
 
 import polars as pl
-import zipfile, io
+import zipfile, io, os
 from pathlib import Path
 
-# ── Config ────────────────────────────────────────────────────────
-HCAD_BASE = Path("/content/drive/MyDrive/HCAD_Archive/property")
+# ── Mount Google Drive ────────────────────────────────────────────
+try:
+    from google.colab import drive
+    drive.mount('/content/drive', force_remount=False)
+    print("✅ Google Drive mounted")
+except ImportError:
+    print("⚠ Not running in Colab — assuming Drive paths are available locally")
+
+# ── Config — discover HCAD path ──────────────────────────────────
+HCAD_CANDIDATES = [
+    Path("/content/drive/MyDrive/HCAD_Archive/property"),
+    Path("/content/drive/My Drive/HCAD_Archive/property"),
+    Path("G:/My Drive/HCAD_Archive/property"),
+    Path("G:\\My Drive\\HCAD_Archive\\property"),
+]
+HCAD_BASE = None
+for p in HCAD_CANDIDATES:
+    if p.exists():
+        HCAD_BASE = p
+        print(f"✅ Found HCAD data at: {p}")
+        break
+
+if HCAD_BASE is None:
+    # Try to discover it
+    drive_root = Path("/content/drive/MyDrive")
+    if drive_root.exists():
+        print(f"📂 Drive root contents: {list(drive_root.iterdir())[:20]}")
+        # Look for HCAD anywhere
+        for d in drive_root.rglob("Real_acct_owner.zip"):
+            HCAD_BASE = d.parent.parent  # go up from YEAR/Real_acct_owner.zip
+            print(f"✅ Discovered HCAD at: {HCAD_BASE}")
+            break
+    if HCAD_BASE is None:
+        raise SystemExit("❌ Cannot find HCAD_Archive/property. Check Drive mount.")
+
 YEARS = list(range(2015, 2026))
 HOLD_HORIZONS = [1, 2, 3, 5]  # years forward to measure returns
 
@@ -46,15 +79,19 @@ TARGET_ENTITIES = [
 print("📦 Loading owners + valuations for each year...")
 owner_frames = []
 val_frames = []
+name_col = None  # auto-detected
+acct_col = None  # auto-detected
 
 for yr in YEARS:
     zip_path = HCAD_BASE / str(yr) / "Real_acct_owner.zip"
     if not zip_path.exists():
-        print(f"  {yr}: ❌ NOT FOUND")
+        print(f"  {yr}: ❌ NOT FOUND at {zip_path}")
         continue
     try:
         with zipfile.ZipFile(str(zip_path), 'r') as zf:
             names = zf.namelist()
+            if yr == YEARS[0]:
+                print(f"    📦 Files inside {yr} zip: {names}")
 
             # ── owners.txt ──
             owner_file = next((n for n in names if 'owner' in n.lower() and n.endswith('.txt')), None)
@@ -68,10 +105,31 @@ for yr in YEARS:
                                       quote_char=None)
                 odf = odf.rename({c: c.strip().lower().replace(' ', '_') for c in odf.columns})
                 odf = odf.with_columns(pl.lit(yr).alias("year"))
+
+                # Auto-detect column names on first file
+                if name_col is None:
+                    nc = [c for c in odf.columns if any(kw in c for kw in ['owner_nm', 'owner_name', 'ownr_nm'])]
+                    if not nc:
+                        nc = [c for c in odf.columns if 'name' in c and odf[c].dtype == pl.Utf8]
+                    if not nc:
+                        nc = [c for c in odf.columns if 'owner' in c and odf[c].dtype == pl.Utf8]
+                    ac = [c for c in odf.columns if any(kw in c for kw in ['acct', 'account', 'prop_id'])]
+                    name_col = nc[0] if nc else None
+                    acct_col = ac[0] if ac else odf.columns[0]
+                    print(f"    Auto-detected: name_col='{name_col}', acct_col='{acct_col}'")
+                    if name_col is None:
+                        str_cols = [c for c in odf.columns if odf[c].dtype == pl.Utf8]
+                        print(f"    String columns: {str_cols}")
+                        raise SystemExit("Cannot auto-detect name column")
+
                 # Keep only primary owner (ln_num == 1 if available)
                 if 'ln_num' in odf.columns:
                     odf = odf.filter(pl.col("ln_num") == 1)
-                owner_frames.append(odf.select(["acct", "name", "year"]).cast({"acct": pl.Utf8}))
+                owner_frames.append(
+                    odf.select([acct_col, name_col, "year"])
+                    .cast({acct_col: pl.Utf8, name_col: pl.Utf8})
+                    .rename({acct_col: "acct", name_col: "name"})
+                )
 
             # ── real_acct.txt (valuations) ──
             acct_file = next((n for n in names if n.lower() == 'real_acct.txt'), None)
