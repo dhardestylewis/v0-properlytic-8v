@@ -60,6 +60,10 @@ function DashboardContent() {
         selectedId: null,
         highlightedIds: undefined
       }))
+      // Dispatch window event so forecast-map clears MapLibre feature state (border/highlight)
+      window.dispatchEvent(new CustomEvent("tavus-map-action", {
+        detail: { action: "clear_selection" }
+      }))
       toast({ title: "Selection cleared", duration: 2000 })
       return
     }
