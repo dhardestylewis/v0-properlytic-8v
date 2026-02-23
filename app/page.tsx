@@ -548,12 +548,12 @@ function DashboardContent() {
             />
 
             {/* Controls: 2x2 Grid on Mobile, Column on Desktop */}
-            <div className="grid grid-cols-2 gap-1 md:flex md:flex-col shrink-0">
+            <div className="grid grid-cols-2 grid-rows-2 gap-1 md:flex md:flex-col shrink-0 self-stretch">
 
               {/* Single Select */}
               <button
                 onClick={() => setMobileSelectionMode('replace')}
-                className={`w-7 aspect-square rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] md:hidden ${mobileSelectionMode === 'replace' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
+                className={`rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] md:hidden ${mobileSelectionMode === 'replace' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
                 title="Single Select"
               >
                 1
@@ -562,7 +562,7 @@ function DashboardContent() {
               {/* Multi Select */}
               <button
                 onClick={() => setMobileSelectionMode('add')}
-                className={`w-7 aspect-square rounded-md flex items-center justify-center transition-colors shadow-sm md:hidden ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
+                className={`rounded-md flex items-center justify-center transition-colors shadow-sm md:hidden ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
                 title="Multi Select"
               >
                 <Copy className="h-3.5 w-3.5" />
@@ -573,7 +573,7 @@ function DashboardContent() {
                 onClick={() => {
                   setMapState({ zoom: Math.min(18, mapState.zoom + 1) })
                 }}
-                className="w-7 aspect-square glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
+                className="glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
                 aria-label="Zoom In"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -584,7 +584,7 @@ function DashboardContent() {
                 onClick={() => {
                   setMapState({ zoom: Math.max(9, mapState.zoom - 1) })
                 }}
-                className="w-7 aspect-square glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
+                className="glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
                 aria-label="Zoom Out"
               >
                 <Minus className="h-3.5 w-3.5" />
