@@ -71,11 +71,11 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
     if (locations.length === 0) return null
 
     return (
-        <div className={cn("relative group", className)}>
-            <div className="overflow-hidden rounded-t-lg" ref={emblaRef}>
-                <div className="flex">
+        <div className={cn("relative group h-full", className)}>
+            <div className="overflow-hidden rounded-t-lg h-full" ref={emblaRef}>
+                <div className="flex h-full">
                     {locations.map((loc, index) => (
-                        <div key={`${loc.lat}-${loc.lng}-${index}`} className="flex-[0_0_100%] min-w-0 relative h-[180px]">
+                        <div key={`${loc.lat}-${loc.lng}-${index}`} className="flex-[0_0_100%] min-w-0 relative h-full">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={signedUrls[`${loc.lat}-${loc.lng}`] || getStreetViewImageUrl(loc.lat, loc.lng, apiKey)}
