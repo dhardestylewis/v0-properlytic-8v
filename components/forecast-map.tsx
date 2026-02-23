@@ -1397,7 +1397,7 @@ export function ForecastMap({
                                 </div>
                             )}
                             {/* Chart — right half */}
-                            <div className="w-1/2 min-h-0 px-1 py-1 flex flex-col">
+                            <div className="w-1/2 min-h-0 px-1 flex flex-col">
                                 {(() => {
                                     const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
                                     const forecastVal = displayProps.p50 ?? displayProps.value ?? null
