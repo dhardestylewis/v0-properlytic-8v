@@ -455,6 +455,7 @@ function DashboardContent() {
             year={currentYear}
             className="absolute inset-0 z-0"
             onConsultAI={handleConsultAI}
+            isChatOpen={isChatOpen}
           />
         ) : filters.useVectorMap ? (
           <VectorMap
