@@ -1265,7 +1265,7 @@ export function ForecastMap({
                     className={cn(
                         "z-[9999] glass-panel shadow-2xl overflow-hidden",
                         isMobile
-                            ? `fixed bottom-0 left-0 ${isChatOpen ? 'w-1/2' : 'right-0 w-full'} rounded-t-xl rounded-b-none border-t border-x-0 border-b-0 pointer-events-auto`
+                            ? `fixed bottom-0 left-0 ${isChatOpen ? 'w-1/2 rounded-tl-xl' : 'right-0 w-full rounded-t-xl'} rounded-b-none border-t border-x-0 border-b-0 pointer-events-auto`
                             : "fixed rounded-xl w-[320px]",
                         !isMobile && (selectedId ? "pointer-events-auto cursor-move" : "pointer-events-none")
                     )}
