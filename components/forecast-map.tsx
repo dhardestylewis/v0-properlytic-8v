@@ -144,12 +144,33 @@ export function ForecastMap({
     // Sync external clear_selection (parent sets mapState.selectedId to null)
     useEffect(() => {
         if (mapState.selectedId === null && selectedId !== null) {
+            const map = mapRef.current
+            if (map && selectedIdRef.current) {
+                const zoom = map.getZoom()
+                const sourceLayer = getSourceLayer(zoom)
+                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                        try {
+                            map.setFeatureState(
+                                { source: s, sourceLayer, id: selectedIdRef.current! },
+                                { selected: false }
+                            )
+                        } catch (err) { /* ignore */ }
+                    })
+            }
             selectedIdRef.current = null
-            setSelectedId(null)
             hoveredIdRef.current = null
+            setSelectedId(null)
+            setSelectedProps(null)
             setTooltipData(null)
             setFixedTooltipPos(null)
             setSelectedCoords(null)
+            setFanChartData(null)
+            setHistoricalValues(undefined)
+            setComparisonData(null)
+            setComparisonHistoricalValues(undefined)
+            comparisonFetchRef.current = null
+            detailFetchRef.current = null
+            onFeatureSelect(null)
         }
     }, [mapState.selectedId])
 
