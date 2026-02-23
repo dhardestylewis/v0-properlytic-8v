@@ -141,6 +141,18 @@ export function ForecastMap({
     // Notify parent of coordinate changes (for search bar geocoding)
     useEffect(() => { onCoordsChange?.(selectedCoords) }, [selectedCoords, onCoordsChange])
 
+    // Sync external clear_selection (parent sets mapState.selectedId to null)
+    useEffect(() => {
+        if (mapState.selectedId === null && selectedId !== null) {
+            selectedIdRef.current = null
+            setSelectedId(null)
+            hoveredIdRef.current = null
+            setTooltipData(null)
+            setFixedTooltipPos(null)
+            setSelectedCoords(null)
+        }
+    }, [mapState.selectedId])
+
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
     useEffect(() => {

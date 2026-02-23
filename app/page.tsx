@@ -195,6 +195,7 @@ function DashboardContent() {
           toast({ title: "Homecastr Agent", description: `Added ${result.chosen?.label || idsToAdd.length + " locations"} to comparison` })
         }
       } else if (action === "clear_selection") {
+        console.log("[PAGE] clear_selection fired")
         setMapState(prev => ({
           ...prev,
           selectedId: null,
