@@ -25,6 +25,7 @@ import { ChatPanel, type MapAction } from "@/components/chat-panel"
 import { MessageSquare } from "lucide-react"
 import { createTavusConversation } from "@/app/actions/tavus"
 import dynamic from "next/dynamic"
+import { HomecastrLogo } from "@/components/homecastr-logo"
 
 // Dynamic import with SSR disabled — daily-js needs browser APIs
 const TavusMiniWindow = dynamic(
@@ -493,7 +494,7 @@ function DashboardContent() {
         />
 
         {/* Unified Sidebar Container - Top Left */}
-        <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-3 w-full max-w-[calc(100vw-32px)] md:w-[320px] transition-all duration-300 ${isChatOpen ? 'md:left-[416px]' : ''}`}>
+        <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-3 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300 ${isChatOpen ? 'md:left-[416px]' : ''}`}>
           {/* Search + Chat Toggle Row */}
           <div className="flex items-center gap-2">
             <SearchBox
@@ -633,11 +634,9 @@ function DashboardContent() {
               isChatOpen ? "left-[420px]" : "left-5"
             )}
           >
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors overflow-hidden">
-              <img src="/homecastr-logo-cropped.png" alt="Homecastr" className="w-6 h-6 object-contain" />
-            </div>
+            <HomecastrLogo size={28} />
             <div className="flex flex-col items-start">
-              <span className="text-xs font-semibold">Talk to Homecastr Live Agent</span>
+              <span className="text-xs font-semibold">Talk to live agent</span>
               <span className="text-[10px] text-muted-foreground">Powered by Tavus</span>
             </div>
           </button>

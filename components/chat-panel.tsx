@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Send, X, Loader2, MessageSquare, MapPin, Sparkles } from "lucide-react"
+import { HomecastrLogo } from "./homecastr-logo"
 import ReactMarkdown from "react-markdown"
 
 export interface MapAction {
@@ -152,8 +153,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPa
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/80">
                     <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        <span className="font-semibold text-sm">Homecastr AI</span>
+                        <HomecastrLogo variant="horizontal" size={20} />
                         <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
                             Beta
                         </span>
@@ -171,7 +171,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPa
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
                     {messages.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full text-center px-6 gap-4 opacity-60">
-                            <MessageSquare className="w-10 h-10 text-muted-foreground/50" />
+                            <HomecastrLogo size={40} className="opacity-50" />
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Ask me anything</p>
                                 <p className="text-xs text-muted-foreground/70 mt-1">

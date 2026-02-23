@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, MousePointer2, GitCompare, MousePointerClick, Lock } from "lucide-react"
+import { HomecastrLogo } from "./homecastr-logo"
 
 export function ExplainerPopup() {
     const [isOpen, setIsOpen] = useState(false)
@@ -35,6 +36,17 @@ export function ExplainerPopup() {
         }
     }, [])
 
+    // ESC key closes the popup
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && isOpen && !isMinimized) {
+                handleMinimize()
+            }
+        }
+        window.addEventListener("keydown", handleKeyDown)
+        return () => window.removeEventListener("keydown", handleKeyDown)
+    }, [isOpen, isMinimized])
+
     const handleMinimize = () => {
         setIsMinimized(true)
         localStorage.setItem("properlytic_explainer_seen", "true")
@@ -57,7 +69,7 @@ export function ExplainerPopup() {
         <>
             {/* Full Modal */}
             <div
-                className={`fixed inset-0 z-[10000] flex items-center justify-center transition-colors duration-1000 ease-in-out ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black/60 backdrop-blur-sm p-4"
+                className={`fixed inset-0 z-[10001] flex items-center justify-center transition-colors duration-1000 ease-in-out ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black/60 backdrop-blur-sm p-4"
                     } ${!isOpen ? "hidden" : ""}`}
             >
                 <div
@@ -76,9 +88,9 @@ export function ExplainerPopup() {
                     {/* Header */}
                     <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-start">
                         <div>
-                            <h2 className="text-2xl font-bold text-foreground">
-                                Welcome to Homecastr
-                            </h2>
+                            <div className="flex items-center gap-3 mb-1">
+                                <HomecastrLogo variant="horizontal" size={32} />
+                            </div>
                             <p className="text-muted-foreground mt-1 text-sm font-medium">
                                 Smarter models. Clearer forecasts.
                             </p>

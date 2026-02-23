@@ -312,8 +312,8 @@ export function MapTooltip({
                                         }}
                                         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
-                                        <Bot className="w-3.5 h-3.5" />
-                                        Talk to Homecastr
+                                        <HomecastrLogo variant="horizontal" size={14} />
+                                        <span>Talk to live agent</span>
                                     </button>
                                 </div>
                             )}

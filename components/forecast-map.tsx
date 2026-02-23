@@ -1498,7 +1498,7 @@ export function ForecastMap({
                             <div className="pt-1 mt-0 border-t border-border/50 text-center">
                                 <div className="text-[9px] text-muted-foreground flex justify-center items-center gap-1.5">
                                     <Bot className="w-3 h-3 text-primary/50" />
-                                    <span>AI Forecast • {displayProps.series_kind ?? "forecast"}</span>
+                                    <span>AI Forecast</span>
                                 </div>
                             </div>
 
@@ -1516,8 +1516,8 @@ export function ForecastMap({
                                         }}
                                         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
-                                        <Bot className="w-3.5 h-3.5" />
-                                        Talk to Homecastr
+                                        <HomecastrLogo variant="horizontal" size={14} />
+                                        <span>Talk to live agent</span>
                                     </button>
                                 </div>
                             )}
