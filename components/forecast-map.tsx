@@ -894,8 +894,10 @@ export function ForecastMap({
                         })
                 }
                 selectedIdRef.current = null
+                hoveredIdRef.current = null
                 setSelectedId(null)
                 setSelectedProps(null)
+                setTooltipData(null)
                 setFixedTooltipPos(null)
                 setSelectedCoords(null)
                 setFanChartData(null)
