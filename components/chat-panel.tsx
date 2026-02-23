@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useKeyboardOpen } from "@/hooks/use-keyboard-open"
 import { Send, X, Loader2, MessageSquare, MapPin, Sparkles } from "lucide-react"
 import { HomecastrLogo } from "./homecastr-logo"
 import ReactMarkdown from "react-markdown"
@@ -36,6 +37,17 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const isKeyboardOpen = useKeyboardOpen()
+    const [vvHeight, setVvHeight] = useState<number | null>(null)
+
+    // Track visual viewport height for keyboard-aware sizing
+    useEffect(() => {
+        const vv = window.visualViewport
+        if (!vv) return
+        const update = () => setVvHeight(vv.height)
+        vv.addEventListener('resize', update)
+        return () => vv.removeEventListener('resize', update)
+    }, [])
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -153,8 +165,19 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 }
         md:absolute md:top-0 md:left-0 md:h-full
         ${isOpen ? "md:w-[400px]" : "md:w-0"}
-        bottom-0 left-1/2 right-0 w-1/2 h-[40vh] max-h-[40vh] md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
+        bottom-0 left-1/2 right-0 w-1/2 md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
       `}
+            style={isKeyboardOpen && vvHeight ? {
+                height: `${vvHeight}px`,
+                maxHeight: `${vvHeight}px`,
+                bottom: `${window.innerHeight - vvHeight}px`,
+                borderRadius: 0,
+                width: '100%',
+                left: 0,
+            } : {
+                height: '40vh',
+                maxHeight: '40vh',
+            }}
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
                 {/* Header */}

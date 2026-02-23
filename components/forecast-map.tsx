@@ -11,6 +11,7 @@ import { HomecastrLogo } from "@/components/homecastr-logo"
 import { Bot } from "lucide-react"
 import { FanChart } from "@/components/fan-chart"
 import { StreetViewCarousel } from "@/components/street-view-carousel"
+import { useKeyboardOpen } from "@/hooks/use-keyboard-open"
 
 // Tooltip positioning constants
 const SIDEBAR_WIDTH = 340
@@ -148,6 +149,8 @@ export function ForecastMap({
         window.addEventListener('resize', check)
         return () => window.removeEventListener('resize', check)
     }, [])
+
+    const isKeyboardOpen = useKeyboardOpen()
 
     // Mobile swipe-to-minimize state
     const [mobileMinimized, setMobileMinimized] = useState(false)
@@ -1378,8 +1381,8 @@ export function ForecastMap({
                         </>
                     )}
 
-                    {/* Street View Carousel */}
-                    {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
+                    {/* Street View Carousel — hidden when keyboard is open on mobile */}
+                    {!(isMobile && isKeyboardOpen) && process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
                         <StreetViewCarousel
                             h3Ids={[]}
                             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
