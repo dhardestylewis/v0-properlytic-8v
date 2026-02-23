@@ -1277,7 +1277,7 @@ export function ForecastMap({
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
                         height: '30vh',
                         maxHeight: '30vh',
-                        bottom: isChatOpen ? (isKeyboardOpen ? `calc(${keyboardHeight}px + 230px)` : '30vh') : (isKeyboardOpen ? `${keyboardHeight}px` : '0px'),
+                        bottom: isChatOpen ? '30vh' : '0px',
                         overflowY: 'hidden',
                     } : {
                         left: displayPos.globalX,
