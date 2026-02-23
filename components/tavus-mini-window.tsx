@@ -245,7 +245,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
       className={cn(
         "fixed z-[10001] transition-all duration-300 ease-in-out",
         // Mobile: right half, matching chat panel position
-        "bottom-0 right-0 w-1/2 h-[25vh] rounded-t-xl overflow-hidden",
+        "bottom-0 left-0 right-0 w-full h-[25vh] rounded-t-xl overflow-hidden",
         // Desktop: shift right when chat open
         "md:bottom-5 md:w-auto md:h-auto md:rounded-2xl",
         chatOpen ? "md:left-[420px]" : "md:left-5",
