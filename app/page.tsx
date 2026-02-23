@@ -525,7 +525,7 @@ function DashboardContent() {
         />
 
         {/* Unified Sidebar Container - Top Left */}
-        <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-1.5 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300 ${isChatOpen ? 'md:left-[416px]' : ''}`}>
+        <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-1.5 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300`}>
           {/* Search + Chat Toggle Row */}
           <div className="flex items-center gap-2">
             <SearchBox
@@ -640,7 +640,7 @@ function DashboardContent() {
             onClick={handleFloatingConsultAI}
             className={cn(
               "fixed bottom-5 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group",
-              isChatOpen ? "hidden md:flex md:left-[420px]" : "left-5"
+              isChatOpen ? "hidden md:flex md:left-[365px]" : "left-5"
             )}
           >
             <HomecastrLogo size={28} />
@@ -657,7 +657,7 @@ function DashboardContent() {
             "fixed z-[10000] glass-panel text-foreground rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-3 transition-all duration-300",
             "bottom-3 left-3",
             "md:bottom-5",
-            isChatOpen ? "md:left-[420px]" : "md:left-5"
+            isChatOpen ? "md:left-[365px]" : "md:left-5"
           )}>
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             <span className="text-xs font-medium">Connecting to Homecastr...</span>

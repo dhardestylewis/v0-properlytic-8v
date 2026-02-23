@@ -195,9 +195,8 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                     ? "opacity-100"
                     : "opacity-0 pointer-events-none"
                 }
-        md:absolute md:top-0 md:left-0 md:h-full
-        ${isOpen ? "md:w-[400px]" : "md:w-0"}
-        bottom-0 left-0 right-0 w-full md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
+        bottom-0 left-0 right-0 w-full rounded-t-xl overflow-hidden
+        md:bottom-5 md:left-5 md:right-auto md:w-[340px] md:h-[520px] md:rounded-2xl
       `}
             style={isKeyboardOpen ? {
                 height: `${kbPanelHeight}px`,
@@ -211,7 +210,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 maxHeight: '25vh',
             } : {}}
         >
-            <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
+            <div className="h-full flex flex-col glass-panel border border-white/10 rounded-t-xl md:rounded-2xl shadow-2xl">
                 {/* Header — hidden on mobile (use corner icon to close) and when keyboard is open */}
                 {!isKeyboardOpen && !isMobile && (
                     <div className="flex items-center justify-between px-3 h-9 border-b border-border bg-background/80">

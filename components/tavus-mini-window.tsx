@@ -300,11 +300,11 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
           </div>
         )}
 
-        {/* Video area — left/right split layout */}
+        {/* Video area — top/bottom split layout */}
         {!isMinimized && !hasError && (
-          <div className="flex-1 flex flex-row bg-black relative overflow-hidden">
-            {/* Left: Remote participant (Homecastr agent) */}
-            <div className="w-1/2 relative bg-[#0a0a0f] overflow-hidden">
+          <div className="flex-1 flex flex-col bg-black relative overflow-hidden">
+            {/* Top: Remote participant (Homecastr agent) */}
+            <div className="flex-1 relative bg-[#0a0a0f] overflow-hidden">
               {remoteParticipant ? (
                 <>
                   <video
@@ -330,8 +330,8 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
               )}
             </div>
 
-            {/* Right: Local participant (You) */}
-            <div className="w-1/2 relative bg-[#111118] overflow-hidden border-l border-white/10">
+            {/* Bottom: Local participant (You) */}
+            <div className="h-[120px] relative bg-[#111118] overflow-hidden border-t border-white/10">
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -355,7 +355,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
             </div>
 
             {/* Floating controls */}
-            <div className="absolute bottom-[148px] left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm border border-white/10">
+            <div className="absolute bottom-[130px] left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm border border-white/10">
               <button
                 onClick={toggleMic}
                 className={cn(
