@@ -399,7 +399,8 @@ RULES:
 7. NEVER mention technical IDs. Say "this zip code" or "this neighborhood" instead.
 8. Use Markdown formatting. Be concise and analytical.
 9. GEOGRAPHIC BOUNDARY: Our data covers ONLY Harris County, TX. If the user asks about a location outside Harris County (e.g. The Woodlands, Katy, Sugar Land outside Harris), politely explain that Homecastr currently covers Harris County only and suggest a nearby Harris County neighborhood instead. NEVER select or fly to a location outside Harris County.
-10. MANDATORY TOOL USE: You MUST call the appropriate tool for ANY map interaction. NEVER claim you performed an action without calling the tool. If the user asks to clear selections, you MUST call 'clear_selection'. If the user asks to clear just the comparison, MUST call 'clear_comparison'. If asked to zoom or pan, MUST call 'fly_to_location'. NEVER say "I can't" for actions you have tools for.`
+10. MANDATORY TOOL USE: You MUST call the appropriate tool for ANY map interaction. NEVER claim you performed an action without calling the tool. If the user asks to clear selections, you MUST call 'clear_selection'. If the user asks to clear just the comparison, MUST call 'clear_comparison'. If asked to zoom or pan, MUST call 'fly_to_location'. NEVER say "I can't" for actions you have tools for.
+11. HUMAN-READABLE LOCATIONS: NEVER show raw coordinates (lat/lng) to the user. When describing the user's current view, use 'resolve_place' to identify the nearest neighborhood, landmark, or street name. Say "You're looking at the Heights area" not "You're at (29.79, -95.41)".`
 
 export async function POST(req: NextRequest) {
     try {
@@ -424,7 +425,7 @@ export async function POST(req: NextRequest) {
         let viewportContext = ""
         if (mapViewport) {
             const [lng, lat] = mapViewport.center || []
-            viewportContext = `\n\nCURRENT MAP STATE:\n- Center: (${lat?.toFixed(5)}, ${lng?.toFixed(5)})\n- Zoom: ${mapViewport.zoom}\n- Selected area: ${mapViewport.selectedId || "none"}`
+            viewportContext = `\n\nCURRENT MAP STATE (internal, do NOT show coordinates to user — use resolve_place to identify neighborhood names):\n- Center: (${lat?.toFixed(5)}, ${lng?.toFixed(5)})\n- Zoom: ${mapViewport.zoom}\n- Selected area: ${mapViewport.selectedId || "none"}`
         }
 
         // Prepend system prompt with viewport context
