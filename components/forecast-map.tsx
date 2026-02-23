@@ -1275,8 +1275,8 @@ export function ForecastMap({
                     style={isMobile ? {
                         transform: `translateY(calc(${mobileMinimized ? '100% - 24px' : '0px'} + ${swipeDragOffset}px))`,
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
-                        height: isChatOpen ? '40vh' : undefined,
-                        maxHeight: '40vh',
+                        height: isChatOpen ? (isKeyboardOpen ? '170px' : '40vh') : undefined,
+                        maxHeight: isKeyboardOpen ? '170px' : '40vh',
                         overflowY: 'hidden',
                     } : {
                         left: displayPos.globalX,
@@ -1320,8 +1320,8 @@ export function ForecastMap({
                         setSwipeTouchStart(null)
                     } : undefined}
                 >
-                    {/* Mobile Header with Close Button */}
-                    {isMobile && (
+                    {/* Mobile Header with Close Button — hidden when keyboard open */}
+                    {isMobile && !isKeyboardOpen && (
                         <div
                             className="w-full flex items-center justify-between px-3 h-9 bg-muted/40 backdrop-blur-md border-b border-border/50"
                             data-tooltip-header="true"

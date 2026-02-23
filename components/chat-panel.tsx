@@ -168,8 +168,8 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
         bottom-0 left-1/2 right-0 w-1/2 md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
       `}
             style={isKeyboardOpen && vvHeight ? {
-                height: '120px',
-                maxHeight: '120px',
+                height: '170px',
+                maxHeight: '170px',
                 width: '100%',
                 left: 0,
                 bottom: `${window.innerHeight - vvHeight}px`,
