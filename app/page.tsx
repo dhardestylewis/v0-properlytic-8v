@@ -52,6 +52,18 @@ function DashboardContent() {
 
   // Handle map actions from chat (smooth fly-to)
   const handleChatMapAction = useCallback((action: MapAction) => {
+    // Handle clear_selection action
+    if ((action as any).action === 'clear_selection') {
+      console.log('[PAGE] clear_selection from chat')
+      setMapState(prev => ({
+        ...prev,
+        selectedId: null,
+        highlightedIds: undefined
+      }))
+      toast({ title: "Selection cleared", duration: 2000 })
+      return
+    }
+
     // Use area_id for forecast mode, select_hex_id for H3 mode
     const selectedId = action.area_id || action.select_hex_id || undefined
     setMapState({

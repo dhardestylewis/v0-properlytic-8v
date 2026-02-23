@@ -218,6 +218,19 @@ const TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
             },
         },
     },
+    {
+        type: "function",
+        function: {
+            name: "clear_selection",
+            description:
+                "Clear the current map selection, dismissing any open tooltip and deselecting any highlighted geometry. Use when the user asks to clear, reset, or dismiss the current selection.",
+            parameters: {
+                type: "object",
+                properties: {},
+                required: [],
+            },
+        },
+    },
 ]
 
 // Forecast-mode tool definitions (geography-level, matching tavus.ts)
@@ -463,6 +476,15 @@ export async function POST(req: NextRequest) {
                         role: "tool",
                         tool_call_id: tc.id,
                         content: JSON.stringify({ status: "ok", message: "Map is now showing the requested location." }),
+                    })
+                } else if (toolFn.name === "clear_selection") {
+                    // UI tool — clear the current selection
+                    allMapActions.push({ action: "clear_selection" })
+                    console.log(`[Chat API] clear_selection`)
+                    conversationMessages.push({
+                        role: "tool",
+                        tool_call_id: tc.id,
+                        content: JSON.stringify({ status: "ok", message: "Selection cleared." }),
                     })
                 } else {
                     // API tool — query real data

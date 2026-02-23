@@ -1001,7 +1001,7 @@ export function ForecastMap({
     useEffect(() => {
         if (!isLoaded || !mapRef.current) return
         const map = mapRef.current
-        const newColor = buildFillColor(filters.mode)
+        const newColor = buildFillColor(filters.colorMode)
         for (const lvl of GEO_LEVELS) {
             for (const suffix of ["a", "b"]) {
                 const layerId = `forecast-fill-${lvl.name}-${suffix}`
@@ -1010,7 +1010,7 @@ export function ForecastMap({
                 }
             }
         }
-    }, [filters.mode, isLoaded])
+    }, [filters.colorMode, isLoaded])
 
     // UPDATE YEAR — Seamless A/B swap (same pattern as vector-map.tsx)
     useEffect(() => {

@@ -15,6 +15,8 @@ interface FanChartProps {
   // Preview mode: overlay shift-select aggregation
   previewData?: FanChartData | null
   previewHistoricalValues?: number[] | null
+  // Optional fixed Y-axis domain [min, max] for consistent scaling across charts
+  yDomain?: [number, number] | null
 }
 
 
