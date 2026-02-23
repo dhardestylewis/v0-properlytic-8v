@@ -1266,7 +1266,7 @@ export function ForecastMap({
             {isLoaded && displayPos && displayProps && createPortal(
                 <div
                     className={cn(
-                        "z-[9999] glass-panel shadow-2xl overflow-hidden",
+                        "z-[9999] glass-panel shadow-2xl overflow-hidden flex flex-col",
                         isMobile
                             ? `fixed left-0 right-0 w-full rounded-t-xl rounded-b-none border-t border-x-0 border-b-0 pointer-events-auto`
                             : "fixed rounded-xl w-[320px]",
@@ -1332,7 +1332,17 @@ export function ForecastMap({
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onPointerDown={(e) => { e.stopPropagation(); selectedIdRef.current = null; setSelectedId(null); onFeatureSelect(null); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    selectedIdRef.current = null;
+                                    setSelectedId(null);
+                                    hoveredIdRef.current = null;
+                                    setTooltipPos(null);
+                                    setFixedTooltipPos(null);
+                                    setSelectedCoords(null);
+                                    onFeatureSelect(null);
+                                }}
                                 className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
                                 style={{ touchAction: 'manipulation' }}
