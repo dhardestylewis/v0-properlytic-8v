@@ -61,6 +61,24 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
         }
     }, [isOpen])
 
+    // Prevent iOS from scrolling the page up when keyboard opens
+    useEffect(() => {
+        const vv = window.visualViewport
+        if (!vv) return
+        const resetScroll = () => {
+            // iOS scrolls the page to bring focused input into view — undo that
+            window.scrollTo(0, 0)
+            document.documentElement.scrollTop = 0
+            document.body.scrollTop = 0
+        }
+        vv.addEventListener('scroll', resetScroll)
+        vv.addEventListener('resize', resetScroll)
+        return () => {
+            vv.removeEventListener('scroll', resetScroll)
+            vv.removeEventListener('resize', resetScroll)
+        }
+    }, [])
+
     const sendMessage = useCallback(async () => {
         if (!input.trim() || isLoading) return
 
@@ -172,7 +190,6 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 maxHeight: '170px',
                 width: '100%',
                 left: 0,
-                bottom: `${window.innerHeight - vvHeight}px`,
                 borderRadius: 0,
             } : {
                 height: '40vh',
