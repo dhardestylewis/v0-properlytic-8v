@@ -8,7 +8,7 @@ interface HomecastrLogoProps {
 export function HomecastrLogo({ className = "", size = 32 }: HomecastrLogoProps) {
     return (
         <Image
-            src="/homecastr-logo-cropped.png"
+            src="/homecastr-icon.png"
             alt="Homecastr"
             width={size}
             height={size}
