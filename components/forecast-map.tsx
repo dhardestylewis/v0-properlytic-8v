@@ -1321,7 +1321,38 @@ export function ForecastMap({
                         setSwipeTouchStart(null)
                     } : undefined}
                 >
-                    {/* Mobile header removed — swipe down to dismiss */}
+                    {/* Mobile Header — compact, at top of tooltip */}
+                    {isMobile && (
+                        <div
+                            className="w-full flex items-center justify-between px-2 h-7 bg-muted/40 backdrop-blur-md border-b border-border/50 shrink-0"
+                            data-tooltip-header="true"
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <HomecastrLogo variant="horizontal" size={14} />
+                                <span className="px-1 py-0.5 bg-violet-500/20 text-violet-400 text-[7px] font-semibold uppercase tracking-wider rounded">Forecast</span>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    selectedIdRef.current = null;
+                                    setSelectedId(null);
+                                    hoveredIdRef.current = null;
+                                    setTooltipPos(null);
+                                    setFixedTooltipPos(null);
+                                    setSelectedCoords(null);
+                                    onFeatureSelect(null);
+                                }}
+                                className="w-6 h-6 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
+                                aria-label="Close tooltip"
+                                style={{ touchAction: 'manipulation' }}
+                            >
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ pointerEvents: 'none' }}>
+                                    <line x1="2" y1="2" x2="10" y2="10" /><line x1="10" y1="2" x2="2" y2="10" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
 
                     {/* Header - matching MapTooltip (hidden on mobile) */}
                     {!isMobile && (
