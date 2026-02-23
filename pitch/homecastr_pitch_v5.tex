@@ -79,6 +79,13 @@
 \includegraphics[height=1.4cm]{assets/homecastr-logo-cropped.png}%
 }
 
+% Bottom-of-slide tagline — absolute position via TikZ overlay
+\newcommand{\slidetagline}[1]{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[anchor=south, text=hcMuted, font=\small] at (current page.south) [yshift=1.0cm] {#1};
+  \end{tikzpicture}%
+}
+
 % Big stat macro for single-stat visual slides
 \newcommand{\bigstat}[2]{%
   {\fontsize{64}{72}\selectfont\bfseries\color{hcGold}#1}\\[8pt]
@@ -227,10 +234,7 @@
   \draw[arr] (model) -- (output);
 \end{tikzpicture}
 \end{center}
-\vfill
-\begin{center}
-\mutedtext{\small Public data in. Probabilistic ranges out.}
-\end{center}
+\slidetagline{Public data in. Probabilistic ranges out.}
 \end{frame}
 
 
@@ -363,10 +367,7 @@
 \end{tikzpicture}
 \end{center}
 
-\vfill
-\begin{center}
-\mutedtext{\small Only product-led platform with backtested, probabilistic forecasts.}
-\end{center}
+\slidetagline{Only product-led platform with backtested, probabilistic forecasts.}
 \end{frame}
 
 
@@ -424,10 +425,7 @@
 \end{column}
 \end{columns}
 
-\vfill
-\begin{center}
-\mutedtext{\small Houston metro live.}
-\end{center}
+\slidetagline{Houston metro live.}
 \end{frame}
 
 
@@ -456,10 +454,7 @@
 \end{tikzpicture}
 \end{center}
 
-\vfill
-\begin{center}
-\mutedtext{\small Intention data is the long-term asset.}
-\end{center}
+\slidetagline{Intention data is the long-term asset.}
 \end{frame}
 
 
@@ -507,10 +502,7 @@
   }
 \end{tikzpicture}
 \end{center}
-\vfill
-\begin{center}
-\mutedtext{\small Programmatic SEO \textbar{} Broker-client sharing \textbar{} Organic growth}
-\end{center}
+\slidetagline{Programmatic SEO \textbar{} Broker-client sharing \textbar{} Organic growth}
 \end{frame}
 
 
