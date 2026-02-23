@@ -247,9 +247,11 @@
 \begin{center}
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
-  \node[font=\fontsize{28}{34}\selectfont\bfseries, text=hcGold, align=center, anchor=north, text width=5.5cm] at (3.1,5.0) {150M+\\Parcels Online};
-  \node[font=\large\bfseries, text=hcText, anchor=north] at (3.1,3.1) {Data Inflection};
-  \node[font=\scriptsize, text=hcMuted, align=center, anchor=north, text width=5.5cm] at (3.1,2.3) {County appraisal records are now\\digitized and bulk-accessible at scale.};
+  \node[anchor=north, text width=5.2cm, align=center] at (3.1,4.9) {
+    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} 150M+\\Parcels Online}\\[10pt]
+    {\large\bfseries\color{hcText} Data Inflection}\\[8pt]
+    {\scriptsize\color{hcMuted} County appraisal records are now\\digitized and bulk-accessible at scale.}
+  };
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -257,9 +259,11 @@
 \begin{center}
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
-  \node[font=\fontsize{28}{34}\selectfont\bfseries, text=hcGold, align=center, anchor=north, text width=5.5cm] at (3.1,5.0) {Diffusion\\Models};
-  \node[font=\large\bfseries, text=hcText, anchor=north] at (3.1,3.1) {Now Feasible at Scale};
-  \node[font=\scriptsize, text=hcMuted, align=center, anchor=north, text width=5.5cm] at (3.1,2.3) {Property-level probabilistic forecasts\\became computationally practical in 2023.};
+  \node[anchor=north, text width=5.2cm, align=center] at (3.1,4.9) {
+    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} Diffusion\\Models}\\[10pt]
+    {\large\bfseries\color{hcText} Now Feasible at Scale}\\[8pt]
+    {\scriptsize\color{hcMuted} Property-level probabilistic forecasts\\became computationally practical in 2023.}
+  };
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -350,7 +354,7 @@
 
   % Reventure: trend extrapolation (not truly predictive), PLG
   \fill[hcRed!60] (-0.5,2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=south west] at (-0.2,2.1) {Reventure};
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=east] at (-0.7,2.0) {Reventure};
 
   % Homecastr — golden quadrant
   \fill[hcGold] (3.5,2.5) circle (8pt);
@@ -409,23 +413,29 @@
 
 % ─── SLIDE 9: Where We Are ─────────────────────────
 \begin{frame}{Where We Are}
-\vspace{16pt}
+\vspace{8pt}
 
-\begin{center}
-\statbox{14\%}{Median Error}
-\hfill
-\statbox{4yr}{Forecast Horizon}
-\hfill
-\statbox{1M+}{Properties Indexed}
-\hfill
+\begin{columns}[c]
+\begin{column}{0.52\textwidth}
+% TODO: Replace with actual dashboard screenshot or demo video
+\begin{tikzpicture}
+  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.8,4.6);
+  \node[font=\small\bfseries, text=hcMuted] at (3.4,2.6) {[Dashboard Screenshot / Demo Video]};
+  \node[font=\scriptsize, text=hcGold] at (3.4,1.8) {\href{https://homecastr.com}{homecastr.com --- Free. Live. Interactive.}};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.44\textwidth}
+\centering
+\statbox{14\%}{Median Error}\\[14pt]
+\statbox{4yr}{Forecast Horizon}\\[14pt]
+\statbox{1M+}{Properties Indexed}\\[14pt]
 \statbox{\textless1s}{API Response}
-\end{center}
+\end{column}
+\end{columns}
 
-\vspace{20pt}
+\vspace{8pt}
 \begin{center}
-\mutedtext{\small Houston metro live. Diffusion-based model producing probabilistic forecast bands.}\\
-\vspace{6pt}
-\mutedtext{\small \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}} — Free. Live. Interactive.}
+\mutedtext{\small Houston metro live. Diffusion-based model producing probabilistic forecast bands.}
 \end{center}
 \end{frame}
 
