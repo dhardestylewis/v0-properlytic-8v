@@ -547,19 +547,28 @@ function DashboardContent() {
               originYear={2025}
             />
 
-            {/* Controls Column */}
-            <div className="flex flex-col gap-1.5 shrink-0">
+            {/* Controls: 2x2 Grid on Mobile, Column on Desktop */}
+            <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-col shrink-0">
 
-              {/* Mobile Multi-Select Toggle (Hidden on Desktop) */}
+              {/* Single Select */}
               <button
-                onClick={() => setMobileSelectionMode(mobileSelectionMode === 'add' ? 'replace' : 'add')}
+                onClick={() => setMobileSelectionMode('replace')}
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] md:hidden ${mobileSelectionMode === 'replace' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
+                title="Single Select"
+              >
+                1
+              </button>
+
+              {/* Multi Select */}
+              <button
+                onClick={() => setMobileSelectionMode('add')}
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors shadow-sm md:hidden ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
-                title={mobileSelectionMode === 'add' ? "Multi Select On" : "Multi Select Off"}
+                title="Multi Select"
               >
                 <Copy className="h-3.5 w-3.5" />
               </button>
 
-              {/* Zoom Controls */}
+              {/* Zoom In */}
               <button
                 onClick={() => {
                   setMapState({ zoom: Math.min(18, mapState.zoom + 1) })
@@ -569,6 +578,8 @@ function DashboardContent() {
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
+
+              {/* Zoom Out */}
               <button
                 onClick={() => {
                   setMapState({ zoom: Math.max(9, mapState.zoom - 1) })
