@@ -492,6 +492,7 @@ function DashboardContent() {
           onClose={() => setIsChatOpen(false)}
           onMapAction={handleChatMapAction}
           forecastMode={filters.useForecastMap ?? false}
+          onTavusRequest={handleFloatingConsultAI}
         />
 
         {/* Unified Sidebar Container - Top Left */}

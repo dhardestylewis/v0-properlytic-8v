@@ -27,9 +27,10 @@ interface ChatPanelProps {
     onClose: () => void
     onMapAction: (action: MapAction) => void
     forecastMode?: boolean
+    onTavusRequest?: () => void
 }
 
-export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPanelProps) {
+export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusRequest }: ChatPanelProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -164,13 +165,27 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPa
                             Beta
                         </span>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
-                        aria-label="Close chat"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        {onTavusRequest && (
+                            <button
+                                onClick={onTavusRequest}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
+                                title="Talk to live agent"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="23 7 16 12 23 17 23 7" />
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                </svg>
+                            </button>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
+                            aria-label="Close chat"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Messages */}
