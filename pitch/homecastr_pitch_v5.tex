@@ -245,25 +245,25 @@
   % Right card
   \fill[hcCard, rounded corners=8pt] (6.8,0) rectangle (13.0,5.2);
 
-  % ── Left card text (absolute coords) ──
+  % -- Left card text (absolute coords) --
   \node[anchor=north, text width=5.2cm, align=center] at (3.1,4.9) {
     {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} 300bps\\Swing}
   };
-  \node[anchor=north, text width=5.2cm, align=center] at (3.1,3.2) {
+  \node[anchor=north, text width=5.2cm, align=center] at (3.1,2.6) {
     {\large\bfseries\color{hcText} Rate Volatility}
   };
-  \node[anchor=north, text width=5.2cm, align=center] at (3.1,2.6) {
+  \node[anchor=north, text width=5.2cm, align=center] at (3.1,1.9) {
     {\scriptsize\color{hcMuted} Rates swung from 3\% to 8\% and back.\\[3pt]Static estimates are useless.\\[3pt]Buyers need forecast ranges.}
   };
 
-  % ── Right card text (same y-coords, shifted x by 6.8) ──
+  % -- Right card text (same y-coords, shifted x by 6.8) --
   \node[anchor=north, text width=5.2cm, align=center] at (9.9,4.9) {
     {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} Diffusion\\Models}
   };
-  \node[anchor=north, text width=5.2cm, align=center] at (9.9,3.2) {
+  \node[anchor=north, text width=5.2cm, align=center] at (9.9,2.6) {
     {\large\bfseries\color{hcText} Now Feasible at Scale}
   };
-  \node[anchor=north, text width=5.2cm, align=center] at (9.9,2.6) {
+  \node[anchor=north, text width=5.2cm, align=center] at (9.9,1.9) {
     {\scriptsize\color{hcMuted} Property-level probabilistic forecasts\\[3pt]are now proven at scale.}
   };
 \end{tikzpicture}
@@ -293,7 +293,7 @@
 
   % SOM
   \fill[hcGold!40] (0,-0.5) circle (1.1cm);
-  \node[text=hcText, font=\small\bfseries, align=center] at (0, -0.5) {5 Key\\Metros};
+  \node[text=hcText, font=\small\bfseries, align=center] at (0, -0.5) {SFR\\Analytics};
 
   % Labels
   \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, 1.8) {\$15B};
@@ -302,7 +302,7 @@
   \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, 0.2) {\$200M};
   \node[text=hcMuted, font=\small, anchor=west] at (3.5, -0.3) {SAM\textsuperscript{2}};
 
-  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, -1.4) {\$1M};
+  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, -1.4) {\$1.5M};
   \node[text=hcMuted, font=\small, anchor=west] at (3.5, -1.9) {SOM\textsuperscript{3}};
 \end{tikzpicture}
 \end{center}
@@ -312,7 +312,7 @@
 \mutedtext{\tiny\parbox{0.9\textwidth}{\setlength{\baselineskip}{7pt}%
 \textsuperscript{1}\href{https://www.precedenceresearch.com/proptech-market}{US PropTech data market} (Precedence Research, 2025).\par
 \textsuperscript{2}SFR analytics segment (est.): \href{https://www.corelogic.com}{CoreLogic} SFR div., \href{https://www.housecanary.com}{HouseCanary} (\$18M), \href{https://www.attomdata.com}{ATTOM} (\$28M), \href{https://www.propstream.com}{PropStream} (\$25M+).\par
-\textsuperscript{3}{\raise.17ex\hbox{$\scriptstyle\sim$}}8K operators {\texttimes} \$99/mo {\texttimes} 10\% penetration, 8 metros. Annual revenue ceiling.}}
+\textsuperscript{3}{\raise.17ex\hbox{$\scriptstyle\sim$}}12K operators {\texttimes} \$99/mo {\texttimes} 10\% penetration, 10 metros. Annual revenue ceiling.}}
 \end{center}
 \end{frame}
 
@@ -420,8 +420,7 @@
 \centering
 \statbox{14\%}{Median Error}\\[14pt]
 \statbox{4yr}{Forecast Horizon}\\[14pt]
-\statbox{1M+}{Properties Indexed}\\[14pt]
-\statbox{\textless1s}{API Response}
+\statbox{1M+}{Properties Indexed}
 \end{column}
 \end{columns}
 
@@ -492,7 +491,7 @@
   % Geography row
   \node[cell] at (2.0, 1.4) {Houston metro};
   \node[cell] at (5.6, 1.4) {5 key metros};
-  \node[cell] at (9.2, 1.4) {National scale};
+  \node[cell] at (9.2, 1.4) {10 metros};
   % Customers row
   \node[cell] at (2.0, 0.3) {RE investors};
   \node[cell] at (5.6, 0.3) {SFR operators};
