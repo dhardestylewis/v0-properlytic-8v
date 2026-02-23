@@ -1272,8 +1272,8 @@ export function ForecastMap({
                     style={isMobile ? {
                         transform: `translateY(calc(${mobileMinimized ? '100% - 24px' : '0px'} + ${swipeDragOffset}px))`,
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
-                        height: isChatOpen ? '55vh' : undefined,
-                        maxHeight: '55vh',
+                        height: isChatOpen ? '40vh' : undefined,
+                        maxHeight: '40vh',
                         overflowY: 'hidden',
                     } : {
                         left: displayPos.globalX,
