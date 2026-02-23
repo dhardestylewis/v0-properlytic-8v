@@ -243,15 +243,15 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
   return (
     <div
       className={cn(
-        "fixed z-[10000] transition-all duration-300 ease-in-out",
-        // Mobile: smaller, bottom-left
-        "bottom-3 left-3",
+        "fixed z-[10001] transition-all duration-300 ease-in-out",
+        // Mobile: right half, matching chat panel position
+        "bottom-0 right-0 w-1/2 h-[40vh] rounded-t-xl overflow-hidden",
         // Desktop: shift right when chat open
-        "md:bottom-5",
+        "md:bottom-5 md:w-auto md:h-auto md:rounded-2xl",
         chatOpen ? "md:left-[420px]" : "md:left-5",
         isMinimized
-          ? "w-[180px] h-[44px] md:w-[280px] md:h-[56px]"
-          : "w-[200px] h-[300px] md:w-[340px] md:h-[520px]"
+          ? "md:w-[280px] md:h-[56px]"
+          : "md:w-[340px] md:h-[520px]"
       )}
     >
       <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0f0f14] flex flex-col">
