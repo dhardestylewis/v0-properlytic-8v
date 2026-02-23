@@ -126,7 +126,7 @@
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.0,4.2);
   \node[anchor=north, font=\small\bfseries, text=hcMuted] at (3.0,4.0) {WHAT EXISTS};
   \draw[hcMuted, thick] (0.5,0.8) -- (1.2,1.2) -- (2.0,1.0) -- (2.8,1.5) -- (3.5,1.4) -- (4.2,1.8) -- (5.0,1.6);
-  \node[font=\footnotesize, text=hcMuted, align=center] at (3.0,3.2) {Zillow Zestimate};
+  \node[font=\footnotesize, text=hcMuted, align=center] at (3.0,3.2) {Today's Estimate};
   \node[font=\LARGE\bfseries, text=hcMuted] at (3.0,2.2) {\$425K};
   \node[font=\scriptsize, text=hcMuted] at (3.0,0.4) {One number. No forecast.};
 \end{tikzpicture}
@@ -266,16 +266,16 @@
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
   \node[font=\fontsize{30}{36}\selectfont\bfseries, text=hcGold, align=center] at (3.1,4.1) {Diffusion\\Models};
-  \node[font=\large\bfseries, text=hcText] at (3.1,2.5) {Now Feasible at Scale};
+  \node[font=\large\bfseries, text=hcText] at (3.1,2.7) {Now Feasible at Scale};
   \node[font=\scriptsize, text=hcMuted, align=center] at (3.1,1.4) {Property-level probabilistic forecasts\\became computationally practical in 2023.};
 \end{tikzpicture}
 \end{center}
 \end{column}
 \end{columns}
 
-\vspace{16pt}
+\vspace{6pt}
 \begin{center}
-\mutedtext{\large The demand exists. The technology just caught up.}
+\mutedtext{The demand exists. The technology just caught up.}
 \end{center}
 \end{frame}
 
@@ -316,7 +316,7 @@
 \mutedtext{\tiny\parbox{0.9\textwidth}{\setlength{\baselineskip}{7pt}%
 \textsuperscript{1}\href{https://www.precedenceresearch.com/proptech-market}{US PropTech data market} (Precedence Research, 2025).\par
 \textsuperscript{2}SFR analytics segment: \href{https://www.corelogic.com}{CoreLogic} SFR div., \href{https://www.housecanary.com}{HouseCanary} (\$18M), \href{https://www.attomdata.com}{ATTOM} (\$28M), \href{https://www.propstream.com}{PropStream} (\$25M+).\par
-\textsuperscript{3}Bottom-up: {\raise.17ex\hbox{$\scriptstyle\sim$}}6,000 ICP entities across 5 metros {\texttimes} \$99/mo {\texttimes} 28\% capture. Year 1 target.}}
+\textsuperscript{3}Bottom-up: {\raise.17ex\hbox{$\scriptstyle\sim$}}6,000 ICP entities across 5 metros {\texttimes} \$99/mo {\texttimes} 28\% capture. Year 3 target.}}
 \end{center}
 \end{frame}
 
@@ -334,8 +334,8 @@
   % Axis labels
   \node[font=\footnotesize, text=hcMuted, anchor=north] at (-3.0,-0.15) {Backward-Looking};
   \node[font=\footnotesize, text=hcGold, anchor=north] at (3.0,-0.15) {Predictive};
-  \node[font=\footnotesize, text=hcMuted, anchor=east, rotate=90] at (-0.2,-2.0) {SLG};
-  \node[font=\footnotesize, text=hcGold, anchor=east, rotate=90] at (-0.2,3.2) {PLG};
+  \node[font=\footnotesize, text=hcMuted, anchor=east, rotate=90] at (-0.2,-2.0) {Sales-Led};
+  \node[font=\footnotesize, text=hcGold, anchor=east, rotate=90] at (-0.2,3.2) {Product-Led};
 
   % Quadrant shading — golden quadrant (top-right)
   \fill[hcGoldLight, opacity=0.15] (0.1,0.1) rectangle (4.5,3.5);
@@ -367,10 +367,10 @@
 \end{tikzpicture}
 \end{center}
 
-\vspace{4pt}
+\vspace{-4pt}
 \begin{center}
-\goldtext{\textbf{Only PLG platform with backtested, probabilistic forecasts.}}\\
-\mutedtext{\small CoreLogic/HouseCanary = enterprise contracts. Reventure/Zillow = no predictive model.}
+\goldtext{\textbf{Only product-led platform with backtested, probabilistic forecasts.}}\\
+\mutedtext{\small Incumbents sell to enterprises. Consumer tools don't forecast.}
 \end{center}
 \end{frame}
 
@@ -410,7 +410,7 @@
 \vspace{8pt}
 
 \begin{center}
-\mutedtext{\small Priced like PropStream. Forecasts like CoreLogic. No enterprise contract.}
+\mutedtext{\small \$99/mo self-serve. Enterprise-grade forecasts. No contract.}
 \end{center}
 \end{frame}
 
@@ -430,9 +430,9 @@
 \end{column}
 \begin{column}{0.42\textwidth}
 \statbox{14\%}{Median Error}
-\vspace{8pt}
+\vspace{14pt}
 \statbox{4yr}{Forecast Horizon}
-\vspace{8pt}
+\vspace{14pt}
 \statbox{1M+}{Properties Indexed}
 \end{column}
 \end{columns}
@@ -571,9 +571,9 @@
 \begin{column}{0.49\textwidth}
 \textbf{Every Dollar Mapped}\\[6pt]
 \begin{itemize}\setlength{\itemsep}{6pt}
-  \item \textbf{ML Engineer}\\\mutedtext{Transfer learning to 5 new metros}
-  \item \textbf{GTM / Sales}\\\mutedtext{Scale to 500+ Operator subs}
-  \item \textbf{Data \& Compute}\\\mutedtext{CoreLogic license + GPU training}
+  \item \textbf{ML Engineer}\\\mutedtext{Expand model to 5 metros}
+  \item \textbf{GTM / Sales}\\\mutedtext{Land first 300 paying operators}
+  \item \textbf{Data \& Compute}\\\mutedtext{Data licenses + GPU compute}
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
@@ -583,8 +583,7 @@
   \item \goldtext{\textbf{\$30K MRR}} from Operator tier
   \item \goldtext{\textbf{1 institutional pilot}} or LOI
 \end{itemize}
-\vspace{8pt}
-\mutedtext{\scriptsize These milestones position us for Series~A.}
+
 \end{column}
 \end{columns}
 
