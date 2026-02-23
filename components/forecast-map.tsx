@@ -1325,7 +1325,7 @@ export function ForecastMap({
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onClick={() => onFeatureSelect(null)}
+                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onFeatureSelect(null); }}
                                 className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
                             >
@@ -1385,8 +1385,8 @@ export function ForecastMap({
 
                     {/* Content Body */}
                     {isMobile ? (
-                        /* Mobile Layout: [Now] [Chart] [Forecast] with values flanking */
-                        <div className="px-2 py-2">
+                        /* Mobile Layout: Full-width chart with overlaid stat badges */
+                        <div className="px-1 py-1 flex-1 min-h-0">
                             {(() => {
                                 const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
                                 const forecastVal = displayProps.p50 ?? displayProps.value ?? null
@@ -1400,35 +1400,34 @@ export function ForecastMap({
                                 const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
                                 const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
                                 return (
-                                    <>
-                                        <div className="flex items-stretch gap-1">
-                                            {/* Left */}
-                                            <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
-                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">{leftLabel}</div>
-                                                <div className="text-xs font-bold text-foreground">{formatValue(leftVal)}</div>
-                                            </div>
-                                            {/* Center: FanChart */}
-                                            <div className="flex-1 min-w-0 h-[150px]">
-                                                {fanChartData ? (
-                                                    <FanChart data={fanChartData} currentYear={year} height={150} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
-                                                ) : isLoadingDetail ? (
-                                                    <div className="h-full flex items-center justify-center">
-                                                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                                    </div>
-                                                ) : null}
-                                            </div>
-                                            {/* Right */}
-                                            <div className="flex flex-col justify-center items-center min-w-[55px] max-w-[80px] shrink-0 text-center px-1">
-                                                <div className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold">{rightLabel}</div>
-                                                <div className="text-xs font-bold text-foreground">{formatValue(rightVal)}</div>
+                                    <div className="relative w-full h-full min-h-[160px]">
+                                        {/* Full-width chart */}
+                                        <div className="w-full h-full">
+                                            {fanChartData ? (
+                                                <FanChart data={fanChartData} currentYear={year} height={160} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
+                                            ) : isLoadingDetail ? (
+                                                <div className="h-full flex items-center justify-center">
+                                                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                        {/* Overlaid stat badges */}
+                                        <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-sm border border-border/30">
+                                            <div className="text-[7px] uppercase tracking-wider text-muted-foreground font-semibold">{leftLabel}</div>
+                                            <div className="text-[10px] font-bold text-foreground">{formatValue(leftVal)}</div>
+                                        </div>
+                                        {!isPresent && (
+                                            <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-sm border border-border/30 text-right">
+                                                <div className="text-[7px] uppercase tracking-wider text-muted-foreground font-semibold">{rightLabel}</div>
+                                                <div className="text-[10px] font-bold text-foreground">{formatValue(rightVal)}</div>
                                                 {pctChange != null && (
-                                                    <div className={`text-[9px] font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    <div className={`text-[8px] font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                                                         {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
-                                    </>
+                                        )}
+                                    </div>
                                 )
                             })()}
                         </div>
