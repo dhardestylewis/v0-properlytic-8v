@@ -1314,18 +1314,22 @@ export function ForecastMap({
                 >
                     {/* Mobile Header with Close Button */}
                     {isMobile && (
-                        <div className="w-full flex items-center justify-between px-3 py-2 bg-muted/40 backdrop-blur-md border-b border-border/50">
+                        <div
+                            className="w-full flex items-center justify-between px-3 h-9 bg-muted/40 backdrop-blur-md border-b border-border/50"
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchMove={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => e.stopPropagation()}
+                        >
                             <div className="flex items-center gap-2">
                                 <HomecastrLogo variant="horizontal" size={16} />
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onClick={(e) => { e.stopPropagation(); onFeatureSelect(null); }}
-                                onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onFeatureSelect(null); }}
-                                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted/60 text-muted-foreground"
+                                onClick={() => onFeatureSelect(null)}
+                                className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
                             >
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                                     <line x1="2" y1="2" x2="10" y2="10" /><line x1="10" y1="2" x2="2" y2="10" />
                                 </svg>
                             </button>

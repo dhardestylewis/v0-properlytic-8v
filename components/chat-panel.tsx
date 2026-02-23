@@ -157,9 +157,9 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPa
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
                 {/* Header */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-background/80">
+                <div className="flex items-center justify-between px-3 h-9 border-b border-border bg-background/80">
                     <div className="flex items-center gap-2">
-                        <HomecastrLogo variant="horizontal" size={20} />
+                        <HomecastrLogo variant="horizontal" size={16} />
                         <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
                             Beta
                         </span>
