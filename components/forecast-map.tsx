@@ -1275,8 +1275,8 @@ export function ForecastMap({
                     style={isMobile ? {
                         transform: `translateY(calc(${mobileMinimized ? '100% - 24px' : '0px'} + ${swipeDragOffset}px))`,
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
-                        height: isChatOpen ? (isKeyboardOpen ? `${Math.max(window.innerHeight * 0.4 - keyboardHeight, 170)}px` : '40vh') : undefined,
-                        maxHeight: isKeyboardOpen ? `${Math.max(window.innerHeight * 0.4 - keyboardHeight, 170)}px` : '40vh',
+                        height: isChatOpen ? (isKeyboardOpen ? `${Math.max((typeof window !== 'undefined' ? window.innerHeight : 800) * 0.4 - keyboardHeight, 200)}px` : '40vh') : undefined,
+                        maxHeight: isKeyboardOpen ? `${Math.max((typeof window !== 'undefined' ? window.innerHeight : 800) * 0.4 - keyboardHeight, 200)}px` : '40vh',
                         bottom: isKeyboardOpen ? `${keyboardHeight}px` : undefined,
                         overflowY: 'hidden',
                     } : {

@@ -43,7 +43,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
     // Compute keyboard-aware panel height: 40vh minus keyboard, min 170px (chart height)
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800
     const kbPanelHeight = isKeyboardOpen
-        ? Math.max(vh * 0.4 - keyboardHeight, 170)
+        ? Math.max(vh * 0.4 - keyboardHeight, 200)
         : vh * 0.4
 
     // Auto-scroll to bottom
@@ -162,7 +162,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 }
         md:absolute md:top-0 md:left-0 md:h-full
         ${isOpen ? "md:w-[400px]" : "md:w-0"}
-        bottom-0 ${tooltipVisible ? 'left-1/2 right-0 w-1/2' : 'left-0 right-0 w-full'} md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
+        bottom-0 left-0 right-0 w-full md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
       `}
             style={isKeyboardOpen ? {
                 height: `${kbPanelHeight}px`,
