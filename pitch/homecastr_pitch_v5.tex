@@ -254,9 +254,9 @@
 \begin{center}
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
-  \node[font=\fontsize{40}{46}\selectfont\bfseries, text=hcGold] at (3.1,3.8) {\$3.4T};
-  \node[font=\large\bfseries, text=hcText] at (3.1,2.7) {SFR Market};
-  \node[font=\scriptsize, text=hcMuted, align=center] at (3.1,1.4) {Operators manage billions in assets\\without precomputed, backtested forecasts.};
+  \node[font=\fontsize{40}{46}\selectfont\bfseries, text=hcGold] at (3.1,3.8) {7\%};
+  \node[font=\large\bfseries, text=hcText] at (3.1,2.7) {Rate Uncertainty};
+  \node[font=\scriptsize, text=hcMuted, align=center] at (3.1,1.4) {A decade of low rates is over.\\Operators need forward-looking tools.};
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -265,8 +265,8 @@
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
   \node[font=\fontsize{30}{36}\selectfont\bfseries, text=hcGold, align=center] at (3.1,4.1) {Diffusion\\Models};
-  \node[font=\large\bfseries, text=hcText] at (3.1,2.5) {Beyond Pro Formas};
-  \node[font=\scriptsize, text=hcMuted, align=center] at (3.1,1.4) {Outperforms traditional pro forma.\\Backtested across 4 years of actuals.};
+  \node[font=\large\bfseries, text=hcText] at (3.1,2.5) {Now Feasible at Scale};
+  \node[font=\scriptsize, text=hcMuted, align=center] at (3.1,1.4) {Property-level probabilistic forecasts\\became computationally practical in 2023.};
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -274,7 +274,7 @@
 
 \vspace{16pt}
 \begin{center}
-\mutedtext{\large Property-level forecasts exist, but no one has built the consumer layer.}
+\mutedtext{\large The demand exists. The technology just caught up.}
 \end{center}
 \end{frame}
 
@@ -331,35 +331,35 @@
   \draw[hcMuted, thick, -{Stealth[length=5pt]}] (0,-3.2) -- (0,3.8);
 
   % Axis labels
-  \node[font=\footnotesize, text=hcMuted, anchor=north] at (-3.0,-0.15) {Backward-Looking};
-  \node[font=\footnotesize, text=hcGold, anchor=north] at (3.0,-0.15) {Forward-Looking};
+  \node[font=\footnotesize, text=hcMuted, anchor=north] at (-3.0,-0.15) {Heuristic};
+  \node[font=\footnotesize, text=hcGold, anchor=north] at (3.0,-0.15) {ML-Backtested};
   \node[font=\footnotesize, text=hcMuted, anchor=east, rotate=90] at (-0.2,-2.5) {Institutional};
-  \node[font=\footnotesize, text=hcGold, anchor=east, rotate=90] at (-0.2,3.2) {Consumer};
+  \node[font=\footnotesize, text=hcGold, anchor=east, rotate=90] at (-0.2,3.2) {Self-Serve};
 
   % Quadrant shading — golden quadrant (top-right)
   \fill[hcGoldLight, opacity=0.15] (0.1,0.1) rectangle (4.5,3.5);
 
-  % Competitors — CoreLogic: forward-looking but institutional
-  \fill[hcRed!60] (1.5,-2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north west] at (1.7,-2.1) {CoreLogic};
+  % CoreLogic: ML but institutional
+  \fill[hcRed!60] (2.0,-2.0) circle (4pt);
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north west] at (2.2,-2.1) {CoreLogic};
 
-  % HouseCanary: forward-looking, self-serve, but institutional UX
-  \fill[hcRed!60] (2.5,-0.8) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north west] at (2.7,-0.9) {HouseCanary};
+  % HouseCanary: ML, semi-self-serve, institutional UX
+  \fill[hcRed!60] (1.5,-0.5) circle (4pt);
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north west] at (1.7,-0.6) {HouseCanary};
 
-  % PropStream: backward-looking, consumer-ish
-  \fill[hcRed!60] (-2.5,1.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=south east] at (-2.7,1.1) {PropStream};
+  % PropStream: heuristic, self-serve
+  \fill[hcRed!60] (-2.5,1.5) circle (4pt);
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=south east] at (-2.7,1.6) {PropStream};
 
-  % Zillow: backward-looking, consumer
-  \fill[hcRed!60] (-3.5,2.5) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=west] at (-3.3,2.5) {Zillow};
+  % Zillow: heuristic, consumer
+  \fill[hcRed!60] (-3.0,2.5) circle (4pt);
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=east] at (-3.2,2.5) {Zillow};
 
-  % Reventure App: trend visualization (ZIP level), consumer
-  \fill[hcRed!60] (0.5,2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north] at (0.5,1.8) {Reventure};
+  % Reventure: heuristic (ratio-based), self-serve
+  \fill[hcRed!60] (-1.5,2.0) circle (4pt);
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north] at (-1.5,1.8) {Reventure};
 
-  % Homecastr — golden quadrant, prominent
+  % Homecastr — golden quadrant
   \fill[hcGold] (3.5,2.5) circle (8pt);
   \node[font=\large\bfseries, text=hcGold, anchor=south west] at (3.8,2.5) {Homecastr};
 
@@ -368,8 +368,8 @@
 
 \vspace{4pt}
 \begin{center}
-\goldtext{\textbf{Only consumer-facing, property-level forecast platform.}}\\
-\mutedtext{\small Reventure shows ZIP-code trends. HouseCanary/CoreLogic forecast for analysts, not consumers.}
+\goldtext{\textbf{Only self-serve, ML-backtested forecast platform.}}\\
+\mutedtext{\small Reventure uses heuristic ratios. CoreLogic/HouseCanary require enterprise contracts.}
 \end{center}
 \end{frame}
 
