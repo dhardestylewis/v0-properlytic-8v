@@ -1338,7 +1338,7 @@ export function ForecastMap({
                                     selectedIdRef.current = null;
                                     setSelectedId(null);
                                     hoveredIdRef.current = null;
-                                    setTooltipPos(null);
+                                    setTooltipData(null);
                                     setFixedTooltipPos(null);
                                     setSelectedCoords(null);
                                     onFeatureSelect(null);
@@ -1398,7 +1398,7 @@ export function ForecastMap({
                         <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
                             {/* StreetView — left half */}
                             {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
-                                <div className="w-1/2 h-full">
+                                <div className="w-1/2 h-full overflow-hidden">
                                     <StreetViewCarousel
                                         h3Ids={[]}
                                         apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
@@ -1407,7 +1407,7 @@ export function ForecastMap({
                                 </div>
                             )}
                             {/* Chart — right half */}
-                            <div className="w-1/2 h-full flex flex-col">
+                            <div className="w-1/2 h-full overflow-hidden flex flex-col">
                                 {(() => {
                                     const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
                                     const forecastVal = displayProps.p50 ?? displayProps.value ?? null
