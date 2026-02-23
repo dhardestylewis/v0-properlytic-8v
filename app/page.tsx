@@ -626,8 +626,10 @@ function DashboardContent() {
         {/* Homecastr Loading Indicator */}
         {isTavusLoading && (
           <div className={cn(
-            "fixed bottom-5 z-[10000] glass-panel text-foreground rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-3 transition-all duration-300",
-            isChatOpen ? "left-[420px]" : "left-5"
+            "fixed z-[10000] glass-panel text-foreground rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-3 transition-all duration-300",
+            "bottom-3 left-3",
+            "md:bottom-5",
+            isChatOpen ? "md:left-[420px]" : "md:left-5"
           )}>
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             <span className="text-xs font-medium">Connecting to Homecastr...</span>
