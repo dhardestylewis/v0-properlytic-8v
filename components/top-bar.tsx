@@ -37,8 +37,7 @@ export function TopBar({ filters, isFiltersPanelOpen, onToggleFiltersPanel, onSe
         >
           {isFiltersPanelOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
-        <HomecastrLogo size={24} />
-        <span className="font-semibold text-lg hidden sm:inline">Homecastr</span>
+        <HomecastrLogo variant="horizontal" size={24} />
       </div>
 
       {/* Search */}
