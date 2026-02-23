@@ -1332,7 +1332,7 @@ export function ForecastMap({
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onClick={() => onFeatureSelect(null)}
+                                onPointerDown={(e) => { e.stopPropagation(); onFeatureSelect(null); }}
                                 className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
                                 style={{ touchAction: 'manipulation' }}
