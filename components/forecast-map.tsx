@@ -1320,7 +1320,8 @@ export function ForecastMap({
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onClick={() => onFeatureSelect(null)}
+                                onClick={(e) => { e.stopPropagation(); onFeatureSelect(null); }}
+                                onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onFeatureSelect(null); }}
                                 className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
                             >
