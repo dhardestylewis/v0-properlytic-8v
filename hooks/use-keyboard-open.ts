@@ -58,6 +58,24 @@ export function useKeyboardOpen() {
             }
         }
 
+        // Fallback for Android dismiss button: poll visualViewport height
+        // When keyboard is dismissed via system button, focus doesn't blur
+        // but viewport height changes
+        let pollInterval: ReturnType<typeof setInterval> | null = null
+        if (!vk) {
+            pollInterval = setInterval(() => {
+                const vv = window.visualViewport
+                if (vv) {
+                    const heightRatio = vv.height / window.innerHeight
+                    // If viewport is back to near-full height, keyboard is gone
+                    if (heightRatio > 0.85) {
+                        setIsKeyboardOpen(false)
+                        setKeyboardHeight(0)
+                    }
+                }
+            }, 500)
+        }
+
         document.addEventListener('focusin', handleFocusIn)
         document.addEventListener('focusout', handleFocusOut)
         if (vk) {
@@ -70,6 +88,7 @@ export function useKeyboardOpen() {
             if (vk) {
                 vk.removeEventListener('geometrychange', handleGeometryChange)
             }
+            if (pollInterval) clearInterval(pollInterval)
         }
     }, [])
 
