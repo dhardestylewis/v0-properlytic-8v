@@ -1383,172 +1383,186 @@ export function ForecastMap({
                     )}
 
                     {/* Street View Carousel — hidden when keyboard is open on mobile */}
-                    {!(isMobile && isKeyboardOpen) && process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
-                        <StreetViewCarousel
-                            h3Ids={[]}
-                            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
-                            coordinates={(selectedId ? selectedCoords : tooltipCoords)!}
-                        />
-                    )}
-
-                    {/* Content Body */}
-                    {isMobile ? (
-                        /* Mobile Layout: Full-width chart with overlaid stat badges */
-                        <div className="px-1 py-1 flex-1 min-h-0">
-                            {(() => {
-                                const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
-                                const forecastVal = displayProps.p50 ?? displayProps.value ?? null
-                                const isPast = year < originYear + 1
-                                const isPresent = year === originYear + 1 // 2026 = "now"
-                                const leftLabel = isPresent ? "Now" : isPast ? String(year) : "Now"
-                                const leftVal = isPresent ? currentVal : isPast ? forecastVal : currentVal
-                                const rightLabel = isPresent ? String(year) : isPast ? "Now" : String(year)
-                                const rightVal = isPresent ? currentVal : isPast ? currentVal : forecastVal
-                                const pctBase = isPresent ? null : isPast ? forecastVal : currentVal
-                                const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
-                                const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
-                                return (
-                                    <div className="relative w-full h-full min-h-[160px]">
-                                        {/* Full-width chart */}
-                                        <div className="w-full h-full">
-                                            {fanChartData ? (
-                                                <FanChart data={fanChartData} currentYear={year} height={160} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
-                                            ) : isLoadingDetail ? (
-                                                <div className="h-full flex items-center justify-center">
-                                                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    {isMobile && !(isKeyboardOpen) ? (
+                        /* Mobile: Side-by-side — StreetView left, Chart right */
+                        <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
+                            {/* StreetView — left half */}
+                            {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
+                                <div className="w-1/2 min-h-0">
+                                    <StreetViewCarousel
+                                        h3Ids={[]}
+                                        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
+                                        coordinates={(selectedId ? selectedCoords : tooltipCoords)!}
+                                    />
+                                </div>
+                            )}
+                            {/* Chart — right half */}
+                            <div className="w-1/2 min-h-0 px-1 py-1 flex flex-col">
+                                {(() => {
+                                    const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
+                                    const forecastVal = displayProps.p50 ?? displayProps.value ?? null
+                                    const isPast = year < originYear + 1
+                                    const isPresent = year === originYear + 1 // 2026 = "now"
+                                    const leftLabel = isPresent ? "Now" : isPast ? String(year) : "Now"
+                                    const leftVal = isPresent ? currentVal : isPast ? forecastVal : currentVal
+                                    const rightLabel = isPresent ? String(year) : isPast ? "Now" : String(year)
+                                    const rightVal = isPresent ? currentVal : isPast ? currentVal : forecastVal
+                                    const pctBase = isPresent ? null : isPast ? forecastVal : currentVal
+                                    const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
+                                    const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
+                                    return (
+                                        <div className="relative w-full flex-1 min-h-[120px]">
+                                            {/* Full-width chart */}
+                                            <div className="w-full h-full">
+                                                {fanChartData ? (
+                                                    <FanChart data={fanChartData} currentYear={year} height={120} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
+                                                ) : isLoadingDetail ? (
+                                                    <div className="h-full flex items-center justify-center">
+                                                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                    </div>
+                                                ) : null}
+                                                {/* Overlaid stat badges */}
+                                                <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-sm border border-border/30">
+                                                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground font-semibold">{leftLabel}</div>
+                                                    <div className="text-[10px] font-bold text-foreground">{formatValue(leftVal)}</div>
                                                 </div>
-                                            ) : null}
-                                        </div>
-                                        {/* Overlaid stat badges */}
-                                        <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-sm border border-border/30">
-                                            <div className="text-[7px] uppercase tracking-wider text-muted-foreground font-semibold">{leftLabel}</div>
-                                            <div className="text-[10px] font-bold text-foreground">{formatValue(leftVal)}</div>
-                                        </div>
-                                        {!isPresent && (
-                                            <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-sm border border-border/30 text-right">
-                                                <div className="text-[7px] uppercase tracking-wider text-muted-foreground font-semibold">{rightLabel}</div>
-                                                <div className="text-[10px] font-bold text-foreground">{formatValue(rightVal)}</div>
-                                                {pctChange != null && (
-                                                    <div className={`text-[8px] font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                        {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
+                                                {!isPresent && (
+                                                    <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-background/80 backdrop-blur-sm border border-border/30 text-right">
+                                                        <div className="text-[7px] uppercase tracking-wider text-muted-foreground font-semibold">{rightLabel}</div>
+                                                        <div className="text-[10px] font-bold text-foreground">{formatValue(rightVal)}</div>
+                                                        {pctChange != null && (
+                                                            <div className={`text-[8px] font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
-                                    </div>
-                                )
-                            })()}
+                                        </div>
+                                    )
+                                })()}
+                            </div>
                         </div>
                     ) : (
-                        /* Desktop Layout: Values above, full-width chart below */
-                        <div className="p-4 space-y-3">
-                            {/* Current → Forecast header with % change */}
-                            {(() => {
-                                const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
-                                const forecastVal = displayProps.p50 ?? displayProps.value ?? null
-                                const isPast = year < originYear + 1
-                                const isPresent = year === originYear + 1 // 2026 = "now"
-                                const leftLabel = isPresent ? "Now" : isPast ? String(year) : "Now"
-                                const leftVal = isPresent ? currentVal : isPast ? forecastVal : currentVal
-                                const rightLabel = isPresent ? String(year) : isPast ? "Now" : String(year)
-                                const rightVal = isPresent ? currentVal : isPast ? currentVal : forecastVal
-                                const pctBase = isPresent ? null : isPast ? forecastVal : currentVal
-                                const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
-                                const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
-                                return (
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="text-center flex-1">
-                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{leftLabel}</div>
-                                            <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(leftVal)}</div>
+                        <>
+                            {/* Desktop: StreetView above chart */}
+                            {!(isMobile && isKeyboardOpen) && process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
+                                <StreetViewCarousel
+                                    h3Ids={[]}
+                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
+                                    coordinates={(selectedId ? selectedCoords : tooltipCoords)!}
+                                />
+                            )}
+                            {/* Desktop Layout: Values above, full-width chart below */}
+                            <div className="p-4 space-y-3">
+                                {/* Current → Forecast header with % change */}
+                                {(() => {
+                                    const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
+                                    const forecastVal = displayProps.p50 ?? displayProps.value ?? null
+                                    const isPast = year < originYear + 1
+                                    const isPresent = year === originYear + 1 // 2026 = "now"
+                                    const leftLabel = isPresent ? "Now" : isPast ? String(year) : "Now"
+                                    const leftVal = isPresent ? currentVal : isPast ? forecastVal : currentVal
+                                    const rightLabel = isPresent ? String(year) : isPast ? "Now" : String(year)
+                                    const rightVal = isPresent ? currentVal : isPast ? currentVal : forecastVal
+                                    const pctBase = isPresent ? null : isPast ? forecastVal : currentVal
+                                    const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
+                                    const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
+                                    return (
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="text-center flex-1">
+                                                <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{leftLabel}</div>
+                                                <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(leftVal)}</div>
+                                            </div>
+                                            <div className="text-center shrink-0">
+                                                {pctChange != null && (
+                                                    <div className={`text-sm font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                        {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
+                                                    </div>
+                                                )}
+                                                <div className="text-[9px] text-muted-foreground">→ {rightLabel}</div>
+                                            </div>
+                                            <div className="text-center flex-1">
+                                                <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{rightLabel}</div>
+                                                <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(rightVal)}</div>
+                                            </div>
                                         </div>
-                                        <div className="text-center shrink-0">
-                                            {pctChange != null && (
-                                                <div className={`text-sm font-bold ${pctChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                    {pctChange >= 0 ? '▲' : '▼'} {Math.abs(pctChange).toFixed(1)}%
-                                                </div>
-                                            )}
-                                            <div className="text-[9px] text-muted-foreground">→ {rightLabel}</div>
-                                        </div>
-                                        <div className="text-center flex-1">
-                                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">{rightLabel}</div>
-                                            <div className="text-lg font-bold text-foreground tracking-tight">{formatValue(rightVal)}</div>
-                                        </div>
-                                    </div>
-                                )
-                            })()}
+                                    )
+                                })()}
 
-                            {/* Fan Chart full-width with P-values overlaid top-right */}
-                            <div className="relative h-52 -mx-2">
-                                {fanChartData ? (
-                                    <FanChart
-                                        data={fanChartData}
-                                        currentYear={year}
-                                        height={200}
-                                        historicalValues={historicalValues}
-                                        comparisonData={comparisonData}
-                                        comparisonHistoricalValues={comparisonHistoricalValues}
-                                        yDomain={effectiveYDomain}
-                                    />
-                                ) : isLoadingDetail ? (
-                                    <div className="h-full flex items-center justify-center">
-                                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                    </div>
-                                ) : null}
+                                {/* Fan Chart full-width with P-values overlaid top-right */}
+                                <div className="relative h-52 -mx-2">
+                                    {fanChartData ? (
+                                        <FanChart
+                                            data={fanChartData}
+                                            currentYear={year}
+                                            height={200}
+                                            historicalValues={historicalValues}
+                                            comparisonData={comparisonData}
+                                            comparisonHistoricalValues={comparisonHistoricalValues}
+                                            yDomain={effectiveYDomain}
+                                        />
+                                    ) : isLoadingDetail ? (
+                                        <div className="h-full flex items-center justify-center">
+                                            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                        </div>
+                                    ) : null}
 
-                                {/* P-values overlay — top-right corner */}
-                                {(displayProps.p10 != null || displayProps.p90 != null) && (
-                                    <div className="absolute top-5 right-4 text-[8px] leading-snug rounded px-1 py-0.5" style={{ textShadow: '0 0 3px var(--background), 0 0 3px var(--background)' }}>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="font-medium text-[9px]">{formatValue(displayProps.p90)}</span>
-                                            <span className="text-muted-foreground/50">P90</span>
+                                    {/* P-values overlay — top-right corner */}
+                                    {(displayProps.p10 != null || displayProps.p90 != null) && (
+                                        <div className="absolute top-5 right-4 text-[8px] leading-snug rounded px-1 py-0.5" style={{ textShadow: '0 0 3px var(--background), 0 0 3px var(--background)' }}>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-medium text-[9px]">{formatValue(displayProps.p90)}</span>
+                                                <span className="text-muted-foreground/50">P90</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-medium text-[9px]">{formatValue(displayProps.p75)}</span>
+                                                <span className="text-muted-foreground/50">P75</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-1 bg-primary/10 rounded px-0.5">
+                                                <span className="font-bold text-[9px] text-primary">{formatValue(displayProps.p50 ?? displayProps.value)}</span>
+                                                <span className="text-primary/70">P50</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-medium text-[9px]">{formatValue(displayProps.p25)}</span>
+                                                <span className="text-muted-foreground/50">P25</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="font-medium text-[9px]">{formatValue(displayProps.p10)}</span>
+                                                <span className="text-muted-foreground/50">P10</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="font-medium text-[9px]">{formatValue(displayProps.p75)}</span>
-                                            <span className="text-muted-foreground/50">P75</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-1 bg-primary/10 rounded px-0.5">
-                                            <span className="font-bold text-[9px] text-primary">{formatValue(displayProps.p50 ?? displayProps.value)}</span>
-                                            <span className="text-primary/70">P50</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="font-medium text-[9px]">{formatValue(displayProps.p25)}</span>
-                                            <span className="text-muted-foreground/50">P25</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="font-medium text-[9px]">{formatValue(displayProps.p10)}</span>
-                                            <span className="text-muted-foreground/50">P10</span>
-                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="pt-1 mt-0 border-t border-border/50 text-center">
+                                    <div className="text-[9px] text-muted-foreground flex justify-center items-center gap-1.5">
+                                        <Bot className="w-3 h-3 text-primary/50" />
+                                        <span>AI Forecast</span>
+                                    </div>
+                                </div>
+
+                                {/* Talk to Homecastr button — only when selected */}
+                                {selectedId && onConsultAI && (
+                                    <div className="pt-2 mt-1 border-t border-border/50">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                onConsultAI({
+                                                    predictedValue: displayProps.p50 ?? displayProps.value ?? null,
+                                                    opportunityScore: null,
+                                                    capRate: null,
+                                                })
+                                            }}
+                                            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        >
+                                            <HomecastrLogo variant="horizontal" size={14} />
+                                            <span>Talk to live agent</span>
+                                        </button>
                                     </div>
                                 )}
                             </div>
-
-                            <div className="pt-1 mt-0 border-t border-border/50 text-center">
-                                <div className="text-[9px] text-muted-foreground flex justify-center items-center gap-1.5">
-                                    <Bot className="w-3 h-3 text-primary/50" />
-                                    <span>AI Forecast</span>
-                                </div>
-                            </div>
-
-                            {/* Talk to Homecastr button — only when selected */}
-                            {selectedId && onConsultAI && (
-                                <div className="pt-2 mt-1 border-t border-border/50">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onConsultAI({
-                                                predictedValue: displayProps.p50 ?? displayProps.value ?? null,
-                                                opportunityScore: null,
-                                                capRate: null,
-                                            })
-                                        }}
-                                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                    >
-                                        <HomecastrLogo variant="horizontal" size={14} />
-                                        <span>Talk to live agent</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        </>
                     )}
                 </div>,
                 document.body
