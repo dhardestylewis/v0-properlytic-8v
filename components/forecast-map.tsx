@@ -1332,7 +1332,7 @@ export function ForecastMap({
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onPointerDown={(e) => { e.stopPropagation(); onFeatureSelect(null); }}
+                                onPointerDown={(e) => { e.stopPropagation(); selectedIdRef.current = null; setSelectedId(null); onFeatureSelect(null); }}
                                 className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
                                 style={{ touchAction: 'manipulation' }}
@@ -1388,7 +1388,7 @@ export function ForecastMap({
                         <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
                             {/* StreetView — left half */}
                             {process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY && (selectedId ? selectedCoords : tooltipCoords) && (
-                                <div className="w-1/2 min-h-0">
+                                <div className="w-1/2 h-full">
                                     <StreetViewCarousel
                                         h3Ids={[]}
                                         apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}
@@ -1397,7 +1397,7 @@ export function ForecastMap({
                                 </div>
                             )}
                             {/* Chart — right half */}
-                            <div className="w-1/2 min-h-0 px-1 flex flex-col">
+                            <div className="w-1/2 h-full flex flex-col">
                                 {(() => {
                                     const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
                                     const forecastVal = displayProps.p50 ?? displayProps.value ?? null
