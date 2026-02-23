@@ -61,24 +61,6 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
         }
     }, [isOpen])
 
-    // Prevent iOS from scrolling the page up when keyboard opens
-    useEffect(() => {
-        const vv = window.visualViewport
-        if (!vv) return
-        const resetScroll = () => {
-            // iOS scrolls the page to bring focused input into view — undo that
-            window.scrollTo(0, 0)
-            document.documentElement.scrollTop = 0
-            document.body.scrollTop = 0
-        }
-        vv.addEventListener('scroll', resetScroll)
-        vv.addEventListener('resize', resetScroll)
-        return () => {
-            vv.removeEventListener('scroll', resetScroll)
-            vv.removeEventListener('resize', resetScroll)
-        }
-    }, [])
-
     const sendMessage = useCallback(async () => {
         if (!input.trim() || isLoading) return
 
