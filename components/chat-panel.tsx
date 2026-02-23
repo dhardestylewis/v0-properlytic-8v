@@ -179,8 +179,8 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 bottom: `${keyboardHeight}px`,
                 borderRadius: 0,
             } : {
-                height: '30vh',
-                maxHeight: '30vh',
+                height: '25vh',
+                maxHeight: '25vh',
             }}
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
