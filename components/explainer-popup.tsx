@@ -69,7 +69,7 @@ export function ExplainerPopup() {
         <>
             {/* Full Modal */}
             <div
-                className={`fixed inset-0 z-[10001] flex items-center justify-center transition-colors duration-1000 ease-in-out ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black/60 backdrop-blur-sm p-4"
+                className={`fixed inset-0 z-[10010] flex items-center justify-center transition-colors duration-1000 ease-in-out ${isMinimized ? "pointer-events-none bg-transparent" : "bg-black/60 backdrop-blur-sm p-4"
                     } ${!isOpen ? "hidden" : ""}`}
             >
                 <div
