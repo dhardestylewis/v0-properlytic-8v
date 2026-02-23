@@ -521,6 +521,7 @@ function DashboardContent() {
           forecastMode={filters.useForecastMap ?? false}
           onTavusRequest={handleFloatingConsultAI}
           tooltipVisible={!!(mapState.selectedId || mapState.hoveredId)}
+          mapViewport={{ center: mapState.center, zoom: mapState.zoom, selectedId: mapState.selectedId }}
         />
 
         {/* Unified Sidebar Container - Top Left */}

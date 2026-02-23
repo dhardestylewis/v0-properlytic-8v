@@ -413,16 +413,24 @@ export async function POST(req: NextRequest) {
 
         const rawOpenai = new OpenAI({ apiKey })
         const openai = process.env.BRAINTRUST_API_KEY ? wrapOpenAI(rawOpenai) : rawOpenai
-        const { messages, forecastMode } = await req.json()
+        const { messages, forecastMode, mapViewport } = await req.json()
         console.log(`[Chat API] forecastMode=${forecastMode}, using ${forecastMode ? 'FORECAST' : 'H3'} tools`)
 
         if (!messages || !Array.isArray(messages)) {
             return NextResponse.json({ error: "messages array required" }, { status: 400 })
         }
 
-        // Prepend system prompt
+        // Build viewport context string
+        let viewportContext = ""
+        if (mapViewport) {
+            const [lng, lat] = mapViewport.center || []
+            viewportContext = `\n\nCURRENT MAP STATE:\n- Center: (${lat?.toFixed(5)}, ${lng?.toFixed(5)})\n- Zoom: ${mapViewport.zoom}\n- Selected area: ${mapViewport.selectedId || "none"}`
+        }
+
+        // Prepend system prompt with viewport context
+        const systemPrompt = (forecastMode ? FORECAST_SYSTEM_PROMPT : SYSTEM_PROMPT) + viewportContext
         const conversationMessages: OpenAI.ChatCompletionMessageParam[] = [
-            { role: "system" as const, content: forecastMode ? FORECAST_SYSTEM_PROMPT : SYSTEM_PROMPT },
+            { role: "system" as const, content: systemPrompt },
             ...messages,
         ]
 
