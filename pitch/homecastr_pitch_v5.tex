@@ -525,31 +525,43 @@
 \begin{frame}[plain]{Team}
 \vspace{4pt}
 
-\begin{columns}[c]
-\begin{column}{0.25\textwidth}
+\begin{columns}[T]
+% ── Left: Daniel ──
+\begin{column}{0.47\textwidth}
 \centering
 \begin{tikzpicture}
-  \node[circle, inner sep=0pt, minimum size=2.5cm, path picture={
-    \node at (path picture bounding box.center) {\includegraphics[width=2.5cm]{assets/dhl.jpg}};
+  \node[circle, inner sep=0pt, minimum size=2.2cm, path picture={
+    \node at (path picture bounding box.center) {\includegraphics[width=2.2cm]{assets/dhl.jpg}};
   }] {};
-\end{tikzpicture}
-\end{column}
-\begin{column}{0.70\textwidth}
-{\Large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[4pt]
-{\large Founder \& CEO}\\[2pt]
-\mutedtext{\small \href{https://linkedin.com/in/dhardestylewis}{linkedin.com/in/dhardestylewis}}
-\end{column}
-\end{columns}
+\end{tikzpicture}\\[4pt]
+{\large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[2pt]
+{Founder \& CEO}\\[2pt]
+\mutedtext{\scriptsize \href{https://linkedin.com/in/dhardestylewis}{linkedin.com/in/dhardestylewis}}
 
-\vspace{8pt}
+\vspace{6pt}
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \textbf{Summit Geospatial}\\\mutedtext{\scriptsize Highest quality terrain in Texas}
+  \item \textbf{Sr. Data Scientist, TACC}\\\mutedtext{\scriptsize Principal on \$40M resiliency project}
+  \item \textbf{Scientific ML}\\\mutedtext{\scriptsize Bagnold Medal Research Contributor}
+\end{itemize}
+\end{column}
 
-\begin{columns}[T]
-\begin{column}{\textwidth}
-\begin{itemize}\setlength{\itemsep}{3pt}
-  \item \textbf{Founder, Summit Geospatial}\\\mutedtext{Highest quality terrain in Texas}
-  \item \textbf{Sr. Data Scientist, TACC}\\\mutedtext{Principal on \$40M resiliency project}
-  \item \textbf{Scientific ML}\\\mutedtext{Bagnold Medal Research Contributor}
-  \item \textbf{Teaching}\\\mutedtext{ML for Petrobras Geoscientists}
+% ── Right: Cofounder (placeholder) ──
+\begin{column}{0.47\textwidth}
+\centering
+\begin{tikzpicture}
+  % TODO: Replace with cofounder photo
+  \node[circle, inner sep=0pt, minimum size=2.2cm, fill=hcCard] {};
+\end{tikzpicture}\\[4pt]
+{\large\bfseries\color{hcGold} [Cofounder Name]}\\[2pt]
+{[Title]}\\[2pt]
+\mutedtext{\scriptsize [linkedin]}
+
+\vspace{6pt}
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \textbf{[Role / Company]}\\\mutedtext{\scriptsize [Description]}
+  \item \textbf{[Role / Company]}\\\mutedtext{\scriptsize [Description]}
+  \item \textbf{[Role / Company]}\\\mutedtext{\scriptsize [Description]}
 \end{itemize}
 \end{column}
 \end{columns}
