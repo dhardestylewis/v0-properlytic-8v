@@ -1312,10 +1312,22 @@ export function ForecastMap({
                         setSwipeTouchStart(null)
                     } : undefined}
                 >
-                    {/* Mobile Drag Handle */}
+                    {/* Mobile Header with Close Button */}
                     {isMobile && (
-                        <div className="w-full flex justify-center py-2 bg-muted/40 backdrop-blur-md cursor-grab active:cursor-grabbing">
-                            <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+                        <div className="w-full flex items-center justify-between px-3 py-2 bg-muted/40 backdrop-blur-md border-b border-border/50">
+                            <div className="flex items-center gap-2">
+                                <HomecastrLogo variant="horizontal" size={16} />
+                                <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
+                            </div>
+                            <button
+                                onClick={() => onFeatureSelect(null)}
+                                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted/60 text-muted-foreground"
+                                aria-label="Close tooltip"
+                            >
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                    <line x1="2" y1="2" x2="10" y2="10" /><line x1="10" y1="2" x2="2" y2="10" />
+                                </svg>
+                            </button>
                         </div>
                     )}
 
