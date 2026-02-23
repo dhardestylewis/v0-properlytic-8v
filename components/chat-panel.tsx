@@ -103,36 +103,48 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
 
             setMessages([...newMessages, assistantMessage])
 
-            // Execute map actions (fly-to, select hex)
+            // Execute map actions (fly-to, select hex, clear selection)
             if (data.mapActions && data.mapActions.length > 0) {
-                // Offset longitude to account for the 400px chat sidebar covering the left side
-                // At zoom Z, 1 pixel ≈ 360 / (256 * 2^Z) degrees of longitude
-                // 200px offset (half of 400px sidebar) at various zooms:
-                const computeOffset = (zoom: number) => (200 * 360) / (256 * Math.pow(2, zoom))
+                // Filter out non-navigation actions (like clear_selection)
+                const navActions = data.mapActions.filter((a: any) => !a.action)
+                const controlActions = data.mapActions.filter((a: any) => a.action)
 
-                if (data.mapActions.length === 1) {
-                    // Single location — fly directly, offset for sidebar
-                    const a = data.mapActions[0]
-                    const offset = computeOffset(a.zoom)
-                    console.log(`[MapAction] Requested: (${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}) zoom=${a.zoom}`)
-                    console.log(`[MapAction] Sidebar offset: -${offset.toFixed(5)}° (shifting map center west)`)
-                    console.log(`[MapAction] Adjusted center: (${a.lat.toFixed(5)}, ${(a.lng - offset).toFixed(5)})`)
-                    onMapAction({ ...a, lng: a.lng - offset })
-                } else {
-                    // Multiple locations (e.g. comparison) — compute midpoint + zoom to show all
-                    const actions = data.mapActions as MapAction[]
-                    const avgLat = actions.reduce((s, a) => s + a.lat, 0) / actions.length
-                    const avgLng = actions.reduce((s, a) => s + a.lng, 0) / actions.length
-                    const latSpan = Math.max(...actions.map(a => a.lat)) - Math.min(...actions.map(a => a.lat))
-                    const lngSpan = Math.max(...actions.map(a => a.lng)) - Math.min(...actions.map(a => a.lng))
-                    const maxSpan = Math.max(latSpan, lngSpan)
-                    const fitZoom = maxSpan < 0.01 ? 15 : maxSpan < 0.05 ? 13 : maxSpan < 0.1 ? 12 : maxSpan < 0.3 ? 11 : 10
-                    const offset = computeOffset(fitZoom)
-                    console.log(`[MapAction] ${actions.length} locations:`, actions.map(a => `(${a.lat.toFixed(5)}, ${a.lng.toFixed(5)})`))
-                    console.log(`[MapAction] Midpoint: (${avgLat.toFixed(5)}, ${avgLng.toFixed(5)}), span=${maxSpan.toFixed(4)}, fitZoom=${fitZoom}`)
-                    console.log(`[MapAction] Sidebar offset: -${offset.toFixed(5)}° (shifting map center west)`)
-                    console.log(`[MapAction] Adjusted center: (${avgLat.toFixed(5)}, ${(avgLng - offset).toFixed(5)})`)
-                    onMapAction({ lat: avgLat, lng: avgLng - offset, zoom: fitZoom })
+                // Handle control actions (clear_selection, etc.)
+                for (const ca of controlActions) {
+                    onMapAction(ca)
+                }
+
+                // Handle navigation actions (fly-to with lat/lng)
+                if (navActions.length > 0) {
+                    // Offset longitude to account for the 400px chat sidebar covering the left side
+                    // At zoom Z, 1 pixel ≈ 360 / (256 * 2^Z) degrees of longitude
+                    // 200px offset (half of 400px sidebar) at various zooms:
+                    const computeOffset = (zoom: number) => (200 * 360) / (256 * Math.pow(2, zoom))
+
+                    if (navActions.length === 1) {
+                        // Single location — fly directly, offset for sidebar
+                        const a = navActions[0]
+                        const offset = computeOffset(a.zoom)
+                        console.log(`[MapAction] Requested: (${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}) zoom=${a.zoom}`)
+                        console.log(`[MapAction] Sidebar offset: -${offset.toFixed(5)}° (shifting map center west)`)
+                        console.log(`[MapAction] Adjusted center: (${a.lat.toFixed(5)}, ${(a.lng - offset).toFixed(5)})`)
+                        onMapAction({ ...a, lng: a.lng - offset })
+                    } else {
+                        // Multiple locations (e.g. comparison) — compute midpoint + zoom to show all
+                        const actions = navActions as MapAction[]
+                        const avgLat = actions.reduce((s, a) => s + a.lat, 0) / actions.length
+                        const avgLng = actions.reduce((s, a) => s + a.lng, 0) / actions.length
+                        const latSpan = Math.max(...actions.map(a => a.lat)) - Math.min(...actions.map(a => a.lat))
+                        const lngSpan = Math.max(...actions.map(a => a.lng)) - Math.min(...actions.map(a => a.lng))
+                        const maxSpan = Math.max(latSpan, lngSpan)
+                        const fitZoom = maxSpan < 0.01 ? 15 : maxSpan < 0.05 ? 13 : maxSpan < 0.1 ? 12 : maxSpan < 0.3 ? 11 : 10
+                        const offset = computeOffset(fitZoom)
+                        console.log(`[MapAction] ${actions.length} locations:`, actions.map(a => `(${a.lat.toFixed(5)}, ${a.lng.toFixed(5)})`))
+                        console.log(`[MapAction] Midpoint: (${avgLat.toFixed(5)}, ${avgLng.toFixed(5)}), span=${maxSpan.toFixed(4)}, fitZoom=${fitZoom}`)
+                        console.log(`[MapAction] Sidebar offset: -${offset.toFixed(5)}° (shifting map center west)`)
+                        console.log(`[MapAction] Adjusted center: (${avgLat.toFixed(5)}, ${(avgLng - offset).toFixed(5)})`)
+                        onMapAction({ lat: avgLat, lng: avgLng - offset, zoom: fitZoom })
+                    }
                 }
             }
         } catch (error: any) {
