@@ -82,7 +82,7 @@
 % Bottom-of-slide tagline — absolute position via TikZ overlay
 \newcommand{\slidetagline}[1]{%
   \begin{tikzpicture}[remember picture, overlay]
-    \node[anchor=south, text=hcMuted, font=\small] at (current page.south) [yshift=0.4cm] {#1};
+    \node[anchor=south, text=hcMuted, font=\small] at (current page.south) [yshift=0.2cm] {#1};
   \end{tikzpicture}%
 }
 
@@ -134,7 +134,7 @@
   \node[anchor=north, font=\small\bfseries, text=hcMuted] at (3.0,4.0) {WHAT EXISTS};
   \draw[hcMuted, thick] (0.5,0.8) -- (1.2,1.2) -- (2.0,1.0) -- (2.8,1.5) -- (3.5,1.4) -- (4.2,1.8) -- (5.0,1.6);
   \node[font=\footnotesize, text=hcMuted, align=center] at (3.0,3.2) {Today's Estimate};
-  \node[font=\LARGE\bfseries, text=hcMuted] at (3.0,2.2) {\$425K};
+  \node[font=\normalsize\bfseries, text=hcMuted] at (3.0,2.2) {\$425K};
   \node[font=\scriptsize, text=hcMuted] at (3.0,0.4) {One number. No forecast.};
 \end{tikzpicture}
 \end{center}
@@ -359,8 +359,8 @@
   \node[font=\footnotesize\bfseries, text=hcMuted, anchor=south east] at (-3.2,2.4) {Zillow};
 
   % Reventure: trend extrapolation (not truly predictive), PLG
-  \fill[hcRed!60] (-0.5,2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=east] at (-0.7,2.0) {Reventure};
+  \fill[hcRed!60] (-0.8,2.0) circle (4pt);
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=east] at (-1.0,2.0) {Reventure};
 
   % Homecastr — golden quadrant
   \fill[hcGold] (3.5,2.5) circle (8pt);
