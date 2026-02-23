@@ -144,12 +144,18 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode }: ChatPa
     return (
         <div
             className={`
-        absolute top-0 left-0 z-[70] h-full
+        fixed z-[70]
         transition-all duration-300 ease-in-out
-        ${isOpen ? "w-full md:w-[400px] opacity-100" : "w-0 opacity-0 pointer-events-none"}
+        ${isOpen
+                    ? "opacity-100"
+                    : "opacity-0 pointer-events-none"
+                }
+        md:absolute md:top-0 md:left-0 md:h-full
+        ${isOpen ? "md:w-[400px]" : "md:w-0"}
+        bottom-0 left-0 right-0 h-[60vh] md:h-full md:right-auto rounded-t-xl md:rounded-none
       `}
         >
-            <div className="h-full flex flex-col bg-background/95 backdrop-blur-xl border-r border-border shadow-2xl">
+            <div className="h-full flex flex-col bg-background/95 backdrop-blur-xl border-t md:border-t-0 md:border-r border-border shadow-2xl rounded-t-xl md:rounded-none">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/80">
                     <div className="flex items-center gap-2">
