@@ -631,7 +631,7 @@ function DashboardContent() {
             onClick={handleFloatingConsultAI}
             className={cn(
               "fixed bottom-5 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group",
-              isChatOpen ? "left-[420px]" : "left-5"
+              isChatOpen ? "hidden md:flex md:left-[420px]" : "left-5"
             )}
           >
             <HomecastrLogo size={28} />
