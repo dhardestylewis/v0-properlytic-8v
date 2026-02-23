@@ -300,11 +300,11 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
           </div>
         )}
 
-        {/* Video area — top/bottom split layout */}
+        {/* Video area — left/right split layout */}
         {!isMinimized && !hasError && (
-          <div className="flex-1 flex flex-col bg-black relative">
-            {/* Top: Remote participant (Homecastr agent) */}
-            <div className="flex-1 relative bg-[#0a0a0f] overflow-hidden">
+          <div className="flex-1 flex flex-row bg-black relative overflow-hidden">
+            {/* Left: Remote participant (Homecastr agent) */}
+            <div className="w-1/2 relative bg-[#0a0a0f] overflow-hidden">
               {remoteParticipant ? (
                 <>
                   <video
@@ -314,7 +314,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                     className="w-full h-full object-cover"
                   />
                   <audio ref={remoteAudioRef} autoPlay playsInline />
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-[10px] text-white/70 font-medium">
+                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-[8px] text-white/70 font-medium">
                     Homecastr Agent
                   </div>
                 </>
@@ -322,7 +322,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    <span className="text-[11px] text-white/40">
+                    <span className="text-[9px] text-white/40">
                       {isJoined ? "Agent joining..." : "Connecting..."}
                     </span>
                   </div>
@@ -330,11 +330,8 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
               )}
             </div>
 
-            {/* Divider */}
-            <div className="h-[1px] bg-white/10 shrink-0" />
-
-            {/* Bottom: Local participant (You) */}
-            <div className="h-[80px] md:h-[140px] relative bg-[#111118] overflow-hidden shrink-0">
+            {/* Right: Local participant (You) */}
+            <div className="w-1/2 relative bg-[#111118] overflow-hidden border-l border-white/10">
               <video
                 ref={localVideoRef}
                 autoPlay
@@ -352,7 +349,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                   </div>
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-[10px] text-white/70 font-medium">
+              <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-[8px] text-white/70 font-medium">
                 You
               </div>
             </div>
