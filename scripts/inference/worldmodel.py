@@ -44,6 +44,8 @@ def ensure_import(mod: str, pip_name: Optional[str] = None) -> None:
 
 ensure_import("polars", "polars")
 ensure_import("pyarrow", "pyarrow")
+ensure_import("wandb", "wandb")
+import wandb
 
 try:
     import torch
@@ -62,6 +64,61 @@ try:
     torch.set_float32_matmul_precision("high")
 except Exception:
     pass
+
+# -----------------------------
+# 0b) W&B experiment tracking
+# -----------------------------
+_WB_RUN = None
+
+def init_wandb(
+    project: str = "properlytic",
+    name: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    extra_config: Optional[Dict[str, Any]] = None,
+    mode: str = "online",
+) -> None:
+    """Initialize W&B run.  Call once before training loop."""
+    global _WB_RUN
+    wb_cfg = dict(extra_config or {})
+    try:
+        _WB_RUN = wandb.init(
+            project=project,
+            name=name,
+            tags=tags or [],
+            config=wb_cfg,
+            mode=mode,
+            reinit=True,
+        )
+        print(f"[{ts()}] W&B run initialized: {_WB_RUN.url}")
+    except Exception as e:
+        print(f"[{ts()}] W&B init failed (continuing without): {e}")
+        _WB_RUN = None
+
+def wb_log(data: Dict[str, Any], **kw) -> None:
+    """Log to W&B if active, otherwise silently skip."""
+    if _WB_RUN is not None:
+        try:
+            wandb.log(data, **kw)
+        except Exception:
+            pass
+
+def wb_config_update(data: Dict[str, Any]) -> None:
+    """Update W&B run config if active."""
+    if _WB_RUN is not None:
+        try:
+            wandb.config.update(data, allow_val_change=True)
+        except Exception:
+            pass
+
+def wb_log_artifact(path: str, name: str, artifact_type: str = "model") -> None:
+    """Log a file as W&B artifact."""
+    if _WB_RUN is not None:
+        try:
+            art = wandb.Artifact(name, type=artifact_type)
+            art.add_file(path)
+            _WB_RUN.log_artifact(art)
+        except Exception as e:
+            print(f"[{ts()}] W&B artifact log failed: {e}")
 
 # -----------------------------
 # 1) Config - v10.2 FULLPANEL
@@ -94,8 +151,9 @@ TRAIN_MAX_ACCTS = None
 INFER_MAX_PARCELS = 500
 
 # Sampling mode controls (used only if FULL_PANEL_MODE=False)
-ACCT_SAMPLE_FRACTION = 0.02
-MAX_ACCTS_DIFFUSION = 50_000
+# Override via env var WM_SAMPLE_FRACTION for scaling sweeps
+ACCT_SAMPLE_FRACTION = float(os.environ.get("WM_SAMPLE_FRACTION", "0.02"))
+MAX_ACCTS_DIFFUSION = int(os.environ.get("WM_MAX_ACCTS", "50000"))
 
 # Full-panel materialization controls
 ACCT_CHUNK_SIZE_TRAIN = 300_000
@@ -246,6 +304,20 @@ cat_use = cat_cols[:10]
 NUM_DIM = int(len(num_use))
 N_CAT = int(len(cat_use))
 print(f"[{ts()}] Features: {NUM_DIM} numeric, {N_CAT} categorical")
+print(f"[{ts()}] FEATURE AUDIT — numeric ({NUM_DIM}): {num_use}")
+print(f"[{ts()}] FEATURE AUDIT — categorical ({N_CAT}): {cat_use}")
+if len(num_cols) > 30:
+    print(f"[{ts()}] FEATURE AUDIT — UNUSED numeric ({len(num_cols)-30}): {num_cols[30:]}")
+if len(cat_cols) > 10:
+    print(f"[{ts()}] FEATURE AUDIT — UNUSED categorical ({len(cat_cols)-10}): {cat_cols[10:]}")
+wb_config_update({
+    "features/num_use": num_use,
+    "features/cat_use": cat_use,
+    "features/num_available": num_cols,
+    "features/cat_available": cat_cols,
+    "features/num_unused": num_cols[30:] if len(num_cols) > 30 else [],
+    "features/cat_unused": cat_cols[10:] if len(cat_cols) > 10 else [],
+})
 
 # Geo column discovery (GIS-aware)
 GEO_COL = None
@@ -1458,6 +1530,15 @@ def train_diffusion_from_shards_v102_local(
         dt_ep = time.time() - t_ep0
         if (ep == 0) or ((ep + 1) % max(1, int(epochs) // 5) == 0):
             print(f"[{ts()}] origin={origin} ep={ep+1}/{epochs} loss={mean_loss:.6f} time={dt_ep:.1f}s")
+
+        # W&B per-epoch logging
+        wb_log({
+            f"train/loss_origin_{origin}": mean_loss,
+            "train/loss": mean_loss,
+            "train/epoch": ep + 1,
+            "train/origin": origin,
+            "train/lr": float(lr_sched.get_last_lr()[0]),
+        })
 
     return y_scaler, n_scaler, t_scaler, losses, scaled_paths
 

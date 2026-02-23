@@ -1,0 +1,66 @@
+Total: 64 cols | Numeric: 49 | Cat: 12
+
+NUMERIC (>> = used by model, first 30):
+  >>  0 prior_tot_appr_val [Float64]
+  >>  1 prior_tot_mkt_val [Float64]
+  >>  2 bld_ar [Float64]
+  >>  3 land_ar [Float64]
+  >>  4 acreage [Float64]
+  >>  5 yr_impr [Float64]
+  >>  6 yr_annexed [Float64]
+  >>  7 bld_building_count [UInt32]
+  >>  8 bld_sum_im_sq_ft [Float64]
+  >>  9 bld_max_yr_remodel [Int32]
+  >> 10 bld_min_date_erected [Int32]
+  >> 11 bld_mean_accrued_depr_pct [Float64]
+  >> 12 bld_sum_cama_replacement_cost [Float64]
+  >> 13 land_line_count [Int32]
+  >> 14 land_sum_land_ar [Float64]
+  >> 15 land_sum_land_val [Float64]
+  >> 16 land_mean_land_val [Float64]
+  >> 17 deeds_count [Int32]
+  >> 18 deeds_count_5yr [Int32]
+  >> 19 deeds_last_event_year [Int32]
+  >> 20 deeds_max_sale_price [Float64]
+  >> 21 deeds_last_sale_price [Float64]
+  >> 22 permits_count [Int32]
+  >> 23 permits_count_5yr [Int32]
+  >> 24 permits_last_event_year [Int32]
+  >> 25 permits_sum_value [Float64]
+  >> 26 permits_max_value [Float64]
+  >> 27 owners_line_count [Int32]
+  >> 28 owners_name_nunique [Int32]
+  >> 29 owners_any_entity [Int32]
+     30 jur_value_juris_count [Int32]
+     31 jur_value_sum_value [Float64]
+     32 jur_value_mean_value [Float64]
+     33 jur_exempt_line_count [Int32]
+     34 jur_exempt_sum_value [Float64]
+     35 jur_exempt_any_homestead [Int32]
+     36 tot_mkt_val_lag1 [Float64]
+     37 assessed_val_lag1 [Float64]
+     38 land_val_lag1 [Float64]
+     39 bld_val_lag1 [Float64]
+     40 x_features_val_lag1 [Float64]
+     41 ag_val_lag1 [Float64]
+     42 new_construction_val_lag1 [Float64]
+     43 tot_rcn_val_lag1 [Float64]
+     44 gis_lat [Float64]
+     45 gis_lon [Float64]
+     46 gis_shape_area [Float64]
+     47 gis_shape_leng [Float64]
+     48 gis_year_used [Int32]
+
+CATEGORICAL (>> = used, first 10):
+  >>  0 state_class
+  >>  1 school_dist
+  >>  2 Neighborhood_Code
+  >>  3 Neighborhood_Grp
+  >>  4 Market_Area_1
+  >>  5 Market_Area_2
+  >>  6 econ_area
+  >>  7 econ_bld_class
+  >>  8 center_code
+  >>  9 dsc_cd
+     10 value_status
+     11 gis_zip

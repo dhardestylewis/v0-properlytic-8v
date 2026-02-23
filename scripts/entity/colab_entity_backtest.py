@@ -129,6 +129,7 @@ for yr in YEARS:
                     odf.select([acct_col, name_col, "year"])
                     .cast({acct_col: pl.Utf8, name_col: pl.Utf8})
                     .rename({acct_col: "acct", name_col: "name"})
+                    .with_columns(pl.col("acct").str.strip_chars())
                 )
 
             # ── real_acct.txt (valuations) ──
@@ -150,6 +151,7 @@ for yr in YEARS:
                         val_cols.append(vc)
                 vdf = vdf.select(val_cols).with_columns(pl.lit(yr).alias("year"))
                 vdf = vdf.cast({"acct": pl.Utf8})
+                vdf = vdf.with_columns(pl.col("acct").str.strip_chars())
                 val_frames.append(vdf)
 
             print(f"  {yr}: ✅ owners={len(odf):,}  valuations={len(vdf):,}")
@@ -167,6 +169,14 @@ all_owners = pl.concat(owner_frames, how="vertical_relaxed")
 all_vals = pl.concat(val_frames, how="vertical_relaxed")
 print(f"  Owners: {len(all_owners):,} rows")
 print(f"  Valuations: {len(all_vals):,} rows")
+
+# Diagnostic: check acct overlap
+owner_accts = set(all_owners["acct"].unique().to_list()[:100])
+val_accts = set(all_vals["acct"].unique().to_list()[:100])
+overlap = owner_accts & val_accts
+print(f"  🔍 Acct overlap check (sample 100 each): {len(overlap)} matches")
+print(f"     Owner sample: {list(owner_accts)[:5]}")
+print(f"     Val sample:   {list(val_accts)[:5]}")
 
 # Detect ownership transitions (buyer = current name, seller = previous)
 print("\n🔄 Detecting ownership changes...")
@@ -191,13 +201,29 @@ print(f"  Entity purchases: {len(entity_txns):,}")
 # STEP 3: Join transactions with valuations to compute returns
 # ══════════════════════════════════════════════════════════════════
 print("\n📈 Computing portfolio returns...")
+print(f"  Entity txns sample accts: {entity_txns['acct'].head(5).to_list()}")
+print(f"  Entity txns sample years: {entity_txns['year'].head(5).to_list()}")
+print(f"  Valuations sample accts: {all_vals['acct'].head(5).to_list()}")
+print(f"  Valuations columns: {all_vals.columns}")
+
+# Check if tot_appr_val exists and has data
+if 'tot_appr_val' in all_vals.columns:
+    non_null = all_vals.filter(pl.col('tot_appr_val').is_not_null()).shape[0]
+    print(f"  Valuations with tot_appr_val: {non_null:,}")
+else:
+    print(f"  ⚠️ tot_appr_val NOT FOUND. Available: {all_vals.columns}")
+    # Try to find the right column
+    val_candidates = [c for c in all_vals.columns if 'val' in c.lower() or 'appr' in c.lower()]
+    print(f"  Value candidates: {val_candidates}")
 
 # Get valuation at time of purchase
+vals_for_join = all_vals.select(["acct", "year", "tot_appr_val"]).rename({"tot_appr_val": "buy_val"})
 buy_vals = entity_txns.join(
-    all_vals.rename({"tot_appr_val": "buy_val"}),
+    vals_for_join,
     on=["acct", "year"],
     how="left"
 )
+print(f"  After join: {len(buy_vals):,} rows, buy_val nulls: {buy_vals['buy_val'].null_count():,}")
 # Drop rows without a buy value
 buy_vals = buy_vals.filter(pl.col("buy_val").is_not_null() & (pl.col("buy_val") > 0))
 print(f"  Purchases with valuations: {len(buy_vals):,}")

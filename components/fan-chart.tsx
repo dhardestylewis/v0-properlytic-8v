@@ -40,7 +40,7 @@ function formatYAxisValue(value: number): string {
 /**
  * Calculate "nice" tick values for Y-axis that are human-readable
  */
-function getNiceYTicks(minVal: number, maxVal: number, targetCount = 3): number[] {
+function getNiceYTicks(minVal: number, maxVal: number, targetCount = 5): number[] {
   const range = maxVal - minVal
   if (range === 0) return [minVal]
 
@@ -67,8 +67,10 @@ function getNiceYTicks(minVal: number, maxVal: number, targetCount = 3): number[
     ticks.push(v)
   }
 
-  if (ticks.length > 5) {
-    return [ticks[0], ticks[Math.floor(ticks.length / 2)], ticks[ticks.length - 1]]
+  // Keep up to 8 ticks; if more, take every other one (keep first and last)
+  if (ticks.length > 8) {
+    const filtered = ticks.filter((_, i) => i % 2 === 0 || i === ticks.length - 1)
+    return filtered
   }
 
   return ticks
