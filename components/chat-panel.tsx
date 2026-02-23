@@ -29,9 +29,10 @@ interface ChatPanelProps {
     onMapAction: (action: MapAction) => void
     forecastMode?: boolean
     onTavusRequest?: () => void
+    tooltipVisible?: boolean
 }
 
-export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusRequest }: ChatPanelProps) {
+export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusRequest, tooltipVisible = false }: ChatPanelProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [input, setInput] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -160,7 +161,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 }
         md:absolute md:top-0 md:left-0 md:h-full
         ${isOpen ? "md:w-[400px]" : "md:w-0"}
-        bottom-0 left-1/2 right-0 w-1/2 md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
+        bottom-0 ${tooltipVisible ? 'left-1/2 right-0 w-1/2' : 'left-0 right-0 w-full'} md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
       `}
             style={isKeyboardOpen ? {
                 height: `${kbPanelHeight}px`,

@@ -493,6 +493,7 @@ function DashboardContent() {
           onMapAction={handleChatMapAction}
           forecastMode={filters.useForecastMap ?? false}
           onTavusRequest={handleFloatingConsultAI}
+          tooltipVisible={!!(mapState.selectedId || mapState.hoveredId)}
         />
 
         {/* Unified Sidebar Container - Top Left */}
