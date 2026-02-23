@@ -367,8 +367,8 @@ export function FanChart({
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className={onYearChange ? "w-full h-full cursor-crosshair" : "w-full h-full"}
-        preserveAspectRatio="xMidYMid meet"
-        style={{ maxHeight: height }}
+        preserveAspectRatio="none"
+        style={{ display: 'block' }}
         onMouseMove={onYearChange ? handleMouseMove : undefined}
         onMouseLeave={onYearChange ? () => setHoveredYear(null) : undefined}
         onClick={onYearChange ? handleClick : undefined}
@@ -567,5 +567,5 @@ export function FanChart({
     )
   }, [data, height, currentYear, historicalValues, p10, p50, p90, y_med, childLines, comparisonData, comparisonHistoricalValues, previewData, previewHistoricalValues, hoveredYear, onYearChange, yDomain])
 
-  return <div className="bg-secondary/30 rounded-lg p-2">{svgContent}</div>
+  return <div className="w-full h-full">{svgContent}</div>
 }
