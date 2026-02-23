@@ -1411,11 +1411,11 @@ export function ForecastMap({
                                     const pctTarget = isPresent ? null : isPast ? currentVal : forecastVal
                                     const pctChange = pctBase && pctTarget ? ((pctTarget - pctBase) / pctBase * 100) : null
                                     return (
-                                        <div className="relative w-full flex-1 min-h-[120px]">
+                                        <div className="relative w-full flex-1 h-full">
                                             {/* Full-width chart */}
                                             <div className="w-full h-full">
                                                 {fanChartData ? (
-                                                    <FanChart data={fanChartData} currentYear={year} height={120} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
+                                                    <FanChart data={fanChartData} currentYear={year} height={200} historicalValues={historicalValues} comparisonData={comparisonData} comparisonHistoricalValues={comparisonHistoricalValues} yDomain={effectiveYDomain} />
                                                 ) : isLoadingDetail ? (
                                                     <div className="h-full flex items-center justify-center">
                                                         <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
