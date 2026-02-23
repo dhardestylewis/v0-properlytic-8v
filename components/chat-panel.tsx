@@ -175,36 +175,38 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
             }}
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
-                {/* Header */}
-                <div className="flex items-center justify-between px-3 h-9 border-b border-border bg-background/80">
-                    <div className="flex items-center gap-2">
-                        <HomecastrLogo variant="horizontal" size={16} />
-                        <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
-                            Beta
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        {onTavusRequest && (
+                {/* Header — hidden when keyboard is open on mobile */}
+                {!isKeyboardOpen && (
+                    <div className="flex items-center justify-between px-3 h-9 border-b border-border bg-background/80">
+                        <div className="flex items-center gap-2">
+                            <HomecastrLogo variant="horizontal" size={16} />
+                            <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full font-medium">
+                                Beta
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {onTavusRequest && (
+                                <button
+                                    onClick={onTavusRequest}
+                                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
+                                    title="Talk to live agent"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polygon points="23 7 16 12 23 17 23 7" />
+                                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                    </svg>
+                                </button>
+                            )}
                             <button
-                                onClick={onTavusRequest}
+                                onClick={onClose}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
-                                title="Talk to live agent"
+                                aria-label="Close chat"
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polygon points="23 7 16 12 23 17 23 7" />
-                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                                </svg>
+                                <X className="w-4 h-4" />
                             </button>
-                        )}
-                        <button
-                            onClick={onClose}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted transition-colors"
-                            aria-label="Close chat"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
@@ -311,6 +313,18 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 py-1.5"
                             disabled={isLoading}
                         />
+                        {isKeyboardOpen && onTavusRequest && (
+                            <button
+                                onClick={onTavusRequest}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted/50 transition-colors shrink-0"
+                                title="Talk to live agent"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="23 7 16 12 23 17 23 7" />
+                                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                </svg>
+                            </button>
+                        )}
                         <button
                             onClick={sendMessage}
                             disabled={!input.trim() || isLoading}
