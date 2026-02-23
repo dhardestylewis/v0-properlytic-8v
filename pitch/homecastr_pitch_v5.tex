@@ -67,7 +67,7 @@
 \newcommand{\goldtext}[1]{{\color{hcGold}#1}}
 \newcommand{\mutedtext}[1]{{\color{hcMuted}#1}}
 \newcommand{\statbox}[2]{%
-  \begin{minipage}[t]{0.22\textwidth}
+  \begin{minipage}[t]{\linewidth}
     \centering
     {\LARGE\bfseries\color{hcGold}#1}\\[2pt]
     {\small\color{hcMuted}#2}
@@ -429,11 +429,13 @@
 \end{tikzpicture}
 \end{column}
 \begin{column}{0.42\textwidth}
+\vfill
 \statbox{14\%}{Median Error}
-\vspace{14pt}
+\vfill
 \statbox{4yr}{Forecast Horizon}
-\vspace{14pt}
+\vfill
 \statbox{1M+}{Properties Indexed}
+\vfill
 \end{column}
 \end{columns}
 
