@@ -231,17 +231,9 @@
   \draw[arr] (model) -- (output);
 \end{tikzpicture}
 \end{center}
-
-\vspace{20pt}
-
+\vspace{16pt}
 \begin{center}
-\statbox{14\%}{Median Error}
-\hfill
-\statbox{4yr}{Forecast Horizon}
-\hfill
-\statbox{1M+}{Properties Indexed}
-\hfill
-\statbox{<1s}{API Response}
+\mutedtext{\small Public data in. Probabilistic forecasts out. No black box.}
 \end{center}
 \end{frame}
 
@@ -281,7 +273,7 @@
 
 
 % ─── SLIDE 6: Market ─────────────────────────────────────────
-\begin{frame}{Market: The \$15B Forecast Layer}
+\begin{frame}{Market}
 \vspace{12pt}
 
 \begin{center}
@@ -306,7 +298,7 @@
   \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, 0.2) {\$200M};
   \node[text=hcMuted, font=\small, anchor=west] at (3.5, -0.3) {SAM\textsuperscript{2}};
 
-  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, -1.4) {\$2M};
+  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, -1.4) {\$1M};
   \node[text=hcMuted, font=\small, anchor=west] at (3.5, -1.9) {SOM\textsuperscript{3}};
 \end{tikzpicture}
 \end{center}
@@ -316,7 +308,7 @@
 \mutedtext{\tiny\parbox{0.9\textwidth}{\setlength{\baselineskip}{7pt}%
 \textsuperscript{1}\href{https://www.precedenceresearch.com/proptech-market}{US PropTech data market} (Precedence Research, 2025).\par
 \textsuperscript{2}SFR analytics segment (est.): \href{https://www.corelogic.com}{CoreLogic} SFR div., \href{https://www.housecanary.com}{HouseCanary} (\$18M), \href{https://www.attomdata.com}{ATTOM} (\$28M), \href{https://www.propstream.com}{PropStream} (\$25M+).\par
-\textsuperscript{3}Bottom-up: {\raise.17ex\hbox{$\scriptstyle\sim$}}6,000 ICP entities across 5 metros {\texttimes} \$99/mo {\texttimes} 28\% capture. Year 3 target.}}
+\textsuperscript{3}Bottom-up: {\raise.17ex\hbox{$\scriptstyle\sim$}}6,000 ICP entities across 5 metros {\texttimes} \$99/mo {\texttimes} 15\% capture. Year 3 target.}}
 \end{center}
 \end{frame}
 
@@ -358,7 +350,7 @@
 
   % Reventure: trend extrapolation (not truly predictive), PLG
   \fill[hcRed!60] (-0.5,2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north] at (-0.5,1.8) {Reventure};
+  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=south west] at (-0.2,2.1) {Reventure};
 
   % Homecastr — golden quadrant
   \fill[hcGold] (3.5,2.5) circle (8pt);
@@ -417,31 +409,23 @@
 
 % ─── SLIDE 9: Where We Are ─────────────────────────
 \begin{frame}{Where We Are}
-\vspace{8pt}
+\vspace{16pt}
 
-\begin{columns}[c]
-\begin{column}{0.55\textwidth}
-% TODO: Replace with actual dashboard screenshot
-\begin{tikzpicture}
-  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (7.0,4.8);
-  \node[font=\small\bfseries, text=hcMuted] at (3.5,2.4) {[Dashboard Screenshot]};
-  \node[font=\scriptsize, text=hcGold] at (3.5,1.6) {\href{https://homecastr.com}{Click for live demo}};
-\end{tikzpicture}
-\end{column}
-\begin{column}{0.42\textwidth}
-\vfill
-\statbox{14\%}{Median Error}
-\vfill
-\statbox{4yr}{Forecast Horizon}
-\vfill
-\statbox{1M+}{Properties Indexed}
-\vfill
-\end{column}
-\end{columns}
-
-\vspace{12pt}
 \begin{center}
-\mutedtext{\small Houston metro live. Diffusion-based model producing probabilistic forecast bands.}
+\statbox{14\%}{Median Error}
+\hfill
+\statbox{4yr}{Forecast Horizon}
+\hfill
+\statbox{1M+}{Properties Indexed}
+\hfill
+\statbox{\textless1s}{API Response}
+\end{center}
+
+\vspace{20pt}
+\begin{center}
+\mutedtext{\small Houston metro live. Diffusion-based model producing probabilistic forecast bands.}\\
+\vspace{6pt}
+\mutedtext{\small \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}} — Free. Live. Interactive.}
 \end{center}
 \end{frame}
 
