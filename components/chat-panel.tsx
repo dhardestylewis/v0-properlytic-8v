@@ -39,6 +39,13 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const { isKeyboardOpen, keyboardHeight } = useKeyboardOpen()
+    const [isMobile, setIsMobile] = useState(false)
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768)
+        check()
+        window.addEventListener('resize', check)
+        return () => window.removeEventListener('resize', check)
+    }, [])
 
     // Compute panel height: 30vh default on mobile, min 230px when keyboard up
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800
@@ -177,8 +184,8 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
             }}
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
-                {/* Header — hidden when keyboard is open on mobile */}
-                {!isKeyboardOpen && (
+                {/* Header — hidden on mobile (use corner icon to close) and when keyboard is open */}
+                {!isKeyboardOpen && !isMobile && (
                     <div className="flex items-center justify-between px-3 h-9 border-b border-border bg-background/80">
                         <div className="flex items-center gap-2">
                             <HomecastrLogo variant="horizontal" size={16} />
