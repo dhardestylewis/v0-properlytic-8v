@@ -238,32 +238,36 @@
 \begin{frame}{Why Now}
 \vspace{16pt}
 
-\begin{columns}[c]
-\begin{column}{0.48\textwidth}
 \begin{center}
 \begin{tikzpicture}
+  % Left card
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
+  % Right card
+  \fill[hcCard, rounded corners=8pt] (6.8,0) rectangle (13.0,5.2);
+
+  % ── Left card text (absolute coords) ──
   \node[anchor=north, text width=5.2cm, align=center] at (3.1,4.9) {
-    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} 300bps\\Swing}\\[10pt]
-    {\large\bfseries\color{hcText} Rate Volatility}\\[8pt]
+    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} 300bps\\Swing}
+  };
+  \node[anchor=north, text width=5.2cm, align=center] at (3.1,3.2) {
+    {\large\bfseries\color{hcText} Rate Volatility}
+  };
+  \node[anchor=north, text width=5.2cm, align=center] at (3.1,2.6) {
     {\scriptsize\color{hcMuted} Rates swung from 3\% to 8\% and back.\\[3pt]Static estimates are useless.\\[3pt]Buyers need forecast ranges.}
   };
-\end{tikzpicture}
-\end{center}
-\end{column}
-\begin{column}{0.48\textwidth}
-\begin{center}
-\begin{tikzpicture}
-  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.2,5.2);
-  \node[anchor=north, text width=5.2cm, align=center] at (3.1,4.9) {
-    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} Diffusion\\Models}\\[10pt]
-    {\large\bfseries\color{hcText} Now Feasible at Scale}\\[8pt]
+
+  % ── Right card text (same y-coords, shifted x by 6.8) ──
+  \node[anchor=north, text width=5.2cm, align=center] at (9.9,4.9) {
+    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} Diffusion\\Models}
+  };
+  \node[anchor=north, text width=5.2cm, align=center] at (9.9,3.2) {
+    {\large\bfseries\color{hcText} Now Feasible at Scale}
+  };
+  \node[anchor=north, text width=5.2cm, align=center] at (9.9,2.6) {
     {\scriptsize\color{hcMuted} Property-level probabilistic forecasts\\[3pt]are now proven at scale.}
   };
 \end{tikzpicture}
 \end{center}
-\end{column}
-\end{columns}
 
 \vspace{6pt}
 \begin{center}
@@ -308,7 +312,7 @@
 \mutedtext{\tiny\parbox{0.9\textwidth}{\setlength{\baselineskip}{7pt}%
 \textsuperscript{1}\href{https://www.precedenceresearch.com/proptech-market}{US PropTech data market} (Precedence Research, 2025).\par
 \textsuperscript{2}SFR analytics segment (est.): \href{https://www.corelogic.com}{CoreLogic} SFR div., \href{https://www.housecanary.com}{HouseCanary} (\$18M), \href{https://www.attomdata.com}{ATTOM} (\$28M), \href{https://www.propstream.com}{PropStream} (\$25M+).\par
-\textsuperscript{3}{\raise.17ex\hbox{$\scriptstyle\sim$}}6K operators {\texttimes} \$99/mo {\texttimes} 15\% penetration, 5 metros. Annual revenue ceiling.}}
+\textsuperscript{3}{\raise.17ex\hbox{$\scriptstyle\sim$}}8K operators {\texttimes} \$99/mo {\texttimes} 10\% penetration, 8 metros. Annual revenue ceiling.}}
 \end{center}
 \end{frame}
 
@@ -438,10 +442,10 @@
     minimum width=3.6cm, minimum height=1.4cm, align=center, font=\small},
   arr/.style={-{Stealth[length=5pt]}, very thick, color=hcGold}
 ]
-  \node[block] (consumers) at (-3.0,1.8) {\textbf{Free Users}\\{\scriptsize Drive adoption}};
-  \node[block] (signal) at (3.0,1.8) {\textbf{Conversational Data}\\{\scriptsize Reveal intent signals}};
-  \node[block] (model) at (3.0,-1.8) {\textbf{Better Model}\\{\scriptsize Improve accuracy}};
-  \node[block] (value) at (-3.0,-1.8) {\textbf{Pro Revenue}\\{\scriptsize Fund growth}};
+  \node[block] (consumers) at (-3.0,1.8) {\textbf{Free users}\\{\scriptsize Drive adoption}};
+  \node[block] (signal) at (3.0,1.8) {\textbf{Conversational data}\\{\scriptsize Reveal intent signals}};
+  \node[block] (model) at (3.0,-1.8) {\textbf{Better model}\\{\scriptsize Improve accuracy}};
+  \node[block] (value) at (-3.0,-1.8) {\textbf{Operator revenue}\\{\scriptsize Funds growth}};
 
   \draw[arr] (consumers) -- (signal);
   \draw[arr] (signal) -- (model);
@@ -467,40 +471,40 @@
 \begin{center}
 \begin{tikzpicture}[
   hdr/.style={font=\small\bfseries, text=hcGold, align=center},
-  lbl/.style={font=\footnotesize\bfseries, text=hcMuted, align=right},
+  lbl/.style={font=\footnotesize\bfseries, text=hcMuted, anchor=east},
   cell/.style={rounded corners=4pt, fill=hcCard, text=hcText,
-    minimum width=3.6cm, minimum height=1.0cm, align=center, font=\scriptsize},
+    minimum width=3.2cm, minimum height=1.0cm, align=center, font=\scriptsize},
   arr/.style={-{Stealth[length=4pt]}, thick, color=hcGold}
 ]
-  % Phase headers
-  \node[hdr] at (0, 3.4)   {Now};
-  \node[hdr] at (4.0, 3.4) {Q2--Q3};
-  \node[hdr] at (8.0, 3.4) {Q4+};
-  % Row labels
-  \node[lbl] at (-2.0, 2.5) {Product};
-  \node[lbl] at (-2.0, 1.4) {Geography};
-  \node[lbl] at (-2.0, 0.3) {Customers};
-  \node[lbl] at (-2.0,-0.8) {Revenue};
+  % Phase headers (aligned with cell centers)
+  \node[hdr] at (2.0, 3.4) {Now};
+  \node[hdr] at (5.6, 3.4) {Q2--Q3};
+  \node[hdr] at (9.2, 3.4) {Q4+};
+  % Row labels — right-anchored, clear gap before first cell
+  \node[lbl] at (0.3, 2.5) {Product};
+  \node[lbl] at (0.3, 1.4) {Geography};
+  \node[lbl] at (0.3, 0.3) {Customers};
+  \node[lbl] at (0.3,-0.8) {Revenue};
   % Product row
-  \node[cell] at (0,   2.5) {Free dashboard};
-  \node[cell] at (4.0, 2.5) {\$99/mo Operator tier};
-  \node[cell] at (8.0, 2.5) {Enterprise API};
+  \node[cell] at (2.0, 2.5) {Free dashboard};
+  \node[cell] at (5.6, 2.5) {\$99/mo Operator tier};
+  \node[cell] at (9.2, 2.5) {Enterprise API};
   % Geography row
-  \node[cell] at (0,   1.4) {Houston metro};
-  \node[cell] at (4.0, 1.4) {5 key metros};
-  \node[cell] at (8.0, 1.4) {National scale};
+  \node[cell] at (2.0, 1.4) {Houston metro};
+  \node[cell] at (5.6, 1.4) {5 key metros};
+  \node[cell] at (9.2, 1.4) {National scale};
   % Customers row
-  \node[cell] at (0,   0.3) {RE investors};
-  \node[cell] at (4.0, 0.3) {SFR operators};
-  \node[cell] at (8.0, 0.3) {1 institutional pilot};
+  \node[cell] at (2.0, 0.3) {RE investors};
+  \node[cell] at (5.6, 0.3) {SFR operators};
+  \node[cell] at (9.2, 0.3) {1 institutional pilot};
   % Revenue row
-  \node[cell] at (0,  -0.8) {\$0};
-  \node[cell] at (4.0,-0.8) {\$10K MRR};
-  \node[cell] at (8.0,-0.8) {\$30K MRR};
-  % Arrows across rows
+  \node[cell] at (2.0,-0.8) {\$0};
+  \node[cell] at (5.6,-0.8) {\$10K MRR};
+  \node[cell] at (9.2,-0.8) {\$30K MRR};
+  % Arrows between columns
   \foreach \y in {2.5, 1.4, 0.3, -0.8} {
-    \draw[arr] (1.85,\y) -- (2.15,\y);
-    \draw[arr] (5.85,\y) -- (6.15,\y);
+    \draw[arr] (3.65,\y) -- (3.95,\y);
+    \draw[arr] (7.25,\y) -- (7.55,\y);
   }
 \end{tikzpicture}
 \end{center}
