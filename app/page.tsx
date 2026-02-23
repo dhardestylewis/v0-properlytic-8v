@@ -497,7 +497,7 @@ function DashboardContent() {
         />
 
         {/* Unified Sidebar Container - Top Left */}
-        <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-3 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300 ${isChatOpen ? 'md:left-[416px]' : ''}`}>
+        <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-1.5 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300 ${isChatOpen ? 'md:left-[416px]' : ''}`}>
           {/* Search + Chat Toggle Row */}
           <div className="flex items-center gap-2">
             <SearchBox
