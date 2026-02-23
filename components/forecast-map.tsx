@@ -1324,7 +1324,7 @@ export function ForecastMap({
                     {/* Mobile Header — compact, at top of tooltip */}
                     {isMobile && (
                         <div
-                            className="w-full flex items-center justify-between px-2 h-7 bg-muted/40 backdrop-blur-md border-b border-border/50 shrink-0"
+                            className="w-full flex items-center justify-between px-2 pt-1 h-8 bg-muted/40 backdrop-blur-md border-b border-border/50 shrink-0"
                             data-tooltip-header="true"
                         >
                             <div className="flex items-center gap-1.5">
