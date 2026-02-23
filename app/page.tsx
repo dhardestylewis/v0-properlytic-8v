@@ -548,7 +548,7 @@ function DashboardContent() {
             />
 
             {/* Controls: 2x2 Grid on Mobile, Column on Desktop */}
-            <div className="grid grid-cols-2 grid-rows-2 gap-1 md:flex md:flex-col shrink-0 self-stretch">
+            <div className="grid grid-cols-2 grid-rows-2 gap-1 md:flex md:flex-col shrink-0 self-stretch w-[4.5rem] md:w-auto">
 
               {/* Single Select */}
               <button
