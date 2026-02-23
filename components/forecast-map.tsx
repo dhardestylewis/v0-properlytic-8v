@@ -150,7 +150,7 @@ export function ForecastMap({
         return () => window.removeEventListener('resize', check)
     }, [])
 
-    const isKeyboardOpen = useKeyboardOpen()
+    const { isKeyboardOpen, keyboardHeight } = useKeyboardOpen()
 
     // Mobile swipe-to-minimize state
     const [mobileMinimized, setMobileMinimized] = useState(false)
@@ -1275,9 +1275,9 @@ export function ForecastMap({
                     style={isMobile ? {
                         transform: `translateY(calc(${mobileMinimized ? '100% - 24px' : '0px'} + ${swipeDragOffset}px))`,
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
-                        height: isChatOpen ? (isKeyboardOpen ? '170px' : '40vh') : undefined,
-                        maxHeight: isKeyboardOpen ? '170px' : '40vh',
-                        bottom: isKeyboardOpen ? `${window.innerHeight - (window.visualViewport?.height ?? window.innerHeight)}px` : undefined,
+                        height: isChatOpen ? (isKeyboardOpen ? `${Math.max(window.innerHeight * 0.4 - keyboardHeight, 170)}px` : '40vh') : undefined,
+                        maxHeight: isKeyboardOpen ? `${Math.max(window.innerHeight * 0.4 - keyboardHeight, 170)}px` : '40vh',
+                        bottom: isKeyboardOpen ? `${keyboardHeight}px` : undefined,
                         overflowY: 'hidden',
                     } : {
                         left: displayPos.globalX,

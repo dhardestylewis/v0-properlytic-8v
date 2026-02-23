@@ -3,32 +3,75 @@
 import { useState, useEffect } from "react"
 
 /**
- * Detects whether the mobile keyboard is open by comparing
- * window.visualViewport.height to window.innerHeight.
- * Returns true when keyboard takes up significant screen space.
+ * Detects whether the mobile keyboard is open.
+ * With overlays-content viewport, visualViewport doesn't resize,
+ * so we detect via focus/blur on input/textarea elements
+ * and use navigator.virtualKeyboard or a fallback estimate for height.
+ *
+ * Returns { isKeyboardOpen, keyboardHeight }
  */
 export function useKeyboardOpen() {
     const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
+    const [keyboardHeight, setKeyboardHeight] = useState(0)
 
     useEffect(() => {
-        const vv = window.visualViewport
-        if (!vv) return // Not supported (desktop)
+        // Only on mobile
+        if (typeof window === 'undefined') return
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+        if (!isMobile) return
 
-        const threshold = 150 // px — keyboard is at least 150px tall
-
-        const handleResize = () => {
-            const keyboardHeight = window.innerHeight - vv.height
-            setIsKeyboardOpen(keyboardHeight > threshold)
+        // Try to enable VirtualKeyboard API
+        const vk = (navigator as any).virtualKeyboard
+        if (vk) {
+            vk.overlaysContent = true
         }
 
-        vv.addEventListener("resize", handleResize)
-        vv.addEventListener("scroll", handleResize)
+        const handleFocusIn = (e: FocusEvent) => {
+            const target = e.target as HTMLElement
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                setIsKeyboardOpen(true)
+                // Estimate keyboard height — use VirtualKeyboard API if available
+                if (vk?.boundingRect?.height) {
+                    setKeyboardHeight(vk.boundingRect.height)
+                } else {
+                    // Fallback: estimate ~40% of screen for keyboard
+                    setKeyboardHeight(Math.round(window.innerHeight * 0.4))
+                }
+            }
+        }
+
+        const handleFocusOut = (e: FocusEvent) => {
+            const related = e.relatedTarget as HTMLElement | null
+            // Only close if not focusing another input
+            if (!related || (related.tagName !== 'INPUT' && related.tagName !== 'TEXTAREA')) {
+                setIsKeyboardOpen(false)
+                setKeyboardHeight(0)
+            }
+        }
+
+        // Also listen to VirtualKeyboard geometry changes
+        const handleGeometryChange = () => {
+            if (vk?.boundingRect) {
+                const h = vk.boundingRect.height
+                setKeyboardHeight(h)
+                setIsKeyboardOpen(h > 0)
+            }
+        }
+
+        document.addEventListener('focusin', handleFocusIn)
+        document.addEventListener('focusout', handleFocusOut)
+        if (vk) {
+            vk.addEventListener('geometrychange', handleGeometryChange)
+        }
 
         return () => {
-            vv.removeEventListener("resize", handleResize)
-            vv.removeEventListener("scroll", handleResize)
+            document.removeEventListener('focusin', handleFocusIn)
+            document.removeEventListener('focusout', handleFocusOut)
+            if (vk) {
+                vk.removeEventListener('geometrychange', handleGeometryChange)
+            }
         }
     }, [])
 
-    return isKeyboardOpen
+    return { isKeyboardOpen, keyboardHeight }
 }

@@ -37,17 +37,12 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
-    const isKeyboardOpen = useKeyboardOpen()
-    const [vvHeight, setVvHeight] = useState<number | null>(null)
+    const { isKeyboardOpen, keyboardHeight } = useKeyboardOpen()
 
-    // Track visual viewport height for keyboard-aware sizing
-    useEffect(() => {
-        const vv = window.visualViewport
-        if (!vv) return
-        const update = () => setVvHeight(vv.height)
-        vv.addEventListener('resize', update)
-        return () => vv.removeEventListener('resize', update)
-    }, [])
+    // Compute keyboard-aware panel height: 40vh minus keyboard, min 170px (chart height)
+    const kbPanelHeight = isKeyboardOpen
+        ? Math.max(window.innerHeight * 0.4 - keyboardHeight, 170)
+        : window.innerHeight * 0.4
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -167,12 +162,12 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
         ${isOpen ? "md:w-[400px]" : "md:w-0"}
         bottom-0 left-1/2 right-0 w-1/2 md:left-0 md:w-auto md:h-full md:max-h-full md:right-auto rounded-t-xl md:rounded-none overflow-hidden
       `}
-            style={isKeyboardOpen && vvHeight ? {
-                height: '170px',
-                maxHeight: '170px',
+            style={isKeyboardOpen ? {
+                height: `${kbPanelHeight}px`,
+                maxHeight: `${kbPanelHeight}px`,
                 width: '100%',
                 left: 0,
-                bottom: `${window.innerHeight - vvHeight}px`,
+                bottom: `${keyboardHeight}px`,
                 borderRadius: 0,
             } : {
                 height: '40vh',
