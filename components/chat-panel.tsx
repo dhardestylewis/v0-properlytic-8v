@@ -172,6 +172,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 maxHeight: '120px',
                 width: '100%',
                 left: 0,
+                bottom: `${window.innerHeight - vvHeight}px`,
                 borderRadius: 0,
             } : {
                 height: '40vh',
