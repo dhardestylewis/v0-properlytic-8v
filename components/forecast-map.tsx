@@ -1528,7 +1528,7 @@ export function ForecastMap({
             )}
 
             {/* Forecast mode badge */}
-            <div className="absolute top-4 right-4 z-50">
+            <div className="absolute bottom-20 right-4 md:bottom-auto md:top-4 z-50">
                 <div className="glass-panel rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-lg border border-white/10">
                     <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
                     <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
