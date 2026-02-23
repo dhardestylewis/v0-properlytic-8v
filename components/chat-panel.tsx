@@ -118,10 +118,6 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
 
                 // Handle navigation actions (fly-to with lat/lng)
                 if (navActions.length > 0) {
-                    // Offset longitude to account for the 400px chat sidebar covering the left side
-                    // At zoom Z, 1 pixel ≈ 360 / (256 * 2^Z) degrees of longitude
-                    // 200px offset (half of 400px sidebar) at various zooms:
-                    const computeOffset = (zoom: number) => (200 * 360) / (256 * Math.pow(2, zoom))
 
                     // Preserve area_id/level from whichever action has them
                     const areaAction = navActions.find((a: any) => a.area_id)
@@ -138,13 +134,10 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                     })
 
                     if (uniqueActions.length === 1) {
-                        // Single location — fly directly, offset for sidebar
+                        // Single location — fly directly
                         const a = uniqueActions[0]
-                        const offset = computeOffset(a.zoom)
                         console.log(`[MapAction] Requested: (${a.lat.toFixed(5)}, ${a.lng.toFixed(5)}) zoom=${a.zoom}`)
-                        console.log(`[MapAction] Sidebar offset: -${offset.toFixed(5)}° (shifting map center west)`)
-                        console.log(`[MapAction] Adjusted center: (${a.lat.toFixed(5)}, ${(a.lng - offset).toFixed(5)})`)
-                        onMapAction({ ...a, lng: a.lng - offset, ...(areaId ? { area_id: areaId, level } : {}) })
+                        onMapAction({ ...a, ...(areaId ? { area_id: areaId, level } : {}) })
                     } else {
                         // Multiple locations (e.g. comparison) — compute midpoint + zoom to show all
                         const actions = uniqueActions as MapAction[]
@@ -154,12 +147,9 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                         const lngSpan = Math.max(...actions.map(a => a.lng)) - Math.min(...actions.map(a => a.lng))
                         const maxSpan = Math.max(latSpan, lngSpan)
                         const fitZoom = maxSpan < 0.01 ? 15 : maxSpan < 0.05 ? 13 : maxSpan < 0.1 ? 12 : maxSpan < 0.3 ? 11 : 10
-                        const offset = computeOffset(fitZoom)
                         console.log(`[MapAction] ${actions.length} locations:`, actions.map(a => `(${a.lat.toFixed(5)}, ${a.lng.toFixed(5)})`))
                         console.log(`[MapAction] Midpoint: (${avgLat.toFixed(5)}, ${avgLng.toFixed(5)}), span=${maxSpan.toFixed(4)}, fitZoom=${fitZoom}`)
-                        console.log(`[MapAction] Sidebar offset: -${offset.toFixed(5)}° (shifting map center west)`)
-                        console.log(`[MapAction] Adjusted center: (${avgLat.toFixed(5)}, ${(avgLng - offset).toFixed(5)})`)
-                        onMapAction({ lat: avgLat, lng: avgLng - offset, zoom: fitZoom, ...(areaId ? { area_id: areaId, level } : {}) })
+                        onMapAction({ lat: avgLat, lng: avgLng, zoom: fitZoom, ...(areaId ? { area_id: areaId, level } : {}) })
                     }
                 }
             }

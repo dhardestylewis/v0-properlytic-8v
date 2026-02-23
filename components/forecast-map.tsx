@@ -943,8 +943,8 @@ export function ForecastMap({
                         zoom: targetZoom,
                         duration: 2000,
                     })
-                    // After fly completes AND tiles load, auto-select the feature at center
-                    map.once("idle", () => {
+                    // Auto-select feature at center after fly completes, with retry for tile loading
+                    const attemptSelect = (retries: number) => {
                         const zoom = map.getZoom()
                         const sourceLayer = getSourceLayer(zoom)
                         const activeSuffix = (map as any)._activeSuffix || "a"
@@ -957,13 +957,11 @@ export function ForecastMap({
                             const feature = features[0]
                             const id = (feature.properties?.id || feature.id) as string
                             if (id) {
-                                // Clear prev selection
                                 if (selectedIdRef.current) {
                                     ;["forecast-a", "forecast-b"].forEach((s) => {
                                         try { map.setFeatureState({ source: s, sourceLayer, id: selectedIdRef.current! }, { selected: false }) } catch { }
                                     })
                                 }
-                                // Set new selection
                                 selectedIdRef.current = id
                                 setSelectedId(id)
                                 setSelectedProps(feature.properties)
@@ -974,8 +972,12 @@ export function ForecastMap({
                                     })
                                 fetchForecastDetail(id, sourceLayer)
                             }
+                        } else if (retries > 0) {
+                            console.log(`[ForecastMap] No features at center, retrying... (${retries} left)`)
+                            setTimeout(() => attemptSelect(retries - 1), 500)
                         }
-                    })
+                    }
+                    map.once("idle", () => attemptSelect(3))
                 }
             } else if (action === "location_to_area" || action === "add_location_to_selection" || action === "resolve_place" || action === "get_forecast_area") {
                 // All these return lat/lng — fly to it and auto-select the center feature
