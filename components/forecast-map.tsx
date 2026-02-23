@@ -1290,7 +1290,12 @@ export function ForecastMap({
                             dragRef.current = { startX: e.clientX, startY: e.clientY, origX: fixedTooltipPos.globalX, origY: fixedTooltipPos.globalY }
                         }
                     } : undefined}
-                    onTouchStart={isMobile ? (e) => setSwipeTouchStart(e.touches[0].clientY) : undefined}
+                    onTouchStart={isMobile ? (e) => {
+                        // Skip swipe tracking if touch is on the header bar
+                        const target = e.target as HTMLElement
+                        if (target.closest('[data-tooltip-header]')) return
+                        setSwipeTouchStart(e.touches[0].clientY)
+                    } : undefined}
                     onTouchMove={isMobile ? (e) => {
                         if (swipeTouchStart === null) return
                         const delta = e.touches[0].clientY - swipeTouchStart
@@ -1316,20 +1321,19 @@ export function ForecastMap({
                     {isMobile && (
                         <div
                             className="w-full flex items-center justify-between px-3 h-9 bg-muted/40 backdrop-blur-md border-b border-border/50"
-                            onTouchStart={(e) => e.stopPropagation()}
-                            onTouchMove={(e) => e.stopPropagation()}
-                            onTouchEnd={(e) => e.stopPropagation()}
+                            data-tooltip-header="true"
                         >
                             <div className="flex items-center gap-2">
                                 <HomecastrLogo variant="horizontal" size={16} />
                                 <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
-                                onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onFeatureSelect(null); }}
+                                onClick={() => onFeatureSelect(null)}
                                 className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
                                 aria-label="Close tooltip"
+                                style={{ touchAction: 'manipulation' }}
                             >
-                                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ pointerEvents: 'none' }}>
                                     <line x1="2" y1="2" x2="10" y2="10" /><line x1="10" y1="2" x2="2" y2="10" />
                                 </svg>
                             </button>
