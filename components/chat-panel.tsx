@@ -40,11 +40,11 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
     const inputRef = useRef<HTMLInputElement>(null)
     const { isKeyboardOpen, keyboardHeight } = useKeyboardOpen()
 
-    // Compute keyboard-aware panel height: 40vh minus keyboard, min 170px (chart height)
+    // Compute panel height: 30vh default on mobile, min 230px when keyboard up
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800
     const kbPanelHeight = isKeyboardOpen
         ? Math.max(vh * 0.4 - keyboardHeight, 230)
-        : vh * 0.4
+        : vh * 0.3
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -172,8 +172,8 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 bottom: `${keyboardHeight}px`,
                 borderRadius: 0,
             } : {
-                height: '40vh',
-                maxHeight: '40vh',
+                height: '30vh',
+                maxHeight: '30vh',
             }}
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
