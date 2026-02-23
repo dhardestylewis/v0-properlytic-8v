@@ -1275,9 +1275,9 @@ export function ForecastMap({
                     style={isMobile ? {
                         transform: `translateY(calc(${mobileMinimized ? '100% - 24px' : '0px'} + ${swipeDragOffset}px))`,
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
-                        height: '30vh',
-                        maxHeight: '30vh',
-                        bottom: isChatOpen ? '30vh' : '0px',
+                        height: '22vh',
+                        maxHeight: '22vh',
+                        bottom: isChatOpen ? '22vh' : '0px',
                         overflowY: 'hidden',
                     } : {
                         left: displayPos.globalX,
@@ -1321,38 +1321,7 @@ export function ForecastMap({
                         setSwipeTouchStart(null)
                     } : undefined}
                 >
-                    {/* Mobile Header with Close Button — hidden when keyboard open */}
-                    {isMobile && !isKeyboardOpen && (
-                        <div
-                            className="w-full flex items-center justify-between px-3 h-9 bg-muted/40 backdrop-blur-md border-b border-border/50"
-                            data-tooltip-header="true"
-                        >
-                            <div className="flex items-center gap-2">
-                                <HomecastrLogo variant="horizontal" size={16} />
-                                <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    selectedIdRef.current = null;
-                                    setSelectedId(null);
-                                    hoveredIdRef.current = null;
-                                    setTooltipPos(null);
-                                    setFixedTooltipPos(null);
-                                    setSelectedCoords(null);
-                                    onFeatureSelect(null);
-                                }}
-                                className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full active:bg-muted/60 text-muted-foreground"
-                                aria-label="Close tooltip"
-                                style={{ touchAction: 'manipulation' }}
-                            >
-                                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ pointerEvents: 'none' }}>
-                                    <line x1="2" y1="2" x2="10" y2="10" /><line x1="10" y1="2" x2="2" y2="10" />
-                                </svg>
-                            </button>
-                        </div>
-                    )}
+                    {/* Mobile header removed — swipe down to dismiss */}
 
                     {/* Header - matching MapTooltip (hidden on mobile) */}
                     {!isMobile && (
