@@ -547,70 +547,37 @@ function DashboardContent() {
               originYear={2025}
             />
 
-            {/* Controls Column: Grid on Mobile, Flex Col on Desktop */}
-            <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-col md:w-8 shrink-0">
+            {/* Controls Column */}
+            <div className="flex flex-col gap-1.5 shrink-0">
 
-              {/* Mobile Selection Buttons (Hidden on Desktop) */}
-              <div className="flex flex-col gap-1.5 md:hidden w-8">
-                <button
-                  onClick={() => setMobileSelectionMode('replace')}
-                  className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] ${mobileSelectionMode === 'replace' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
-                  title="Single Select"
-                >
-                  1
-                </button>
-                <button
-                  onClick={() => setMobileSelectionMode('add')}
-                  className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
-                  title="Multi Select (Add)"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => setMobileSelectionMode('range')}
-                  className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] ${mobileSelectionMode === 'range' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
-                  title="Range Select"
-                >
-                  <ArrowLeftRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              {/* Mobile Multi-Select Toggle (Hidden on Desktop) */}
+              <button
+                onClick={() => setMobileSelectionMode(mobileSelectionMode === 'add' ? 'replace' : 'add')}
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors shadow-sm md:hidden ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
+                title={mobileSelectionMode === 'add' ? "Multi Select On" : "Multi Select Off"}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
 
-              {/* Vertical Zoom Controls (Always Visible, Col 2 on Mobile) */}
-              <div className="flex flex-col gap-1.5 w-8">
-                <button
-                  onClick={() => {
-                    setMapState({ zoom: Math.min(18, mapState.zoom + 1) })
-                  }}
-                  className="w-8 h-8 glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
-                  aria-label="Zoom In"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    setMapState({ zoom: Math.max(9, mapState.zoom - 1) })
-                  }}
-                  className="w-8 h-8 glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
-                  aria-label="Zoom Out"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    setMapState({
-                      center: [-95.3698, 29.7604],
-                      zoom: 11,
-                      selectedId: null
-                    })
-                    resetFilters()
-                  }}
-                  className="w-8 h-8 glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
-                  aria-label="Reset Map"
-                  title="Reset Map"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                </button>
-              </div>
+              {/* Zoom Controls */}
+              <button
+                onClick={() => {
+                  setMapState({ zoom: Math.min(18, mapState.zoom + 1) })
+                }}
+                className="w-7 h-7 glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
+                aria-label="Zoom In"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  setMapState({ zoom: Math.max(9, mapState.zoom - 1) })
+                }}
+                className="w-7 h-7 glass-panel rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors shadow-sm active:scale-95"
+                aria-label="Zoom Out"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
 
