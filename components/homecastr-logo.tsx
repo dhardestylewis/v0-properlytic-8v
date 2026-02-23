@@ -8,9 +8,9 @@ interface HomecastrLogoProps {
 
 export function HomecastrLogo({ className = "", size = 32, variant = "icon" }: HomecastrLogoProps) {
     if (variant === "horizontal") {
-        // Horizontal logo is ~6.4:1 aspect ratio (1050x165)
+        // Horizontal logo aspect ratio (563x127)
         const height = size
-        const width = Math.round(height * (1050 / 165))
+        const width = Math.round(height * (563 / 127))
         return (
             <Image
                 src="/homecastr-logo-horizontal.png"
