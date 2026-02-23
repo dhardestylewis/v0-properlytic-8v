@@ -206,10 +206,10 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                 left: 0,
                 bottom: `${keyboardHeight}px`,
                 borderRadius: 0,
-            } : {
+            } : isMobile ? {
                 height: '25vh',
                 maxHeight: '25vh',
-            }}
+            } : {}}
         >
             <div className="h-full flex flex-col glass-panel border-t md:border-t-0 md:border-r border-border rounded-t-xl md:rounded-none">
                 {/* Header — hidden on mobile (use corner icon to close) and when keyboard is open */}
