@@ -359,7 +359,15 @@ const FORECAST_TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
         type: "function",
         function: {
             name: "clear_selection",
-            description: "Clear all current map selections and reset the view.",
+            description: "Clear the current map selection, dismissing the tooltip, fan chart, and deselecting any highlighted geometry. Use when the user asks to clear, reset, dismiss, or close the current selection or tooltip.",
+            parameters: { type: "object", properties: {}, required: [] }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "clear_comparison",
+            description: "Clear only the comparison overlay while keeping the primary selection and tooltip visible. Use when the user asks to remove or clear just the comparison.",
             parameters: { type: "object", properties: {}, required: [] }
         }
     }
@@ -390,7 +398,8 @@ RULES:
 6. FLY + LOCK: Always batch 'fly_to_location' with 'location_to_area' so the map pans AND the tooltip locks.
 7. NEVER mention technical IDs. Say "this zip code" or "this neighborhood" instead.
 8. Use Markdown formatting. Be concise and analytical.
-9. GEOGRAPHIC BOUNDARY: Our data covers ONLY Harris County, TX. If the user asks about a location outside Harris County (e.g. The Woodlands, Katy, Sugar Land outside Harris), politely explain that Homecastr currently covers Harris County only and suggest a nearby Harris County neighborhood instead. NEVER select or fly to a location outside Harris County.`
+9. GEOGRAPHIC BOUNDARY: Our data covers ONLY Harris County, TX. If the user asks about a location outside Harris County (e.g. The Woodlands, Katy, Sugar Land outside Harris), politely explain that Homecastr currently covers Harris County only and suggest a nearby Harris County neighborhood instead. NEVER select or fly to a location outside Harris County.
+10. MANDATORY TOOL USE: You MUST call the appropriate tool for ANY map interaction. NEVER claim you performed an action without calling the tool. If the user asks to clear selections, you MUST call 'clear_selection'. If the user asks to clear just the comparison, MUST call 'clear_comparison'. If asked to zoom or pan, MUST call 'fly_to_location'. NEVER say "I can't" for actions you have tools for.`
 
 export async function POST(req: NextRequest) {
     try {
@@ -484,7 +493,16 @@ export async function POST(req: NextRequest) {
                     conversationMessages.push({
                         role: "tool",
                         tool_call_id: tc.id,
-                        content: JSON.stringify({ status: "ok", message: "Selection cleared." }),
+                        content: JSON.stringify({ status: "ok", message: "Selection cleared. The tooltip, fan chart, and map highlight have been dismissed." }),
+                    })
+                } else if (toolFn.name === "clear_comparison") {
+                    // UI tool — clear only the comparison overlay
+                    allMapActions.push({ action: "clear_comparison" })
+                    console.log(`[Chat API] clear_comparison`)
+                    conversationMessages.push({
+                        role: "tool",
+                        tool_call_id: tc.id,
+                        content: JSON.stringify({ status: "ok", message: "Comparison overlay cleared. Primary selection remains." }),
                     })
                 } else {
                     // API tool — query real data

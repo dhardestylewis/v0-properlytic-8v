@@ -928,6 +928,12 @@ export function ForecastMap({
                 comparisonFetchRef.current = null
                 detailFetchRef.current = null
                 onFeatureSelect(null)
+            } else if (action === "clear_comparison") {
+                // Clear only the comparison overlay, keep primary selection
+                console.log('[ForecastMap] clear_comparison')
+                setComparisonData(null)
+                setComparisonHistoricalValues(undefined)
+                comparisonFetchRef.current = null
             } else if (action === "fly_to_location" && params) {
                 const map = mapRef.current
                 if (map && params.lat && params.lng) {

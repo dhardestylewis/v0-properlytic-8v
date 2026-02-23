@@ -68,6 +68,16 @@ function DashboardContent() {
       return
     }
 
+    // Handle clear_comparison action (keep primary selection, clear comparison overlay)
+    if ((action as any).action === 'clear_comparison') {
+      console.log('[PAGE] clear_comparison from chat')
+      window.dispatchEvent(new CustomEvent("tavus-map-action", {
+        detail: { action: "clear_comparison" }
+      }))
+      toast({ title: "Comparison cleared", duration: 2000 })
+      return
+    }
+
     // Use area_id for forecast mode, select_hex_id for H3 mode
     const selectedId = action.area_id || action.select_hex_id || undefined
     setMapState({
