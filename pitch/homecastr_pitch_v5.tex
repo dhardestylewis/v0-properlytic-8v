@@ -192,7 +192,7 @@
 
 \vspace{12pt}
 \begin{center}
-\mutedtext{\small \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}} \quad Free. Live. Interactive.}
+\mutedtext{\small \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}} \textbar{} Free. Live. Interactive.}
 \end{center}
 \end{frame}
 
@@ -359,10 +359,9 @@
 \end{tikzpicture}
 \end{center}
 
-\vspace{-4pt}
+\vspace{-16pt}
 \begin{center}
-\mutedtext{\small Only product-led platform with backtested, probabilistic forecasts.}\\
-\mutedtext{\small Incumbents sell to enterprises. Consumer tools don't forecast.}
+\mutedtext{\small Only product-led platform with backtested, probabilistic forecasts.}
 \end{center}
 \end{frame}
 
@@ -467,41 +466,47 @@
 
 \begin{center}
 \begin{tikzpicture}[
-  phase/.style={rounded corners=6pt, fill=hcCard, text=hcText,
-    minimum width=3.4cm, minimum height=2cm, align=center, font=\small},
-  arr/.style={-{Stealth[length=5pt]}, thick, color=hcGold}
+  hdr/.style={font=\small\bfseries, text=hcGold, align=center},
+  lbl/.style={font=\footnotesize\bfseries, text=hcMuted, align=right},
+  cell/.style={rounded corners=4pt, fill=hcCard, text=hcText,
+    minimum width=3.6cm, minimum height=1.0cm, align=center, font=\scriptsize},
+  arr/.style={-{Stealth[length=4pt]}, thick, color=hcGold}
 ]
-  \node[phase] (p1) at (0,0) {
-    \goldtext{\textbf{Now}}\\[4pt]
-    Free dashboard\\[2pt]
-    RE investors\\[2pt]
-    Houston metro
-  };
-  \node[phase] (p2) at (5,0) {
-    \goldtext{\textbf{Q2--Q3}}\\[4pt]
-    5 Key Metros\\[2pt]
-    SFR Operator Pilots\\[2pt]
-     \$99/mo
-  };
-  \node[phase] (p3) at (10,0) {
-    \goldtext{\textbf{Q4+}}\\[4pt]
-    National Scale\\[2pt]
-    \$30K MRR\\[2pt]
-    1 Institutional Pilot
-  };
-
-  \draw[arr] (p1) -- (p2);
-  \draw[arr] (p2) -- (p3);
+  % Phase headers
+  \node[hdr] at (0, 3.4)   {Now};
+  \node[hdr] at (4.0, 3.4) {Q2--Q3};
+  \node[hdr] at (8.0, 3.4) {Q4+};
+  % Row labels
+  \node[lbl] at (-2.0, 2.5) {Product};
+  \node[lbl] at (-2.0, 1.4) {Geography};
+  \node[lbl] at (-2.0, 0.3) {Customers};
+  \node[lbl] at (-2.0,-0.8) {Revenue};
+  % Product row
+  \node[cell] at (0,   2.5) {Free dashboard};
+  \node[cell] at (4.0, 2.5) {\$99/mo Operator tier};
+  \node[cell] at (8.0, 2.5) {Enterprise API};
+  % Geography row
+  \node[cell] at (0,   1.4) {Houston metro};
+  \node[cell] at (4.0, 1.4) {5 key metros};
+  \node[cell] at (8.0, 1.4) {National scale};
+  % Customers row
+  \node[cell] at (0,   0.3) {RE investors};
+  \node[cell] at (4.0, 0.3) {SFR operators};
+  \node[cell] at (8.0, 0.3) {1 institutional pilot};
+  % Revenue row
+  \node[cell] at (0,  -0.8) {\$0};
+  \node[cell] at (4.0,-0.8) {\$10K MRR};
+  \node[cell] at (8.0,-0.8) {\$30K MRR};
+  % Arrows across rows
+  \foreach \y in {2.5, 1.4, 0.3, -0.8} {
+    \draw[arr] (1.85,\y) -- (2.15,\y);
+    \draw[arr] (5.85,\y) -- (6.15,\y);
+  }
 \end{tikzpicture}
 \end{center}
-
-\vspace{12pt}
+\vspace{4pt}
 \begin{center}
-\begin{itemize}\setlength{\itemsep}{8pt}
-  \item \goldtext{\textbf{Programmatic SEO}}\\\mutedtext{Capture ``Will [Address] appreciate?'' searches}
-  \item \goldtext{\textbf{Broker-Client Loops}}\\\mutedtext{Agents share forecasts with clients}
-  \item \goldtext{\textbf{Organic Growth}}\\\mutedtext{Free tool drives word-of-mouth}
-\end{itemize}
+\mutedtext{\scriptsize Programmatic SEO \textbullet\ Broker-client sharing \textbullet\ Organic growth}
 \end{center}
 \end{frame}
 
