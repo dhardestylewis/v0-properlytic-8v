@@ -94,7 +94,7 @@ export function FanChart({
 
   const svgContent = useMemo(() => {
     const width = 300
-    const padding = { top: 20, right: 15, bottom: 50, left: 55 }
+    const padding = { top: 10, right: 15, bottom: 20, left: 55 }
     const chartWidth = width - padding.left - padding.right
     const chartHeight = height - padding.top - padding.bottom
 
