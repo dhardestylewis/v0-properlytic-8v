@@ -29,6 +29,8 @@ const GEO_LEVELS = [
 function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHeight: number) {
     if (typeof window === "undefined") return { x, y }
 
+    const isMobileView = windowWidth < 768
+
     let left = x + 20
     let top = y - 20
 
@@ -51,6 +53,21 @@ function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHei
 
     top = Math.max(10, Math.min(top, windowHeight - TOOLTIP_HEIGHT - 10))
     left = Math.max(10, left)
+
+    // Desktop: avoid the top-left UI zone (logo, mode badge, zoom controls occupy ~220px wide × 140px tall)
+    if (!isMobileView) {
+        const TOP_LEFT_BLOCK_W = 220
+        const TOP_LEFT_BLOCK_H = 140
+        const overlapsTopLeft = left < TOP_LEFT_BLOCK_W && top < TOP_LEFT_BLOCK_H
+        if (overlapsTopLeft) {
+            // Prefer pushing right; if no room, push down
+            if (left + TOOLTIP_WIDTH + TOP_LEFT_BLOCK_W < windowWidth) {
+                left = TOP_LEFT_BLOCK_W + 10
+            } else {
+                top = TOP_LEFT_BLOCK_H + 10
+            }
+        }
+    }
 
     return { x: left, y: top }
 }
