@@ -1014,62 +1014,52 @@ export function ForecastMap({
                         zoom: targetZoom,
                         duration: 2000,
                     })
-                    // Auto-select feature at center after fly completes, with retry for tile loading
-                    const attemptSelect = (retries: number) => {
-                        const activeSuffix = (map as any)._activeSuffix || "a"
-                        const center = map.project(map.getCenter())
-                        // Query ALL fill layers, not just the one for current zoom
-                        const allFillLayers = getAllFillLayerIds(activeSuffix).filter(id => map.getLayer(id))
-                        // Try point query first, then a small bbox for better hit rate
-                        let features = map.queryRenderedFeatures(center, { layers: allFillLayers })
-                        if (features.length === 0) {
-                            // Try a 10px bbox around center
-                            const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
-                                [center.x - 10, center.y - 10],
-                                [center.x + 10, center.y + 10],
-                            ]
-                            features = map.queryRenderedFeatures(bbox, { layers: allFillLayers })
-                        }
-                        if (features.length > 0) {
-                            const feature = features[0]
-                            const sourceLayer = feature.sourceLayer || getSourceLayer(map.getZoom())
-                            const id = (feature.properties?.id || feature.id) as string
-                            if (id) {
-                                if (selectedIdRef.current) {
-                                    ;["forecast-a", "forecast-b"].forEach((s) => {
-                                        try { map.setFeatureState({ source: s, sourceLayer, id: selectedIdRef.current! }, { selected: false }) } catch { }
-                                    })
-                                }
-                                selectedIdRef.current = id
-                                setSelectedId(id)
-                                setSelectedProps(feature.properties)
-                                setSelectedCoords([params.lat, params.lng])
-                                setTooltipCoords([params.lat, params.lng])
-                                onFeatureSelect(id)
-
-                                // Position tooltip at center of viewport (no mouse event)
-                                const centerScreen = map.project(map.getCenter())
-                                const rect = map.getCanvas().getBoundingClientRect()
-                                const screenX = rect.left + centerScreen.x
-                                const screenY = rect.top + centerScreen.y
-                                const smartPos = getSmartTooltipPos(screenX, screenY, window.innerWidth, window.innerHeight)
-                                setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
-                                setTooltipData({ globalX: smartPos.x, globalY: smartPos.y, properties: feature.properties })
-                                userDraggedRef.current = false
-
-                                    ;["forecast-a", "forecast-b"].forEach((s) => {
-                                        try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
-                                    })
-                                fetchForecastDetail(id, sourceLayer)
+                    // Only auto-select if there's no existing selection
+                    // fly_to_location is purely pan/zoom when a feature is already selected
+                    if (!selectedIdRef.current) {
+                        const attemptSelect = (retries: number) => {
+                            const activeSuffix = (map as any)._activeSuffix || "a"
+                            const center = map.project(map.getCenter())
+                            const allFillLayers = getAllFillLayerIds(activeSuffix).filter(id => map.getLayer(id))
+                            let features = map.queryRenderedFeatures(center, { layers: allFillLayers })
+                            if (features.length === 0) {
+                                const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+                                    [center.x - 10, center.y - 10],
+                                    [center.x + 10, center.y + 10],
+                                ]
+                                features = map.queryRenderedFeatures(bbox, { layers: allFillLayers })
                             }
-                        } else if (retries > 0) {
-                            console.log(`[ForecastMap] location_to_area: No features at center, retrying... (${retries} left)`)
-                            setTimeout(() => attemptSelect(retries - 1), 1200)
-                        } else {
-                            console.warn(`[ForecastMap] location_to_area: Exhausted retries, no features found at center`)
+                            if (features.length > 0) {
+                                const feature = features[0]
+                                const sourceLayer = feature.sourceLayer || getSourceLayer(map.getZoom())
+                                const id = (feature.properties?.id || feature.id) as string
+                                if (id) {
+                                    selectedIdRef.current = id
+                                    setSelectedId(id)
+                                    setSelectedProps(feature.properties)
+                                    setSelectedCoords([params.lat, params.lng])
+                                    setTooltipCoords([params.lat, params.lng])
+                                    onFeatureSelect(id)
+                                    const centerScreen = map.project(map.getCenter())
+                                    const rect = map.getCanvas().getBoundingClientRect()
+                                    const screenX = rect.left + centerScreen.x
+                                    const screenY = rect.top + centerScreen.y
+                                    const smartPos = getSmartTooltipPos(screenX, screenY, window.innerWidth, window.innerHeight)
+                                    setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
+                                    setTooltipData({ globalX: smartPos.x, globalY: smartPos.y, properties: feature.properties })
+                                    userDraggedRef.current = false
+                                        ;["forecast-a", "forecast-b"].forEach((s) => {
+                                            try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
+                                        })
+                                    fetchForecastDetail(id, sourceLayer)
+                                }
+                            } else if (retries > 0) {
+                                console.log(`[ForecastMap] fly_to_location: No features at center, retrying... (${retries} left)`)
+                                setTimeout(() => attemptSelect(retries - 1), 1200)
+                            }
                         }
+                        map.once("idle", () => attemptSelect(8))
                     }
-                    map.once("idle", () => attemptSelect(8))
                 }
             } else if (action === "add_location_to_selection") {
                 // COMPARISON: keep primary selection, zoom to fit both, overlay comparison data
@@ -1088,12 +1078,14 @@ export function ForecastMap({
                         const latSpan = latMax - latMin
                         const lngSpan = lngMax - lngMin
                         const padding = 0.3 // 30% padding
+                        // Preserve current zoom — never zoom OUT for comparison
+                        const currentZoom = map.getZoom()
                         map.fitBounds(
                             [
                                 [lngMin - lngSpan * padding, latMin - latSpan * padding],
                                 [lngMax + lngSpan * padding, latMax + latSpan * padding],
                             ],
-                            { duration: 2000, maxZoom: 15 }
+                            { duration: 2000, maxZoom: currentZoom, minZoom: Math.max(currentZoom - 3, 9) }
                         )
                         // After flight, query new location and set as comparison (hover)
                         const attemptComparison = (retries: number) => {

@@ -163,6 +163,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
 
               // 3. Send tool result back to the Tavus LLM — only for server-proxied tools
               // Client-side tools (fly_to, set_year, etc.) don't return data the agent needs
+              // Use conversation.echo instead of conversation.respond to avoid polluting transcript as user speech
               const clientOnlyTools = ["fly_to_location", "set_forecast_year", "set_color_mode", "clear_comparison", "end_session"]
               if (conversationId && !clientOnlyTools.includes(toolName)) {
                 // Summarize the result compactly for the LLM
@@ -172,10 +173,12 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
 
                 call.sendAppMessage({
                   message_type: "conversation",
-                  event_type: "conversation.respond",
+                  event_type: "conversation.echo",
                   conversation_id: conversationId,
                   properties: {
-                    text: `[SYSTEM] Tool "${toolName}" returned: ${summaryText}. Now summarize this result naturally in 1-2 sentences. Never read JSON or IDs. Use plain language.`
+                    text: `Summarize the result for ${toolName} like a human. Avoid all technical IDs.`,
+                    modality: "text",
+                    context: summaryText
                   }
                 }, "*")
               }
@@ -184,9 +187,9 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
               if (conversationId) {
                 call.sendAppMessage({
                   message_type: "conversation",
-                  event_type: "conversation.respond",
+                  event_type: "conversation.echo",
                   conversation_id: conversationId,
-                  properties: { text: `The tool ${toolName} failed. Let the user know simply.` }
+                  properties: { text: `The tool ${toolName} encountered an error. Let the user know briefly.` }
                 }, "*")
               }
             }
