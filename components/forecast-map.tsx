@@ -265,10 +265,13 @@ export function ForecastMap({
             .catch(() => { })
     }, [selectedId, selectedCoords])
 
+    // Comparison hover coordinates (separate from tooltipCoords which stays pinned)
+    const [comparisonCoords, setComparisonCoords] = useState<[number, number] | null>(null)
+
     // Reverse geocode comparison feature when hovering
     useEffect(() => {
         const compId = tooltipData?.properties?.id
-        if (!compId || compId === selectedId || !tooltipCoords) {
+        if (!compId || compId === selectedId || !comparisonCoords) {
             setComparisonGeocodedName(null)
             return
         }
@@ -282,13 +285,13 @@ export function ForecastMap({
             return
         }
 
-        const cacheKey = `${geoLevel}:${tooltipCoords[0].toFixed(4)},${tooltipCoords[1].toFixed(4)}`
+        const cacheKey = `${geoLevel}:${comparisonCoords[0].toFixed(4)},${comparisonCoords[1].toFixed(4)}`
         if (geocodeCacheRef.current[cacheKey]) {
             setComparisonGeocodedName(geocodeCacheRef.current[cacheKey])
             return
         }
         setComparisonGeocodedName(null)
-        const [lat, lng] = tooltipCoords
+        const [lat, lng] = comparisonCoords
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
             headers: { 'User-Agent': 'HomecastrUI/1.0' }
         })
@@ -308,7 +311,7 @@ export function ForecastMap({
                 }
             })
             .catch(() => { })
-    }, [tooltipData?.properties?.id, selectedId, tooltipCoords])
+    }, [tooltipData?.properties?.id, selectedId, comparisonCoords])
 
     // Fan chart detail state
     const [fanChartData, setFanChartData] = useState<FanChartData | null>(null)
@@ -673,6 +676,7 @@ export function ForecastMap({
                 // Locked mode: DON'T move tooltip (it stays pinned), but DO update
                 // tooltipData.properties with the hovered feature so comparison works.
                 setTooltipData(prev => prev ? { ...prev, properties: feature.properties } : prev)
+                setComparisonCoords([e.lngLat.lat, e.lngLat.lng])
                 return
             }
 
