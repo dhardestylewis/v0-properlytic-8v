@@ -337,24 +337,25 @@
   \fill[hcGoldLight, opacity=0.15] (0.1,0.1) rectangle (4.5,3.5);
 
   % CoreLogic: predictive but sales-led
-  \fill[hcRed!60] (2.0,-2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north west] at (2.2,-2.1) {CoreLogic};
+  % CoreLogic (was: text label)
+  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (2.0,-2.0)
+    {\includegraphics[height=0.45cm]{assets/logo_corelogic.png}};
 
-  % HouseCanary: predictive, sales-led
-  \fill[hcRed!60] (1.5,-0.8) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north west] at (1.7,-0.9) {HouseCanary};
+  % HouseCanary
+  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (1.5,-0.8)
+    {\includegraphics[height=0.42cm]{assets/logo_housecanary.png}};
 
-  % PropStream: backward-looking, PLG
-  \fill[hcRed!60] (-2.5,1.5) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=north] at (-2.5,1.3) {PropStream};
+  % PropStream
+  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (-2.5,1.5)
+    {\includegraphics[height=0.42cm]{assets/logo_propstream.png}};
 
-  % Zillow: backward-looking, PLG
-  \fill[hcRed!60] (-3.0,2.5) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=south east] at (-3.2,2.4) {Zillow};
+  % Zillow
+  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (-3.0,2.5)
+    {\includegraphics[height=0.42cm]{assets/logo_zillow_v2.png}};
 
-  % Reventure: trend extrapolation (not truly predictive), PLG
-  \fill[hcRed!60] (-0.8,2.0) circle (4pt);
-  \node[font=\footnotesize\bfseries, text=hcMuted, anchor=east] at (-1.0,2.0) {Reventure};
+  % Reventure
+  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (-0.8,2.0)
+    {\includegraphics[height=0.40cm]{assets/logo_reventure.png}};
 
   % Homecastr — golden quadrant
   \fill[hcGold] (3.5,2.5) circle (8pt);
@@ -417,7 +418,7 @@
   arr/.style={-{Stealth[length=5pt]}, very thick, color=hcGold}
 ]
   \node[block] (consumers) at (-3.0,1.8) {\textbf{Free users}\\{\scriptsize grow the audience}};
-  \node[block] (signal) at (3.0,1.8) {\textbf{Usage signals}\\{\scriptsize reveal buyer intent}};
+  \node[block] (signal) at (3.0,1.8) {\textbf{Chat signals}\\{\scriptsize reveal buyer intent}};
   \node[block] (model) at (3.0,-1.8) {\textbf{Better model}\\{\scriptsize improves accuracy}};
   \node[block] (value) at (-3.0,-1.8) {\textbf{Operator revenue}\\{\scriptsize funds growth}};
 
@@ -482,16 +483,19 @@
 \begin{columns}[T]
 \begin{column}{0.33\textwidth}
 \centering
+{\includegraphics[height=1.1cm]{assets/logo_summit.png}}\\[4pt]
 \textbf{Summit Geospatial}\\
 \mutedtext{\scriptsize Highest-quality terrain, Texas}
 \end{column}
 \begin{column}{0.33\textwidth}
 \centering
+{\colorbox{hcCard}{\includegraphics[height=0.8cm]{assets/logo_tacc.png}}}\\[4pt]
 \textbf{Data Scientist, TACC}\\
 \mutedtext{\scriptsize Lead on \$40M resiliency project}
 \end{column}
 \begin{column}{0.33\textwidth}
 \centering
+{\includegraphics[height=0.8cm]{assets/logo_egu.png}}\\[4pt]
 \textbf{Scientific ML}\\
 \mutedtext{\scriptsize Bagnold Medal contributor}
 \end{column}
