@@ -338,28 +338,28 @@
 
   % CoreLogic: predictive but sales-led
   % CoreLogic (was: text label)
-  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (2.0,-2.0)
+  \node[inner sep=1pt] at (2.0,-2.0)
     {\includegraphics[height=0.45cm]{assets/logo_corelogic.png}};
 
   % HouseCanary
-  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (1.5,-0.8)
+  \node[inner sep=1pt] at (1.5,-0.8)
     {\includegraphics[height=0.42cm]{assets/logo_housecanary.png}};
 
   % PropStream
-  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (-2.5,1.5)
+  \node[inner sep=1pt] at (-3.8,1.0)
     {\includegraphics[height=0.42cm]{assets/logo_propstream.png}};
 
   % Zillow
-  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (-3.0,2.5)
+  \node[inner sep=1pt] at (-3.2,2.8)
     {\includegraphics[height=0.42cm]{assets/logo_zillow_v2.png}};
 
-  % Reventure
-  \node[inner sep=2pt, fill=white, rounded corners=2pt] at (-0.8,2.0)
+  % Reventure (white logo — needs dark bg)
+  \node[inner sep=2pt, fill=hcCard, rounded corners=2pt] at (-2.5,2.2)
     {\includegraphics[height=0.40cm]{assets/logo_reventure.png}};
 
   % Homecastr — golden quadrant
   \fill[hcGold] (3.5,2.5) circle (8pt);
-  \node[font=\large\bfseries, text=hcGold, anchor=south west] at (3.8,2.5) {Homecastr};
+  \node[anchor=south west] at (3.8,2.5) {\includegraphics[height=0.55cm]{assets/homecastr-logo-horizontal.png}};
 
 \end{tikzpicture}
 \end{center}
@@ -418,7 +418,7 @@
   arr/.style={-{Stealth[length=5pt]}, very thick, color=hcGold}
 ]
   \node[block] (consumers) at (-3.0,1.8) {\textbf{Free users}\\{\scriptsize grow the audience}};
-  \node[block] (signal) at (3.0,1.8) {\textbf{Chat signals}\\{\scriptsize reveal buyer intent}};
+  \node[block] (signal) at (3.0,1.8) {\textbf{Conversations}\\{\scriptsize reveal buyer intent}};
   \node[block] (model) at (3.0,-1.8) {\textbf{Better model}\\{\scriptsize improves accuracy}};
   \node[block] (value) at (-3.0,-1.8) {\textbf{Operator revenue}\\{\scriptsize funds growth}};
 
@@ -465,40 +465,45 @@
 
 % ─── SLIDE 12: Team ──────────────────────────────────────────
 \begin{frame}{Team}
-\vspace{4pt}
+\vspace{8pt}
 
+\begin{columns}[c]
+
+% Left: headshot + name
+\begin{column}{0.38\textwidth}
 \begin{center}
 \begin{tikzpicture}
-  \node[circle, inner sep=0pt, minimum size=2.4cm, path picture={
-    \node at (path picture bounding box.center) {\includegraphics[width=2.4cm]{assets/dhl.png}};
+  \node[circle, inner sep=0pt, minimum size=2.8cm, path picture={
+    \node at (path picture bounding box.center) {\includegraphics[width=2.8cm]{assets/dhl.png}};
   }] {};
-\end{tikzpicture}\\[6pt]
-{\Large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[3pt]
-{\large Founder \& CEO}\\[3pt]
+\end{tikzpicture}\\[8pt]
+{\Large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[4pt]
+{\large Founder \& CEO}\\[4pt]
 \mutedtext{\small \href{https://linkedin.com/in/dhardestylewis}{linkedin.com/in/dhardestylewis}}
 \end{center}
+\end{column}
 
-\vspace{10pt}
+% Right: credential rows
+\begin{column}{0.58\textwidth}
+\begin{tabular}{@{}ll@{}}
+  \includegraphics[height=0.85cm]{assets/logo_summit.png} &
+  \begin{tabular}[c]{@{}l@{}}
+    \textbf{Summit Geospatial}\\
+    \mutedtext{\scriptsize Founder --- highest-quality terrain data, Texas}
+  \end{tabular}\\[14pt]
+  \colorbox{hcCard}{\includegraphics[height=0.7cm]{assets/logo_tacc.png}} &
+  \begin{tabular}[c]{@{}l@{}}
+    \textbf{Data Scientist, TACC}\\
+    \mutedtext{\scriptsize Lead on \$40M FEMA resiliency project}
+  \end{tabular}\\[14pt]
+  \includegraphics[height=0.7cm]{assets/logo_egu.png} &
+  \begin{tabular}[c]{@{}l@{}}
+    \textbf{Scientific ML}\\
+    \mutedtext{\scriptsize Bagnold Medal contributor, EGU}
+  \end{tabular}\\
+\end{tabular}
+\end{column}
 
-\begin{columns}[T]
-\begin{column}{0.33\textwidth}
-\centering
-{\includegraphics[height=1.1cm]{assets/logo_summit.png}}\\[4pt]
-\textbf{Summit Geospatial}\\
-\mutedtext{\scriptsize Highest-quality terrain, Texas}
-\end{column}
-\begin{column}{0.33\textwidth}
-\centering
-{\colorbox{hcCard}{\includegraphics[height=0.8cm]{assets/logo_tacc.png}}}\\[4pt]
-\textbf{Data Scientist, TACC}\\
-\mutedtext{\scriptsize Lead on \$40M resiliency project}
-\end{column}
-\begin{column}{0.33\textwidth}
-\centering
-{\includegraphics[height=0.8cm]{assets/logo_egu.png}}\\[4pt]
-\textbf{Scientific ML}\\
-\mutedtext{\scriptsize Bagnold Medal contributor}
-\end{column}
 \end{columns}
 \end{frame}
 
