@@ -305,28 +305,23 @@ function DashboardContent() {
   // Click coordinates from ForecastMap (actual feature location, not viewport center)
   const [clickCoords, setClickCoords] = useState<[number, number] | null>(null)
 
-  // Reverse Geocode Effect
+  // Reverse Geocode Effect — only for non-forecast-map modes
+  // In forecast map mode, ForecastMap's onGeocodedName callback sets the search bar directly
   useEffect(() => {
     if (!mapState.selectedId) {
       setSearchBarValue("")
       return
     }
 
+    // In forecast map mode, the search bar is set by onGeocodedName callback
+    if (filters.useForecastMap) return
+
     // Do NOT show raw ID. Show "..." or nothing while loading.
     setSearchBarValue("Loading location...")
 
     const fetchAddress = async () => {
       try {
-        let lat: number, lng: number
-        if (filters.useForecastMap) {
-          // Forecast mode: use actual click coordinates from ForecastMap
-          if (!clickCoords) return
-            ;[lat, lng] = clickCoords
-        } else {
-          ;[lat, lng] = cellToLatLng(mapState.selectedId!)
-        }
-        // Always request max detail for the search bar — the tooltip handles
-        // scale-appropriate display, so the search bar should show the best address.
+        const [lat, lng] = cellToLatLng(mapState.selectedId!)
         const address = await reverseGeocode(lat, lng, 18)
         if (address) {
           setSearchBarValue(address)
@@ -340,7 +335,7 @@ function DashboardContent() {
     }
     fetchAddress()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapState.selectedId, clickCoords, mapState.zoom])
+  }, [mapState.selectedId, filters.useForecastMap])
 
   const handleSearchError = useCallback(
     (error: string) => {
@@ -518,6 +513,7 @@ function DashboardContent() {
             onFeatureSelect={selectFeature}
             onFeatureHover={hoverFeature}
             onCoordsChange={setClickCoords}
+            onGeocodedName={(name) => setSearchBarValue(name || "")}
             year={currentYear}
             className="absolute inset-0 z-0"
             onConsultAI={handleConsultAI}

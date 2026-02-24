@@ -88,6 +88,7 @@ interface ForecastMapProps {
     onFeatureSelect: (id: string | null) => void
     onFeatureHover: (id: string | null) => void
     onCoordsChange?: (coords: [number, number] | null) => void
+    onGeocodedName?: (name: string | null) => void
     year: number
     className?: string
     onConsultAI?: (details: {
@@ -108,6 +109,7 @@ export function ForecastMap({
     onFeatureSelect,
     onFeatureHover,
     onCoordsChange,
+    onGeocodedName,
     className,
     onConsultAI,
     isChatOpen = false,
@@ -271,6 +273,7 @@ export function ForecastMap({
             .catch((err) => { console.error('[GEOCODE] Error:', err) })
     }, [selectedId, selectedCoords])
 
+
     // Comparison hover coordinates (separate from tooltipCoords which stays pinned)
     const [comparisonCoords, setComparisonCoords] = useState<[number, number] | null>(null)
 
@@ -336,6 +339,11 @@ export function ForecastMap({
 
     // Reverse geocoded name for tooltip header
     const [geocodedName, setGeocodedName] = useState<string | null>(null)
+
+    // Bubble geocoded name up to parent (for search bar)
+    useEffect(() => {
+        onGeocodedName?.(geocodedName)
+    }, [geocodedName, onGeocodedName])
     const geocodeCacheRef = useRef<Record<string, string>>({})
 
     // Comparison state: hover overlay when a feature is selected
