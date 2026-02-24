@@ -78,6 +78,15 @@ function DashboardContent() {
       return
     }
 
+    // Handle set_forecast_year — change the timeline year
+    if ((action as any).action === 'set_forecast_year') {
+      const yr = Math.max(2026, Math.min(2030, (action as any).year || 2029))
+      console.log('[PAGE] set_forecast_year from chat:', yr)
+      setCurrentYear(yr)
+      toast({ title: `Timeline set to ${yr}`, duration: 2000 })
+      return
+    }
+
     // Handle add_location_to_selection — keep primary selection, add comparison overlay
     if ((action as any).action === 'add_location_to_selection') {
       console.log('[PAGE] add_location_to_selection from chat', { lat: action.lat, lng: action.lng })

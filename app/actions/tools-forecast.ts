@@ -248,8 +248,73 @@ export async function executeTopLevelForecastTool(
                 const limit = Math.min(args.limit || 5, 10)
                 const objective = args.objective || "value"
 
-                const sortColumn = objective === "value" ? "p50" : "p50" // both sort by p50 for now
+                if (objective === "growth") {
+                    // Growth ranking: fetch forecast + current p50, compute growth_pct
+                    const currentHorizonM = 12 // 2026 = origin + 1 year
 
+                    // 1. Get a pool of areas at the forecast horizon
+                    const { data: futureData, error: futureErr } = await (supabase as any)
+                        .schema(FORECAST_SCHEMA)
+                        .from(meta.table)
+                        .select(`${meta.key}, p50, p10, p90, horizon_m`)
+                        .eq("origin_year", originYear)
+                        .eq("horizon_m", horizonM)
+                        .not("p50", "is", null)
+                        .order("p50", { ascending: false })
+                        .limit(100)
+
+                    if (futureErr || !futureData || futureData.length === 0) {
+                        return JSON.stringify({ areas: [], error: futureErr?.message || "No forecast data" })
+                    }
+
+                    // 2. Get the current p50 for the same areas
+                    const areaIds = futureData.map((r: any) => r[meta.key])
+                    const { data: currentData } = await (supabase as any)
+                        .schema(FORECAST_SCHEMA)
+                        .from(meta.table)
+                        .select(`${meta.key}, p50`)
+                        .eq("origin_year", originYear)
+                        .eq("horizon_m", currentHorizonM)
+                        .in(meta.key, areaIds)
+
+                    // 3. Build lookup of current values
+                    const currentMap = new Map<string, number>()
+                    if (currentData) {
+                        for (const row of currentData) {
+                            currentMap.set(row[meta.key], row.p50)
+                        }
+                    }
+
+                    // 4. Compute growth_pct and sort
+                    const withGrowth = futureData
+                        .filter((row: any) => currentMap.has(row[meta.key]) && currentMap.get(row[meta.key])! > 0)
+                        .map((row: any) => {
+                            const currentP50 = currentMap.get(row[meta.key])!
+                            const growthPct = ((row.p50 - currentP50) / currentP50) * 100
+                            return { ...row, currentP50, growthPct }
+                        })
+                        .sort((a: any, b: any) => b.growthPct - a.growthPct)
+                        .slice(0, limit)
+
+                    const areas = withGrowth.map((row: any, i: number) => ({
+                        level,
+                        id: row[meta.key],
+                        metrics: {
+                            p50: row.p50,
+                            p10: row.p10,
+                            p90: row.p90,
+                            current_value: row.currentP50,
+                            growth_pct: Math.round(row.growthPct * 10) / 10,
+                            horizon_m: row.horizon_m,
+                        },
+                        rank: i + 1,
+                        reason: `Rank #${i + 1} by growth (${Math.round(row.growthPct * 10) / 10}%)${fallbackNote}`,
+                    }))
+
+                    return JSON.stringify({ areas })
+                }
+
+                // Value ranking: straightforward sort by p50
                 const { data, error } = await (supabase as any)
                     .schema(FORECAST_SCHEMA)
                     .from(meta.table)
@@ -257,7 +322,7 @@ export async function executeTopLevelForecastTool(
                     .eq("origin_year", originYear)
                     .eq("horizon_m", horizonM)
                     .not("p50", "is", null)
-                    .order(sortColumn, { ascending: false })
+                    .order("p50", { ascending: false })
                     .limit(limit)
 
                 if (error) return JSON.stringify({ areas: [], error: error.message })

@@ -370,6 +370,20 @@ const FORECAST_TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
             description: "Clear only the comparison overlay while keeping the primary selection and tooltip visible. Use when the user asks to remove or clear just the comparison.",
             parameters: { type: "object", properties: {}, required: [] }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "set_forecast_year",
+            description: "Change the forecast timeline year displayed on the map and charts. Valid years: 2026, 2027, 2028, 2029, 2030. Use when the user asks to change the year, set the timeline, or view a different forecast horizon.",
+            parameters: {
+                type: "object",
+                properties: {
+                    year: { type: "integer", enum: [2026, 2027, 2028, 2029, 2030], description: "The forecast year to display" }
+                },
+                required: ["year"]
+            }
+        }
     }
 ]
 
@@ -512,6 +526,21 @@ export async function POST(req: NextRequest) {
                         role: "tool",
                         tool_call_id: tc.id,
                         content: JSON.stringify({ status: "ok", message: "Comparison overlay cleared. Primary selection remains." }),
+                    })
+                } else if (toolFn.name === "set_forecast_year") {
+                    // UI tool — change the forecast timeline year
+                    try {
+                        const args = JSON.parse(toolFn.arguments)
+                        const yr = args.year || 2029
+                        allMapActions.push({ action: "set_forecast_year", year: yr })
+                        console.log(`[Chat API] set_forecast_year: ${yr}`)
+                    } catch (e) {
+                        console.error(`[Chat API] Failed to parse set_forecast_year args:`, toolFn.arguments)
+                    }
+                    conversationMessages.push({
+                        role: "tool",
+                        tool_call_id: tc.id,
+                        content: JSON.stringify({ status: "ok", message: `Timeline changed to forecast year ${JSON.parse(toolFn.arguments).year || 2029}.` }),
                     })
                 } else {
                     // API tool — query real data
