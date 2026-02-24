@@ -699,8 +699,10 @@ function DashboardContent() {
           <button
             onClick={handleFloatingConsultAI}
             className={cn(
-              "fixed bottom-5 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group",
-              isChatOpen ? "hidden md:flex md:left-[365px]" : "left-5"
+              "fixed z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group",
+              isChatOpen ? "hidden md:flex md:left-[365px] md:bottom-5" : "left-5",
+              // On mobile, shift up above tooltip when a selection is showing
+              mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)]" : "bottom-5"
             )}
           >
             <HomecastrLogo size={28} />
