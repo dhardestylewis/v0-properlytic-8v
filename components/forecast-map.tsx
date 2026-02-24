@@ -1568,8 +1568,10 @@ export function ForecastMap({
                         const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
                         if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select') return
                         e.preventDefault()
-                        if (fixedTooltipPos) {
-                            dragRef.current = { startX: e.clientX, startY: e.clientY, origX: fixedTooltipPos.globalX, origY: fixedTooltipPos.globalY }
+                        // Fall back to displayPos if fixedTooltipPos hasn't been set yet
+                        const origin = fixedTooltipPos ?? displayPos
+                        if (origin) {
+                            dragRef.current = { startX: e.clientX, startY: e.clientY, origX: origin.globalX, origY: origin.globalY }
                         }
                     } : undefined}
                     onTouchStart={isMobile ? (e) => {
