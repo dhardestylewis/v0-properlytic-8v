@@ -78,6 +78,27 @@ function DashboardContent() {
       return
     }
 
+    // Handle add_location_to_selection — keep primary selection, add comparison overlay
+    if ((action as any).action === 'add_location_to_selection') {
+      console.log('[PAGE] add_location_to_selection from chat', { lat: action.lat, lng: action.lng })
+      window.dispatchEvent(new CustomEvent("tavus-map-action", {
+        detail: {
+          action: "add_location_to_selection",
+          params: { lat: action.lat, lng: action.lng, zoom: action.zoom },
+          result: {
+            chosen: { lat: action.lat, lng: action.lng, label: "" },
+            area: { id: (action as any).area_id, level: (action as any).level || "zcta" }
+          }
+        }
+      }))
+      toast({
+        title: "Comparison added",
+        description: `Overlaying comparison at ${action.lat.toFixed(4)}, ${action.lng.toFixed(4)}`,
+        duration: 2000,
+      })
+      return
+    }
+
     // Use area_id for forecast mode, select_hex_id for H3 mode
     const selectedId = action.area_id || action.select_hex_id || undefined
     setMapState({

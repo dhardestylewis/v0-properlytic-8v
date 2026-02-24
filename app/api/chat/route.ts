@@ -521,11 +521,25 @@ export async function POST(req: NextRequest) {
                         const result = await executeTool(toolFn.name, args)
 
                         // Auto-create map actions from location results
-                        if (forecastMode && (toolFn.name === "location_to_area" || toolFn.name === "add_location_to_selection")) {
+                        if (forecastMode && toolFn.name === "location_to_area") {
                             try {
                                 const resultObj = JSON.parse(result)
                                 if (resultObj.chosen?.lat) {
                                     allMapActions.push({
+                                        lat: resultObj.chosen.lat,
+                                        lng: resultObj.chosen.lng,
+                                        zoom: 13,
+                                        area_id: resultObj.area?.id || args.area_id,
+                                        level: args.level || "zcta",
+                                    })
+                                }
+                            } catch (e) { }
+                        } else if (forecastMode && toolFn.name === "add_location_to_selection") {
+                            try {
+                                const resultObj = JSON.parse(result)
+                                if (resultObj.chosen?.lat) {
+                                    allMapActions.push({
+                                        action: "add_location_to_selection",
                                         lat: resultObj.chosen.lat,
                                         lng: resultObj.chosen.lng,
                                         zoom: 13,

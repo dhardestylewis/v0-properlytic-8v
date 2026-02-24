@@ -986,10 +986,10 @@ export function ForecastMap({
                             }
                         } else if (retries > 0) {
                             console.log(`[ForecastMap] No features at center, retrying... (${retries} left)`)
-                            setTimeout(() => attemptSelect(retries - 1), 500)
+                            setTimeout(() => attemptSelect(retries - 1), 800)
                         }
                     }
-                    map.once("idle", () => attemptSelect(3))
+                    map.once("idle", () => attemptSelect(8))
                 }
             } else if (action === "add_location_to_selection") {
                 // COMPARISON: keep primary selection, zoom to fit both, overlay comparison data
@@ -1041,10 +1041,10 @@ export function ForecastMap({
                                 }
                             } else if (retries > 0) {
                                 console.log(`[ForecastMap] add_location_to_selection: No features at comparison point, retrying... (${retries} left)`)
-                                setTimeout(() => attemptComparison(retries - 1), 500)
+                                setTimeout(() => attemptComparison(retries - 1), 800)
                             }
                         }
-                        map.once("idle", () => attemptComparison(3))
+                        map.once("idle", () => attemptComparison(8))
                     } else {
                         // No primary selection yet — treat as normal select
                         map.flyTo({
@@ -1085,10 +1085,10 @@ export function ForecastMap({
                                     fetchForecastDetail(id, sourceLayer)
                                 }
                             } else if (retries > 0) {
-                                setTimeout(() => attemptFirst(retries - 1), 500)
+                                setTimeout(() => attemptFirst(retries - 1), 800)
                             }
                         }
-                        map.once("idle", () => attemptFirst(3))
+                        map.once("idle", () => attemptFirst(8))
                     }
                 }
             } else if (action === "location_to_area" || action === "resolve_place" || action === "get_forecast_area") {
@@ -1145,10 +1145,10 @@ export function ForecastMap({
                             }
                         } else if (retries > 0) {
                             console.log(`[ForecastMap] location_to_area: No features at center, retrying... (${retries} left)`)
-                            setTimeout(() => attemptLocSelect(retries - 1), 500)
+                            setTimeout(() => attemptLocSelect(retries - 1), 800)
                         }
                     }
-                    map.once("idle", () => attemptLocSelect(3))
+                    map.once("idle", () => attemptLocSelect(8))
                 }
             }
         }
@@ -1557,6 +1557,13 @@ export function ForecastMap({
                                 {geocodedName && !geocodedName.startsWith('ZIP') && (
                                     <div className="font-mono text-[9px] text-muted-foreground/60 truncate">
                                         {displayProps.id}
+                                    </div>
+                                )}
+                                {comparisonData && tooltipData?.properties?.id && tooltipData.properties.id !== selectedId && (
+                                    <div className="mt-1 flex items-center gap-1">
+                                        <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[8px] font-semibold uppercase tracking-wider rounded">
+                                            vs {tooltipData.properties.id}
+                                        </span>
                                     </div>
                                 )}
                             </div>
