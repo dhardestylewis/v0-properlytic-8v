@@ -31,9 +31,8 @@ function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHei
 
     const isMobileView = windowWidth < 768
 
+    // ── Horizontal: default right of cursor, flip left if needed ──
     let left = x + 20
-    let top = y - 20
-
     if (left + TOOLTIP_WIDTH > windowWidth - 20) {
         const tryLeft = x - TOOLTIP_WIDTH - 20
         if (tryLeft < SIDEBAR_WIDTH + 10) {
@@ -50,28 +49,30 @@ function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHei
             left = tryLeft
         }
     }
-
-    top = Math.max(10, Math.min(top, windowHeight - TOOLTIP_HEIGHT - 10))
     left = Math.max(10, left)
+
+    // ── Vertical: anchor BOTTOM of tooltip near cursor, grows upward ──
+    // This prevents scroll when clicking near the bottom of screen.
+    const tooltipBottom = y + 10       // bottom edge sits just below cursor
+    let top = tooltipBottom - TOOLTIP_HEIGHT
+    top = Math.max(10, top)            // clamp so it never goes above viewport
 
     // Desktop: sidebar control panel occupies the top-left column.
     // Width = SIDEBAR_WIDTH (340px), height ≈ 260px (4 stacked rows).
-    // Prevent the tooltip from overlapping this zone.
     if (!isMobileView) {
         const CONTROL_PANEL_H = 260
         if (left < SIDEBAR_WIDTH + 10 && top < CONTROL_PANEL_H) {
-            // Prefer pushing left edge past sidebar
             const pushedRight = SIDEBAR_WIDTH + 10
             if (pushedRight + TOOLTIP_WIDTH <= windowWidth - 10) {
                 left = pushedRight
             } else {
-                // No room to the right — push below the panel instead
                 top = CONTROL_PANEL_H + 10
             }
         }
     }
 
     return { x: left, y: top }
+
 }
 
 // Format currency values
@@ -1560,8 +1561,7 @@ export function ForecastMap({
                     } : {
                         left: displayPos.globalX,
                         top: displayPos.globalY,
-                        maxHeight: `calc(100vh - ${(displayPos.globalY ?? 40) + 20}px)`,
-                        overflowY: 'auto',
+                        overflow: 'hidden',
                     }}
                     onMouseDown={!isMobile && selectedId ? (e) => {
                         // Don't drag when clicking interactive elements
