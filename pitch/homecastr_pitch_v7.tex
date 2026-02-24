@@ -122,13 +122,14 @@
 \end{column}
 \begin{column}{0.34\textwidth}
 \centering
-\statbox{15\%}{median error}\\[14pt]
+\statbox{15\%$^{*}$}{median error}\\[14pt]
 \statbox{4yr}{forecast horizon}\\[14pt]
-\statbox{1M+}{properties forecasted}
+\statbox{1M+}{properties forecasted}\\[14pt]
+{\tiny\color{hcMuted}\centering $^{*}$50\% of properties fall below this error.}
 \end{column}
 \end{columns}
 
-\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free. {\tiny $^{*}$50\% of properties fall below this error.}}
+\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free.}
 \end{frame}
 
 
@@ -228,13 +229,15 @@
 \begin{center}
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.8,5.0);
-  \node[align=center, text width=6.0cm] at (3.4,2.5) {
-    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} 300bps}\\[8pt]
-    {\large\bfseries\color{hcText} in our training data}\\[10pt]
-    {\scriptsize\color{hcMuted}
-      Our model trained through rates surging\\[2pt]
-      from 3\% to 7\%+. It learned to\\[2pt]
-      price rate cycles. Others haven't.}
+  \node at (3.4,2.5) {%
+    \begin{minipage}[c][4.2cm][c]{5.6cm}\centering
+      {\fontsize{28}{30}\selectfont\bfseries\color{hcGold} 300bps}\par
+      \vspace{6pt}
+      {\large\bfseries\color{hcText} in our training data}\par
+      \vspace{10pt}
+      {\scriptsize\setlength{\baselineskip}{13pt}\color{hcMuted}
+        Our model trained through rates surging\\from 3\% to 7\%+.\\It learned to price rate cycles.\\Others haven't.}
+    \end{minipage}%
   };
 \end{tikzpicture}
 \end{center}
@@ -246,13 +249,15 @@
 \begin{center}
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.8,5.0);
-  \node[align=center, text width=6.0cm] at (3.4,2.5) {
-    {\fontsize{22}{28}\selectfont\bfseries\color{hcGold} ML Forecasting}\\[8pt]
-    {\large\bfseries\color{hcText} now feasible at scale}\\[10pt]
-    {\scriptsize\color{hcMuted}
-      GPU costs dropped 10{\texttimes}.\\[2pt]
-      Training at 100M+ property scale\\[2pt]
-      is now within reach.}
+  \node at (3.4,2.5) {%
+    \begin{minipage}[c][4.2cm][c]{5.6cm}\centering
+      {\fontsize{22}{24}\selectfont\bfseries\color{hcGold} ML Forecasting}\par
+      \vspace{6pt}
+      {\large\bfseries\color{hcText} now feasible at scale}\par
+      \vspace{10pt}
+      {\scriptsize\setlength{\baselineskip}{13pt}\color{hcMuted}
+        GPU costs dropped 10{\texttimes}.\\Training at 100M+ property scale\\is now within reach.}
+    \end{minipage}%
   };
 \end{tikzpicture}
 \end{center}
@@ -372,7 +377,7 @@
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,3.8);
   \node[font=\large\bfseries, text=hcText] at (3.25,3.3) {Free};
-  \node[font=\small, text=hcMuted, align=center] at (3.25,1.8) {Dashboard \& basic forecasts\\[10pt]Builds audience, captures intent};
+  \node[font=\small, text=hcMuted, align=center] at (3.25,1.8) {Dashboard \& basic forecasts\\[10pt]Builds audience. Every chat trains the model.};
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -430,23 +435,23 @@
 \begin{frame}{Go-to-market}
 \vspace{16pt}
 
-\begin{columns}[T]
-\begin{column}{0.32\textwidth}
+\begin{columns}[T, totalwidth=\textwidth]
+\begin{column}{0.34\textwidth}
 \begin{center}
 {\goldtext{\textbf{Direct outreach}}}\\[8pt]
-{\small\color{hcMuted} Direct calls to Houston\\SFR operators; pilots close\\word-of-mouth referrals.}
+{\small\color{hcMuted} Direct calls to Houston SFR operators. Word-of-mouth closes pilots.}
 \end{center}
 \end{column}
 \begin{column}{0.32\textwidth}
 \begin{center}
 {\goldtext{\textbf{Broker sharing}}}\\[8pt]
-{\small\color{hcMuted} Agents share Homecastr's forecasts\\with clients, creating\\organic word-of-mouth.}
+{\small\color{hcMuted} Agents share Homecastr's forecasts with clients, creating organic word-of-mouth.}
 \end{center}
 \end{column}
-\begin{column}{0.32\textwidth}
+\begin{column}{0.34\textwidth}
 \begin{center}
 {\goldtext{\textbf{Operator upsell}}}\\[8pt]
-{\small\color{hcMuted} Try free. Upgrade to \$99/mo\\when you need bulk forecasts\\or API access.}
+{\small\color{hcMuted} Try free. Upgrade to \$99/mo when you need bulk forecasts or API access.}
 \end{center}
 \end{column}
 \end{columns}
