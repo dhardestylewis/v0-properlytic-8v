@@ -595,7 +595,7 @@ export function ForecastMap({
                                 ["boolean", ["feature-state", "selected"], false],
                                 "#fbbf24",   // amber  — primary selection
                                 ["boolean", ["feature-state", "hover"], false],
-                                "#22d3ee",   // cyan   — comparison hover
+                                "#a3e635",   // lime   — comparison hover
                                 "rgba(0,0,0,0)",
                             ],
                             "line-width": [
@@ -1690,7 +1690,7 @@ export function ForecastMap({
                                 )}
                                 {comparisonData && tooltipData?.properties?.id && tooltipData.properties.id !== selectedId && (
                                     <div className="mt-1 flex items-center gap-1">
-                                        <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[8px] font-semibold uppercase tracking-wider rounded">
+                                        <span className="px-1.5 py-0.5 bg-lime-500/20 text-lime-400 text-[8px] font-semibold uppercase tracking-wider rounded">
                                             vs {comparisonGeocodedName && comparisonGeocodedName !== geocodedName ? comparisonGeocodedName : tooltipData.properties.id}
                                         </span>
                                     </div>
