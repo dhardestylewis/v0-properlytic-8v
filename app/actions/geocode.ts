@@ -121,7 +121,46 @@ export async function getAutocompleteSuggestions(query: string): Promise<Autocom
  */
 export async function reverseGeocode(lat: number, lng: number, zoom = 18): Promise<string | null> {
     try {
-        // Try BigDataCloud first (free, no rate limits)
+        // At high zoom (block/parcel), try Mapbox first for street-level address
+        if (zoom >= 14) {
+            const mapboxToken = process.env.MAPBOX_SECRET_TOKEN
+            if (mapboxToken) {
+                try {
+                    const mbxUrl = `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${lng}&latitude=${lat}&access_token=${mapboxToken}`
+                    const mbxRes = await fetch(mbxUrl)
+                    if (mbxRes.ok) {
+                        const mbx = await mbxRes.json()
+                        const feature = mbx.features?.[0]
+                        if (feature) {
+                            const ctx = feature.properties?.context || {}
+                            const houseNum = ctx.address?.address_number || ""
+                            const street = ctx.street?.name || ""
+                            const neighborhood = ctx.neighborhood?.name || ""
+                            const city = ctx.place?.name || ""
+                            const state = ctx.region?.region_code || ""
+                            const postcode = ctx.postcode?.name || ""
+
+                            const parts: string[] = []
+                            if (zoom >= 16 && houseNum && street) {
+                                parts.push(`${houseNum} ${street}`)
+                            } else if (street) {
+                                parts.push(street)
+                            }
+                            if (neighborhood && neighborhood !== city) parts.push(neighborhood)
+                            if (city) parts.push(city)
+                            if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
+
+                            const result = parts.filter(Boolean).join(", ")
+                            if (result) return result
+                        }
+                    }
+                } catch {
+                    // Mapbox failed — fall through to BigDataCloud
+                }
+            }
+        }
+
+        // BigDataCloud: neighbourhood-level (free, no limits)
         const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
         const response = await fetch(bdcUrl)
 
@@ -147,7 +186,9 @@ export async function reverseGeocode(lat: number, lng: number, zoom = 18): Promi
             const state = addr.state ? _abbreviateState(addr.state) : ""
             const postcode = addr.postcode || ""
             let parts: string[] = []
-            if (neighbourhood) parts.push(neighbourhood)
+            if (zoom >= 16 && house && road) parts.push(`${house} ${road}`)
+            else if (zoom >= 14 && road) parts.push(road)
+            else if (neighbourhood) parts.push(neighbourhood)
             if (city) parts.push(city)
             if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
             return parts.filter(Boolean).join(", ") || data.display_name || null
@@ -156,7 +197,7 @@ export async function reverseGeocode(lat: number, lng: number, zoom = 18): Promi
         const bdc = await response.json()
 
         // Extract neighbourhood: highest-order informative entry that is a place name
-        const informative: Array<{ name?: string; description?: string; order?: number; wikidataId?: string }> =
+        const informative: Array<{ name?: string; description?: string; order?: number }> =
             bdc.localityInfo?.informative || []
         const placeEntries = informative.filter(
             (i) =>
