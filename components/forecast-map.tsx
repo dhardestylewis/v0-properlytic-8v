@@ -1642,10 +1642,10 @@ export function ForecastMap({
                                     <HomecastrLogo variant="horizontal" size={18} />
                                     <span className={cn(
                                         "px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded",
-                                        year > 2025
+                                        year > 2026
                                             ? "bg-violet-500/20 text-violet-400"
                                             : "bg-sky-500/20 text-sky-400"
-                                    )}>{year > 2025 ? "Forecast" : "Historical"}</span>
+                                    )}>{year > 2026 ? "Forecast" : "Historical"}</span>
                                     {selectedId && (
                                         <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[8px] font-semibold uppercase tracking-wider rounded">Locked</span>
                                     )}
