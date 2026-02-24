@@ -79,11 +79,10 @@
 \includegraphics[height=1.4cm]{assets/homecastr-icon.png}%
 }
 
-% Bottom-of-slide tagline — absolute position via TikZ overlay
+% Bottom-of-slide tagline — pushes to bottom of remaining frame space
 \newcommand{\slidetagline}[1]{%
-  \begin{tikzpicture}[remember picture, overlay]
-    \node[anchor=south, text=hcMuted, font=\small] at (current page.south) [yshift=0.2cm] {#1};
-  \end{tikzpicture}%
+  \vspace*{0pt plus 1fill}%
+  \begin{center}{\small\color{hcMuted}#1}\end{center}%
 }
 
 % Big stat macro for single-stat visual slides
@@ -119,17 +118,17 @@
 
 \begin{columns}[c]
 \begin{column}{0.63\textwidth}
-\includegraphics[width=\linewidth,height=5.2cm,keepaspectratio=false]{assets/dashboard_screenshot.png}
+\href{https://homecastr.com}{\includegraphics[width=\linewidth]{assets/dashboard_screenshot.png}}
 \end{column}
 \begin{column}{0.34\textwidth}
 \centering
-\statbox{14\%}{Median Error}\\[14pt]
-\statbox{4yr}{Forecast Horizon}\\[14pt]
-\statbox{1M+}{Properties Indexed}
+\statbox{15\%}{median error (p50)}\\[14pt]
+\statbox{4yr}{forecast horizon}\\[14pt]
+\statbox{1M+}{lots forecasted}
 \end{column}
 \end{columns}
 
-\slidetagline{Houston metro. Live. Free.}
+\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free.}
 \end{frame}
 
 
