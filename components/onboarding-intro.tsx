@@ -174,6 +174,11 @@ export function OnboardingIntro() {
         // Start animation after delay (let flyTo complete)
         const timer = setTimeout(() => {
             if (!cancelled) {
+                // Mark as seen immediately — don't wait for full 12s playback.
+                // This prevents re-showing if the user navigates away mid-demo.
+                if (!isDebug) {
+                    localStorage.setItem(LOCALSTORAGE_KEY, "true")
+                }
                 setShouldShow(true)
                 setPhase("playing")
             }
