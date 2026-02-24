@@ -108,7 +108,7 @@ export function SearchBox({ onSearch, placeholder = "Search address or ID...", v
     <div className="relative w-full" ref={dropdownRef}>
       <form onSubmit={handleSubmit} className="relative">
         {/* Main Glass Panel with Branding + Search */}
-        <div className="glass-panel shadow-lg h-10 flex items-center px-3 gap-3 rounded-md w-full md:w-80 md:focus-within:w-[480px] transition-all duration-300 ease-in-out">
+        <div className="glass-panel shadow-lg h-10 flex items-center px-3 gap-3 rounded-md w-full md:focus-within:w-[480px] transition-all duration-300 ease-in-out">
           {/* Branding */}
           <div className="flex items-center gap-2 text-primary shrink-0 border-r border-border pr-3">
             <HomecastrLogo variant="horizontal" size={20} />

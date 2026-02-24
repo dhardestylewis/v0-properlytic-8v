@@ -15,14 +15,14 @@ import { useToast } from "@/hooks/use-toast"
 import type { PropertyForecast } from "@/app/actions/property-forecast"
 import { TimeControls } from "@/components/time-controls"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Plus, Minus, RotateCcw, ArrowLeftRight, Copy, Terminal, Activity } from "lucide-react"
+import { AlertCircle, Plus, Minus, RotateCcw, ArrowLeftRight, Copy, Terminal, Activity, MessageSquare, Mic } from "lucide-react"
 import { geocodeAddress, reverseGeocode } from "@/app/actions/geocode"
 
 import { cellToLatLng, latLngToCell } from "h3-js"
 import { getH3CellDetails } from "@/app/actions/h3-details"
 import { ExplainerPopup } from "@/components/explainer-popup"
 import { ChatPanel, type MapAction } from "@/components/chat-panel"
-import { MessageSquare } from "lucide-react"
+
 import { createTavusConversation } from "@/app/actions/tavus"
 import dynamic from "next/dynamic"
 import { HomecastrLogo } from "@/components/homecastr-logo"
@@ -587,7 +587,7 @@ function DashboardContent() {
         {/* Unified Sidebar Container - Top Left */}
         <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-1.5 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300`}>
           {/* Search Row */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <SearchBox
               onSearch={handleSearch}
               placeholder="Search address or ID..."
@@ -680,42 +680,41 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Floating Chat Button — to the left of the Tavus button */}
-        {!isChatOpen && (
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className={cn(
-              "fixed z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
-              tavusConversationUrl ? "hidden md:flex" : "flex",
-              !tavusConversationUrl && !isTavusLoading ? "md:left-[220px]" : "left-5",
-              mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
-            )}
-          >
-            <MessageSquare size={22} />
-            <div className="flex flex-col items-start">
-              <span className="text-xs font-semibold">Chat with live agent</span>
-              <span className="text-[10px] text-muted-foreground">Powered by Homecastr AI</span>
-            </div>
-          </button>
-        )}
+        {/* Floating action buttons — flex row, same gap-2 as sidebar rows */}
+        <div className={cn(
+          "fixed z-[9999] flex items-center gap-2 transition-all duration-300",
+          // Shift right of whichever panel is open (both are ~340px wide at left-5 → right edge ~365px)
+          tavusConversationUrl || isChatOpen ? "left-[365px]" : "left-5",
+          mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
+        )}>
+          {/* Chat button — visible when chat panel is closed */}
+          {!isChatOpen && (
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95"
+            >
+              <MessageSquare size={22} />
+              <div className="flex flex-col items-start">
+                <span className="text-xs font-semibold">Chat with live agent</span>
+                <span className="text-[10px] text-muted-foreground">Powered by OpenAI</span>
+              </div>
+            </button>
+          )}
 
-        {/* Floating Homecastr Live Agent Button — bottom-left */}
-        {!tavusConversationUrl && !isTavusLoading && (
-          <button
-            onClick={handleFloatingConsultAI}
-            className={cn(
-              "fixed z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
-              "left-5",
-              mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
-            )}
-          >
-            <HomecastrLogo size={28} />
-            <div className="flex flex-col items-start">
-              <span className="text-xs font-semibold">Talk to live agent</span>
-              <span className="text-[10px] text-muted-foreground">Powered by Tavus</span>
-            </div>
-          </button>
-        )}
+          {/* Tavus button — visible when not in a Tavus call */}
+          {!tavusConversationUrl && !isTavusLoading && (
+            <button
+              onClick={handleFloatingConsultAI}
+              className="flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95"
+            >
+              <Mic size={22} />
+              <div className="flex flex-col items-start">
+                <span className="text-xs font-semibold">Talk to live agent</span>
+                <span className="text-[10px] text-muted-foreground">Powered by Tavus</span>
+              </div>
+            </button>
+          )}
+        </div>
 
         {/* Homecastr Loading Indicator */}
         {
