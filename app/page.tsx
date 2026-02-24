@@ -575,13 +575,13 @@ function DashboardContent() {
               originYear={2025}
             />
 
-            {/* Controls: 2x2 Grid on Mobile, Column on Desktop */}
-            <div className="grid grid-cols-2 grid-rows-2 gap-1 md:flex md:flex-col shrink-0 self-stretch w-[4.5rem] md:w-auto">
+            {/* Controls: 2x2 Grid */}
+            <div className="grid grid-cols-2 grid-rows-2 gap-1 shrink-0 self-stretch w-[4.5rem]">
 
               {/* Single Select */}
               <button
                 onClick={() => setMobileSelectionMode('replace')}
-                className={`aspect-square rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] md:hidden ${mobileSelectionMode === 'replace' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
+                className={`aspect-square rounded-md flex items-center justify-center transition-colors shadow-sm font-bold text-[10px] ${mobileSelectionMode === 'replace' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
                 title="Single Select"
               >
                 1
@@ -590,7 +590,7 @@ function DashboardContent() {
               {/* Multi Select */}
               <button
                 onClick={() => setMobileSelectionMode('add')}
-                className={`aspect-square rounded-md flex items-center justify-center transition-colors shadow-sm md:hidden ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
+                className={`aspect-square rounded-md flex items-center justify-center transition-colors shadow-sm ${mobileSelectionMode === 'add' ? "bg-primary text-primary-foreground" : "glass-panel text-foreground"}`}
                 title="Multi Select"
               >
                 <Copy className="h-3.5 w-3.5" />

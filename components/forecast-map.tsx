@@ -991,7 +991,107 @@ export function ForecastMap({
                     }
                     map.once("idle", () => attemptSelect(3))
                 }
-            } else if (action === "location_to_area" || action === "add_location_to_selection" || action === "resolve_place" || action === "get_forecast_area") {
+            } else if (action === "add_location_to_selection") {
+                // COMPARISON: keep primary selection, zoom to fit both, overlay comparison data
+                const result = (e as CustomEvent).detail?.result || params
+                const newLat = result?.chosen?.lat || result?.location?.lat || result?.area?.location?.lat || params?.lat
+                const newLng = result?.chosen?.lng || result?.location?.lng || result?.area?.location?.lng || params?.lng
+                const map = mapRef.current
+                if (map && newLat && newLng) {
+                    if (selectedIdRef.current && selectedCoords) {
+                        // Primary is locked — zoom to fit both areas
+                        const [selLat, selLng] = selectedCoords
+                        const latMin = Math.min(selLat, newLat)
+                        const latMax = Math.max(selLat, newLat)
+                        const lngMin = Math.min(selLng, newLng)
+                        const lngMax = Math.max(selLng, newLng)
+                        const latSpan = latMax - latMin
+                        const lngSpan = lngMax - lngMin
+                        const padding = 0.3 // 30% padding
+                        map.fitBounds(
+                            [
+                                [lngMin - lngSpan * padding, latMin - latSpan * padding],
+                                [lngMax + lngSpan * padding, latMax + latSpan * padding],
+                            ],
+                            { duration: 2000, maxZoom: 15 }
+                        )
+                        // After flight, query new location and set as comparison (hover)
+                        const attemptComparison = (retries: number) => {
+                            const zoom = map.getZoom()
+                            const sourceLayer = getSourceLayer(zoom)
+                            const activeSuffix = (map as any)._activeSuffix || "a"
+                            const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
+                            const newPoint = map.project([newLng, newLat])
+                            const features = map.getLayer(fillLayerId)
+                                ? map.queryRenderedFeatures(newPoint, { layers: [fillLayerId] })
+                                : []
+                            if (features.length > 0) {
+                                const feature = features[0]
+                                const id = (feature.properties?.id || feature.id) as string
+                                if (id && id !== selectedIdRef.current) {
+                                    // Set hover state on comparison feature
+                                    hoveredIdRef.current = id
+                                    onFeatureHover(id)
+                                        ;["forecast-a", "forecast-b"].forEach((s) => {
+                                            try { map.setFeatureState({ source: s, sourceLayer, id }, { hover: true }) } catch { }
+                                        })
+                                    // Update tooltipData.properties to trigger comparison useEffect
+                                    setTooltipData(prev => prev ? { ...prev, properties: feature.properties } : prev)
+                                    console.log(`[ForecastMap] add_location_to_selection: comparison set to ${id}`)
+                                }
+                            } else if (retries > 0) {
+                                console.log(`[ForecastMap] add_location_to_selection: No features at comparison point, retrying... (${retries} left)`)
+                                setTimeout(() => attemptComparison(retries - 1), 500)
+                            }
+                        }
+                        map.once("idle", () => attemptComparison(3))
+                    } else {
+                        // No primary selection yet — treat as normal select
+                        map.flyTo({
+                            center: [newLng, newLat],
+                            zoom: Math.max(map.getZoom(), 13),
+                            duration: 2000,
+                        })
+                        const attemptFirst = (retries: number) => {
+                            const zoom = map.getZoom()
+                            const sourceLayer = getSourceLayer(zoom)
+                            const activeSuffix = (map as any)._activeSuffix || "a"
+                            const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
+                            const center = map.project(map.getCenter())
+                            const features = map.getLayer(fillLayerId)
+                                ? map.queryRenderedFeatures(center, { layers: [fillLayerId] })
+                                : []
+                            if (features.length > 0) {
+                                const feature = features[0]
+                                const id = (feature.properties?.id || feature.id) as string
+                                if (id) {
+                                    selectedIdRef.current = id
+                                    setSelectedId(id)
+                                    setSelectedProps(feature.properties)
+                                    setSelectedCoords([newLat, newLng])
+                                    setTooltipCoords([newLat, newLng])
+                                    onFeatureSelect(id)
+                                    const centerScreen = map.project(map.getCenter())
+                                    const rect = map.getCanvas().getBoundingClientRect()
+                                    const screenX = rect.left + centerScreen.x
+                                    const screenY = rect.top + centerScreen.y
+                                    const smartPos = getSmartTooltipPos(screenX, screenY, window.innerWidth, window.innerHeight)
+                                    setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
+                                    setTooltipData({ globalX: smartPos.x, globalY: smartPos.y, properties: feature.properties })
+                                    userDraggedRef.current = false
+                                        ;["forecast-a", "forecast-b"].forEach((s) => {
+                                            try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
+                                        })
+                                    fetchForecastDetail(id, sourceLayer)
+                                }
+                            } else if (retries > 0) {
+                                setTimeout(() => attemptFirst(retries - 1), 500)
+                            }
+                        }
+                        map.once("idle", () => attemptFirst(3))
+                    }
+                }
+            } else if (action === "location_to_area" || action === "resolve_place" || action === "get_forecast_area") {
                 // All these return lat/lng — fly to it and auto-select the center feature
                 const result = (e as CustomEvent).detail?.result || params
                 const lat = result?.chosen?.lat || result?.location?.lat || result?.area?.location?.lat || params?.lat
