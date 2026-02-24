@@ -233,14 +233,14 @@ export function ForecastMap({
             return
         }
 
-        const cacheKey = `${geoLevel}:${selectedCoords[0].toFixed(4)},${selectedCoords[1].toFixed(4)}`
+        const cacheKey = `${geoLevel}:${selectedId}`
         if (geocodeCacheRef.current[cacheKey]) {
             setGeocodedName(geocodeCacheRef.current[cacheKey])
             return
         }
         setGeocodedName(null) // Show loading
         const [lat, lng] = selectedCoords
-        const url = `/api/geocode?lat=${lat}&lng=${lng}`
+        const url = `/api/geocode?lat=${lat}&lng=${lng}&level=${geoLevel}`
         console.log('[GEOCODE] Fetching primary:', url)
         // Proxy through our API route to avoid CORS issues with Nominatim
         fetch(url)
@@ -251,11 +251,16 @@ export function ForecastMap({
                 const addr = data.address || {}
                 let name: string | null = null
                 if (geoLevel === "tract") {
-                    // Tract: show suburb/neighborhood
-                    name = addr.suburb || addr.neighbourhood || addr.city_district || null
+                    // Tract: show neighbourhood
+                    name = addr.suburb || addr.neighbourhood || null
+                } else if (geoLevel === "parcel") {
+                    // Parcel: show full address (e.g. "1747 West 25th Street")
+                    const street = addr.road || null
+                    const num = addr.house_number || null
+                    name = (num && street) ? `${num} ${street}` : street || addr.suburb || addr.neighbourhood || null
                 } else {
-                    // Block/Parcel: show street/road
-                    name = addr.road || addr.suburb || addr.neighbourhood || data.display_name?.split(',')[0] || null
+                    // Block: show street name
+                    name = addr.road || addr.suburb || addr.neighbourhood || null
                 }
                 console.log('[GEOCODE] Resolved name:', name)
                 if (name) {
@@ -269,7 +274,7 @@ export function ForecastMap({
     // Comparison hover coordinates (separate from tooltipCoords which stays pinned)
     const [comparisonCoords, setComparisonCoords] = useState<[number, number] | null>(null)
 
-    // Reverse geocode comparison feature when hovering
+    // Reverse geocode comparison feature when hovering — keyed on feature ID, not coords
     useEffect(() => {
         const compId = tooltipData?.properties?.id
         if (!compId || compId === selectedId || !comparisonCoords) {
@@ -286,23 +291,28 @@ export function ForecastMap({
             return
         }
 
-        const cacheKey = `${geoLevel}:${comparisonCoords[0].toFixed(4)},${comparisonCoords[1].toFixed(4)}`
+        // Cache by feature ID — hovering within same feature never re-fetches
+        const cacheKey = `${geoLevel}:${compId}`
         if (geocodeCacheRef.current[cacheKey]) {
             setComparisonGeocodedName(geocodeCacheRef.current[cacheKey])
             return
         }
         setComparisonGeocodedName(null)
         const [lat, lng] = comparisonCoords
-        fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
+        fetch(`/api/geocode?lat=${lat}&lng=${lng}&level=${geoLevel}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (!data) return
                 const addr = data.address || {}
                 let name: string | null = null
                 if (geoLevel === "tract") {
-                    name = addr.suburb || addr.neighbourhood || addr.city_district || null
+                    name = addr.suburb || addr.neighbourhood || null
+                } else if (geoLevel === "parcel") {
+                    const street = addr.road || null
+                    const num = addr.house_number || null
+                    name = (num && street) ? `${num} ${street}` : street || addr.suburb || addr.neighbourhood || null
                 } else {
-                    name = addr.road || addr.suburb || addr.neighbourhood || data.display_name?.split(',')[0] || null
+                    name = addr.road || addr.suburb || addr.neighbourhood || null
                 }
                 if (name) {
                     geocodeCacheRef.current[cacheKey] = name
@@ -310,7 +320,7 @@ export function ForecastMap({
                 }
             })
             .catch(() => { })
-    }, [tooltipData?.properties?.id, selectedId, comparisonCoords])
+    }, [tooltipData?.properties?.id, selectedId])  // Only re-run when hovered feature ID changes
 
     // Fan chart detail state
     const [fanChartData, setFanChartData] = useState<FanChartData | null>(null)

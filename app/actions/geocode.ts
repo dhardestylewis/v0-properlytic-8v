@@ -121,74 +121,66 @@ export async function getAutocompleteSuggestions(query: string): Promise<Autocom
  */
 export async function reverseGeocode(lat: number, lng: number, zoom = 18): Promise<string | null> {
     try {
-        const params = new URLSearchParams({
-            lat: lat.toString(),
-            lon: lng.toString(),
-            zoom: zoom.toString(),
-            format: "json",
-            addressdetails: "1",
-        })
+        // Try BigDataCloud first (free, no rate limits)
+        const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+        const response = await fetch(bdcUrl)
 
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params.toString()}`, {
-            headers: {
-                "User-Agent": "HomecastrUI/1.0",
-            },
-        })
-
-        if (!response.ok) return null
-
-        const data = await response.json()
-        const addr = data.address || {}
-
-        // Build zoom-appropriate address string from structured parts
-        const house = addr.house_number || ""
-        const road = addr.road || addr.street || ""
-        const neighbourhood = addr.neighbourhood || addr.suburb || addr.hamlet || ""
-        const city = addr.city || addr.town || addr.village || addr.municipality || ""
-        const county = addr.county || ""
-        const state = addr.state ? _abbreviateState(addr.state) : ""
-        const postcode = addr.postcode || ""
-
-        let parts: string[] = []
-
-        if (zoom >= 16) {
-            // Full detail: "123 Main St, Houston, TX 77002"
-            const street = house && road ? `${house} ${road}` : road || house
-            if (street) parts.push(street)
-            if (city) parts.push(city)
-            if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
-        } else if (zoom >= 14) {
-            // Street level: "Main St, Houston, TX 77002"
-            if (road) parts.push(road)
-            if (city) parts.push(city)
-            if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
-        } else if (zoom >= 12) {
-            // Neighborhood level: "Montrose, Houston, TX 77006"
+        if (!response.ok) {
+            // Fallback to Nominatim
+            const params = new URLSearchParams({
+                lat: lat.toString(),
+                lon: lng.toString(),
+                zoom: zoom.toString(),
+                format: "json",
+                addressdetails: "1",
+            })
+            const nomResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?${params.toString()}`, {
+                headers: { "User-Agent": "HomecastrUI/1.0" },
+            })
+            if (!nomResponse.ok) return null
+            const data = await nomResponse.json()
+            const addr = data.address || {}
+            const house = addr.house_number || ""
+            const road = addr.road || addr.street || ""
+            const neighbourhood = addr.neighbourhood || addr.suburb || addr.hamlet || ""
+            const city = addr.city || addr.town || addr.village || addr.municipality || ""
+            const state = addr.state ? _abbreviateState(addr.state) : ""
+            const postcode = addr.postcode || ""
+            let parts: string[] = []
             if (neighbourhood) parts.push(neighbourhood)
             if (city) parts.push(city)
             if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
-        } else if (zoom >= 9) {
-            // City level: "Houston, TX 77002"
-            if (city) parts.push(city)
-            if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
-        } else {
-            // County/region level: "Harris County, TX"
-            if (county) parts.push(county)
-            if (state) parts.push(state)
+            return parts.filter(Boolean).join(", ") || data.display_name || null
         }
 
-        const result = parts.filter(Boolean).join(", ")
+        const bdc = await response.json()
 
-        // Fallback to full display_name if our parsing yielded nothing
-        if (!result) {
-            let formatted = data.display_name
-            if (formatted) {
-                formatted = formatted.replace(/^(\d+),\s+/, "$1 ")
-            }
-            return formatted || null
-        }
+        // Extract neighbourhood: highest-order informative entry that is a place name
+        const informative: Array<{ name?: string; description?: string; order?: number; wikidataId?: string }> =
+            bdc.localityInfo?.informative || []
+        const placeEntries = informative.filter(
+            (i) =>
+                i.name &&
+                i.order &&
+                i.order >= 8 &&
+                !i.description?.includes("FIPS") &&
+                !i.description?.includes("postal") &&
+                !i.description?.includes("time zone")
+        )
+        const neighbourhood = placeEntries.length > 0
+            ? placeEntries[placeEntries.length - 1].name!
+            : null
 
-        return result
+        const city = bdc.city || bdc.locality || ""
+        const state = bdc.principalSubdivision ? _abbreviateState(bdc.principalSubdivision) : ""
+        const postcode = bdc.postcode || ""
+
+        const parts: string[] = []
+        if (neighbourhood) parts.push(neighbourhood)
+        if (city) parts.push(city)
+        if (state || postcode) parts.push([state, postcode].filter(Boolean).join(" "))
+
+        return parts.filter(Boolean).join(", ") || null
     } catch (error) {
         console.error("[Geocode] Reverse geocode error:", error)
         return null
