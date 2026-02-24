@@ -60,8 +60,9 @@ export async function createTavusConversation({
     6. To compare locations, use 'add_location_to_selection'. To reset the primary selection, use 'clear_selection'. To remove just the comparison overlay, use 'clear_comparison'.
     7. BIAS TO ACTION: If the user says "select something", "show me anything", or gives a vague request, IMMEDIATELY pick a popular Houston neighborhood (e.g. Montrose, Heights, River Oaks, EaDo, Midtown) and call 'location_to_area'. NEVER ask the user to be more specific — just pick and go.
     8. When calling 'location_to_area', the map will automatically fly there and select the area. You do NOT need to call 'fly_to_location' separately.
-    9. To change the forecast year, use 'set_forecast_year'. To switch between value and growth view, use 'set_color_mode'.
-    10. When the user says goodbye or wants to end the call, use 'end_session'.`
+    9. YEAR TERMINOLOGY: The current year is 2026. Years 2019-2026 are HISTORICAL (past data). Years 2027-2030 are FORECAST. Never call a past year a "forecast year". When the user asks about a specific year, ALWAYS call 'set_forecast_year' first.
+    10. GROWTH: When discussing growth, appreciation, or which area grows faster, ALWAYS call 'set_color_mode' with mode 'growth'. Present growth as a PERCENTAGE first (e.g. "+22.1%"). When switching back to value, call 'set_color_mode' with mode 'value'.
+    11. When the user says goodbye or wants to end the call, use 'end_session'.`
       : `The user is exploring properties ${locationContext} in Houston, TX. 
     IMPORTANT: You have zero initial metrics. You MUST call 'location_to_hex' or 'get_h3_hex' immediately to find the real market data for the current selection.
     
