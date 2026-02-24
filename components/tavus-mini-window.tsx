@@ -161,9 +161,10 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                 }))
               }
 
-              // 3. Send tool result back to the Tavus LLM as a single respond message
-              // (Tavus has no native tool_result event — conversation.respond is treated as user speech)
-              if (conversationId) {
+              // 3. Send tool result back to the Tavus LLM — only for server-proxied tools
+              // Client-side tools (fly_to, set_year, etc.) don't return data the agent needs
+              const clientOnlyTools = ["fly_to_location", "set_forecast_year", "set_color_mode", "clear_comparison", "end_session"]
+              if (conversationId && !clientOnlyTools.includes(toolName)) {
                 // Summarize the result compactly for the LLM
                 const summaryText = resultJson.length > 1500
                   ? resultJson.substring(0, 1500) + "...(truncated)"

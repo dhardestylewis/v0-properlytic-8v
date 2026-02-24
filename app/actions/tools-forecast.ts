@@ -168,9 +168,38 @@ export async function executeTopLevelForecastTool(
         case "location_to_area":
         case "add_location_to_selection": {
             try {
-                const querySuffix = (args.query.toLowerCase().includes("houston") || args.query.toLowerCase().includes("tx")) ? "" : ", TX"
+                const level = args.level || "zcta"
+                const forecastYear = args.forecast_year || 2029
+
+                // If area_id is given directly (e.g. from rank_forecast_areas), skip geocoding
+                if (args.area_id && !args.query) {
+                    const metricsResult = await executeTopLevelForecastTool("get_forecast_area", {
+                        level,
+                        id: args.area_id,
+                        forecast_year: forecastYear,
+                    })
+                    const parsed = JSON.parse(metricsResult)
+                    const result: any = {
+                        action: toolName,
+                        chosen: {
+                            label: parsed.area?.label || `Area ${args.area_id}`,
+                            lat: parsed.area?.lat,
+                            lng: parsed.area?.lng,
+                            kind: level,
+                        },
+                        location: { lat: parsed.area?.lat, lng: parsed.area?.lng, level },
+                    }
+                    if (parsed.area) {
+                        result.metrics = parsed.area.metrics
+                    }
+                    return JSON.stringify(result)
+                }
+
+                // Standard path: geocode query, then optionally fetch metrics
+                const query = args.query || ""
+                const querySuffix = (query.toLowerCase().includes("houston") || query.toLowerCase().includes("tx")) ? "" : ", TX"
                 const params = new URLSearchParams({
-                    q: args.query + querySuffix,
+                    q: query + querySuffix,
                     format: "json",
                     limit: "1",
                     addressdetails: "1",
@@ -188,11 +217,7 @@ export async function executeTopLevelForecastTool(
                 const lat = parseFloat(place.lat)
                 const lng = parseFloat(place.lon)
                 const addr = place.address || {}
-                const locationLabel = addr.suburb || addr.neighbourhood || addr.city_district || place.display_name?.split(",")[0] || args.query
-
-                // Determine the geography level based on zoom or type
-                const level = args.level || "zcta"
-                const forecastYear = args.forecast_year || 2029
+                const locationLabel = addr.suburb || addr.neighbourhood || addr.city_district || place.display_name?.split(",")[0] || query
 
                 // Build the tool result
                 const result: any = {
