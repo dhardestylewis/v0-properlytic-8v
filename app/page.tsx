@@ -586,26 +586,13 @@ function DashboardContent() {
 
         {/* Unified Sidebar Container - Top Left */}
         <div className={`absolute top-4 left-4 z-[60] flex flex-col gap-1.5 w-full max-w-[calc(100vw-32px)] md:w-fit md:min-w-[320px] transition-all duration-300`}>
-          {/* Search + Chat Toggle Row */}
+          {/* Search Row */}
           <div className="flex items-center gap-2">
             <SearchBox
               onSearch={handleSearch}
               placeholder="Search address or ID..."
               value={searchBarValue}
             />
-            <button
-              onClick={() => setIsChatOpen(!isChatOpen)}
-              className={cn(
-                "w-10 h-10 rounded-lg flex items-center justify-center transition-all shadow-sm shrink-0",
-                isChatOpen
-                  ? "bg-primary text-primary-foreground"
-                  : "glass-panel text-foreground hover:bg-accent"
-              )}
-              aria-label={isChatOpen ? "Close chat" : "Open AI chat"}
-              title="Chat with Homecastr AI"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
           </div>
 
           {/* TimeControls + Help Button Row */}
@@ -622,7 +609,6 @@ function DashboardContent() {
             />
             <ExplainerPopup />
           </div>
-
 
           {/* 3. Legend & (Selection Buttons + Vertical Zoom Controls) Row */}
           <div className="flex flex-row gap-1.5 items-stretch">
@@ -680,7 +666,7 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* API Documentation + Version - below legend */}
+          {/* API Documentation + Version */}
           <div className="flex justify-between items-center px-1">
             <a
               href="/api-docs"
@@ -694,14 +680,32 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Floating Homecastr Live Agent Button — always visible, bottom-left, shifts when chat open */}
+        {/* Floating Chat Button — to the left of the Tavus button */}
+        {!isChatOpen && (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className={cn(
+              "fixed z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
+              tavusConversationUrl ? "hidden md:flex" : "flex",
+              !tavusConversationUrl && !isTavusLoading ? "md:left-[220px]" : "left-5",
+              mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
+            )}
+          >
+            <MessageSquare size={22} />
+            <div className="flex flex-col items-start">
+              <span className="text-xs font-semibold">Chat with live agent</span>
+              <span className="text-[10px] text-muted-foreground">Powered by Homecastr AI</span>
+            </div>
+          </button>
+        )}
+
+        {/* Floating Homecastr Live Agent Button — bottom-left */}
         {!tavusConversationUrl && !isTavusLoading && (
           <button
             onClick={handleFloatingConsultAI}
             className={cn(
-              "fixed z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group",
-              isChatOpen ? "hidden md:flex md:left-[365px]" : "left-5",
-              // Mobile: shift up above tooltip when a selection is showing. Desktop: always bottom-5
+              "fixed z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-2xl glass-panel hover:bg-accent/50 text-foreground shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95",
+              "left-5",
               mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
             )}
           >
@@ -714,29 +718,33 @@ function DashboardContent() {
         )}
 
         {/* Homecastr Loading Indicator */}
-        {isTavusLoading && (
-          <div className={cn(
-            "fixed z-[10000] glass-panel text-foreground rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-3 transition-all duration-300",
-            "bottom-3 left-3",
-            "md:bottom-5",
-            isChatOpen ? "md:left-[365px]" : "md:left-5"
-          )}>
-            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <span className="text-xs font-medium">Connecting to Homecastr...</span>
-          </div>
-        )}
+        {
+          isTavusLoading && (
+            <div className={cn(
+              "fixed z-[10000] glass-panel text-foreground rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-3 transition-all duration-300",
+              "bottom-3 left-3",
+              "md:bottom-5",
+              isChatOpen ? "md:left-[365px]" : "md:left-5"
+            )}>
+              <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="text-xs font-medium">Connecting to Homecastr...</span>
+            </div>
+          )
+        }
 
         {/* Tavus AI Analyst Mini Window */}
-        {tavusConversationUrl && !isTavusLoading && (
-          <TavusMiniWindow
-            conversationUrl={tavusConversationUrl}
-            onClose={() => setTavusConversationUrl(null)}
-            chatOpen={isChatOpen}
-            forecastMode={filters.useForecastMap ?? false}
-          />
-        )}
-      </main>
-    </div>
+        {
+          tavusConversationUrl && !isTavusLoading && (
+            <TavusMiniWindow
+              conversationUrl={tavusConversationUrl}
+              onClose={() => setTavusConversationUrl(null)}
+              chatOpen={isChatOpen}
+              forecastMode={filters.useForecastMap ?? false}
+            />
+          )
+        }
+      </main >
+    </div >
   )
 }
 
