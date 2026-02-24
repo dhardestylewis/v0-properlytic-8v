@@ -1016,16 +1016,23 @@ export function ForecastMap({
                     })
                     // Auto-select feature at center after fly completes, with retry for tile loading
                     const attemptSelect = (retries: number) => {
-                        const zoom = map.getZoom()
-                        const sourceLayer = getSourceLayer(zoom)
                         const activeSuffix = (map as any)._activeSuffix || "a"
-                        const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
                         const center = map.project(map.getCenter())
-                        const features = map.getLayer(fillLayerId)
-                            ? map.queryRenderedFeatures(center, { layers: [fillLayerId] })
-                            : []
+                        // Query ALL fill layers, not just the one for current zoom
+                        const allFillLayers = getAllFillLayerIds(activeSuffix).filter(id => map.getLayer(id))
+                        // Try point query first, then a small bbox for better hit rate
+                        let features = map.queryRenderedFeatures(center, { layers: allFillLayers })
+                        if (features.length === 0) {
+                            // Try a 10px bbox around center
+                            const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+                                [center.x - 10, center.y - 10],
+                                [center.x + 10, center.y + 10],
+                            ]
+                            features = map.queryRenderedFeatures(bbox, { layers: allFillLayers })
+                        }
                         if (features.length > 0) {
                             const feature = features[0]
+                            const sourceLayer = feature.sourceLayer || getSourceLayer(map.getZoom())
                             const id = (feature.properties?.id || feature.id) as string
                             if (id) {
                                 if (selectedIdRef.current) {
@@ -1056,8 +1063,10 @@ export function ForecastMap({
                                 fetchForecastDetail(id, sourceLayer)
                             }
                         } else if (retries > 0) {
-                            console.log(`[ForecastMap] No features at center, retrying... (${retries} left)`)
-                            setTimeout(() => attemptSelect(retries - 1), 800)
+                            console.log(`[ForecastMap] location_to_area: No features at center, retrying... (${retries} left)`)
+                            setTimeout(() => attemptSelect(retries - 1), 1200)
+                        } else {
+                            console.warn(`[ForecastMap] location_to_area: Exhausted retries, no features found at center`)
                         }
                     }
                     map.once("idle", () => attemptSelect(8))
@@ -1088,16 +1097,22 @@ export function ForecastMap({
                         )
                         // After flight, query new location and set as comparison (hover)
                         const attemptComparison = (retries: number) => {
-                            const zoom = map.getZoom()
-                            const sourceLayer = getSourceLayer(zoom)
                             const activeSuffix = (map as any)._activeSuffix || "a"
-                            const fillLayerId = `forecast-fill-${sourceLayer}-${activeSuffix}`
                             const newPoint = map.project([newLng, newLat])
-                            const features = map.getLayer(fillLayerId)
-                                ? map.queryRenderedFeatures(newPoint, { layers: [fillLayerId] })
-                                : []
+                            // Query ALL fill layers, not just the one for current zoom
+                            const allFillLayers = getAllFillLayerIds(activeSuffix).filter(id => map.getLayer(id))
+                            let features = map.queryRenderedFeatures(newPoint, { layers: allFillLayers })
+                            if (features.length === 0) {
+                                // Try a 10px bbox around the point
+                                const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+                                    [newPoint.x - 10, newPoint.y - 10],
+                                    [newPoint.x + 10, newPoint.y + 10],
+                                ]
+                                features = map.queryRenderedFeatures(bbox, { layers: allFillLayers })
+                            }
                             if (features.length > 0) {
                                 const feature = features[0]
+                                const sourceLayer = feature.sourceLayer || getSourceLayer(map.getZoom())
                                 const id = (feature.properties?.id || feature.id) as string
                                 if (id && id !== selectedIdRef.current) {
                                     // Set hover state on comparison feature
@@ -1112,7 +1127,9 @@ export function ForecastMap({
                                 }
                             } else if (retries > 0) {
                                 console.log(`[ForecastMap] add_location_to_selection: No features at comparison point, retrying... (${retries} left)`)
-                                setTimeout(() => attemptComparison(retries - 1), 800)
+                                setTimeout(() => attemptComparison(retries - 1), 1200)
+                            } else {
+                                console.warn(`[ForecastMap] add_location_to_selection: Exhausted retries, no comparison features found`)
                             }
                         }
                         map.once("idle", () => attemptComparison(8))
