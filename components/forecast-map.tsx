@@ -14,7 +14,7 @@ import { StreetViewCarousel } from "@/components/street-view-carousel"
 import { useKeyboardOpen } from "@/hooks/use-keyboard-open"
 
 // Tooltip positioning constants
-const SIDEBAR_WIDTH = 340
+const SIDEBAR_WIDTH = 390
 const TOOLTIP_WIDTH = 320
 const TOOLTIP_HEIGHT = 620
 
@@ -60,7 +60,7 @@ function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHei
     // Desktop: sidebar control panel occupies the top-left column.
     // Width = SIDEBAR_WIDTH (340px), height ≈ 260px (4 stacked rows).
     if (!isMobileView) {
-        const CONTROL_PANEL_H = 260
+        const CONTROL_PANEL_H = 300
         if (left < SIDEBAR_WIDTH + 10 && top < CONTROL_PANEL_H) {
             const pushedRight = SIDEBAR_WIDTH + 10
             if (pushedRight + TOOLTIP_WIDTH <= windowWidth - 10) {
@@ -1640,7 +1640,12 @@ export function ForecastMap({
                             >
                                 <div className="flex items-center gap-2">
                                     <HomecastrLogo variant="horizontal" size={18} />
-                                    <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-[8px] font-semibold uppercase tracking-wider rounded">Forecast</span>
+                                    <span className={cn(
+                                        "px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded",
+                                        year > 2025
+                                            ? "bg-violet-500/20 text-violet-400"
+                                            : "bg-sky-500/20 text-sky-400"
+                                    )}>{year > 2025 ? "Forecast" : "Historical"}</span>
                                     {selectedId && (
                                         <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[8px] font-semibold uppercase tracking-wider rounded">Locked</span>
                                     )}
@@ -1882,18 +1887,6 @@ export function ForecastMap({
                 document.body
             )}
 
-            {/* Forecast mode badge */}
-            <div className="absolute bottom-14 right-4 md:bottom-auto md:top-14 z-50">
-                <div className="glass-panel rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-lg border border-white/10">
-                    <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
-                        Forecast Mode
-                    </span>
-                    <span className="text-[10px] font-mono text-muted-foreground">
-                        {year}
-                    </span>
-                </div>
-            </div>
         </div>
     )
 }
