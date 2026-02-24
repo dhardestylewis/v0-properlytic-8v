@@ -161,24 +161,20 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                 }))
               }
 
-              // 3. Append to LLM context (Bounded Contract)
+              // 3. Send tool result back to the Tavus LLM as a single respond message
+              // (Tavus has no native tool_result event — conversation.respond is treated as user speech)
               if (conversationId) {
-                call.sendAppMessage({
-                  message_type: "conversation",
-                  event_type: "conversation.append_llm_context",
-                  conversation_id: conversationId,
-                  properties: {
-                    context: `Result for ${toolName}: ${resultJson}. INSTRUCTION: Report the key takeaway in 1 sentence. Never read JSON. Never say H3 IDs.`
-                  }
-                }, "*")
+                // Summarize the result compactly for the LLM
+                const summaryText = resultJson.length > 1500
+                  ? resultJson.substring(0, 1500) + "...(truncated)"
+                  : resultJson
 
-                // 4. Trigger Response (Force natural speech)
                 call.sendAppMessage({
                   message_type: "conversation",
                   event_type: "conversation.respond",
                   conversation_id: conversationId,
                   properties: {
-                    text: `Summarize the result for ${toolName} like a human. Avoid all technical IDs.`
+                    text: `[SYSTEM] Tool "${toolName}" returned: ${summaryText}. Now summarize this result naturally in 1-2 sentences. Never read JSON or IDs. Use plain language.`
                   }
                 }, "*")
               }
