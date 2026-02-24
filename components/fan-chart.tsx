@@ -504,27 +504,27 @@ export function FanChart({
         />
 
         {/* Fan area (forecast uncertainty) */}
-        {fanPath && <path d={fanPath} fill="#4a5568" fillOpacity={0.2} />}
-        {comparisonFanPath && <path d={comparisonFanPath} fill="#ca8a04" fillOpacity={0.15} />}
+        {fanPath && <path d={fanPath} fill="#fbbf24" fillOpacity={0.15} />}
+        {comparisonFanPath && <path d={comparisonFanPath} fill="#22d3ee" fillOpacity={0.15} />}
 
         {/* Historical line (solid - actual values) */}
         {histPath && (
-          <path d={histPath} fill="none" stroke="#4a5568" strokeWidth={2} />
+          <path d={histPath} fill="none" stroke="#fbbf24" strokeWidth={2} />
         )}
         {comparisonHistPath && (
-          <path d={comparisonHistPath} fill="none" stroke="#ca8a04" strokeWidth={2} strokeDasharray="3 3" />
+          <path d={comparisonHistPath} fill="none" stroke="#22d3ee" strokeWidth={2} strokeDasharray="3 3" />
         )}
 
         {connectorPath && (
-          <path d={connectorPath} fill="none" stroke="#4a5568" strokeWidth={2} />
+          <path d={connectorPath} fill="none" stroke="#fbbf24" strokeWidth={2} />
         )}
         {comparisonConnectorPath && (
-          <path d={comparisonConnectorPath} fill="none" stroke="#ca8a04" strokeWidth={2} />
+          <path d={comparisonConnectorPath} fill="none" stroke="#22d3ee" strokeWidth={2} />
         )}
 
         {/* P50 forecast line */}
-        {p50Line && <path d={p50Line} fill="none" stroke="#4a5568" strokeWidth={2} />}
-        {comparisonP50Line && <path d={comparisonP50Line} fill="none" stroke="#ca8a04" strokeWidth={2} />}
+        {p50Line && <path d={p50Line} fill="none" stroke="#fbbf24" strokeWidth={2} />}
+        {comparisonP50Line && <path d={comparisonP50Line} fill="none" stroke="#22d3ee" strokeWidth={2} />}
 
         {/* Preview Layer (Fuchsia for visibility) */}
         {previewFanPath && <path d={previewFanPath} fill="#d946ef" fillOpacity={0.15} />}

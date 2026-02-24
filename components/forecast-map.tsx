@@ -593,9 +593,9 @@ export function ForecastMap({
                             "line-color": [
                                 "case",
                                 ["boolean", ["feature-state", "selected"], false],
-                                "#fbbf24",
+                                "#fbbf24",   // amber  — primary selection
                                 ["boolean", ["feature-state", "hover"], false],
-                                "#ffffff",
+                                "#22d3ee",   // cyan   — comparison hover
                                 "rgba(0,0,0,0)",
                             ],
                             "line-width": [
