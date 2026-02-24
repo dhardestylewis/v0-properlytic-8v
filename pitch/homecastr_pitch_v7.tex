@@ -107,9 +107,8 @@
 \end{frame}
 
 % ─── Default background for remaining slides ─────────────────
-% Reset background template — setbeamercolor{background canvas} handles the fill
-\usebackgroundtemplate{}
-\setbeamercolor{background canvas}{bg=hcBg}
+% Use \color+\rule fill — works in one pass, no TikZ overlay needed
+\usebackgroundtemplate{\color{hcBg}\rule{\paperwidth}{\paperheight}}
 
 
 % ─── SLIDE 2: Live Today ─────────────────────────────────────
@@ -118,17 +117,18 @@
 
 \begin{columns}[c]
 \begin{column}{0.63\textwidth}
-\href{https://homecastr.com}{\includegraphics[width=\linewidth,height=4.8cm,keepaspectratio=true]{assets/dashboard_screenshot.png}}
+\centering
+\href{https://homecastr.com}{\includegraphics[width=\linewidth,height=4.2cm,keepaspectratio=true]{assets/dashboard_screenshot.png}}
 \end{column}
 \begin{column}{0.34\textwidth}
 \centering
-\statbox{15\%}{median error (p50)}\\[14pt]
+\statbox{15\%}{median error\textsuperscript{\textasteriskcentered}}\\[14pt]
 \statbox{4yr}{forecast horizon}\\[14pt]
 \statbox{1M+}{lots forecasted}
 \end{column}
 \end{columns}
 
-\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free.}
+\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free. \quad {\tiny\textsuperscript{\textasteriskcentered}50th percentile, 4yr horizon}}
 \end{frame}
 
 
@@ -215,30 +215,6 @@
   \draw[arr] (model) -- (output);
 \end{tikzpicture}
 \end{center}
-
-\vspace{10pt}
-
-% ── Output features row ──
-\begin{columns}[c]
-\begin{column}{0.33\textwidth}
-\centering
-\includegraphics[width=3.6cm]{assets/scenarios.png}\\[4pt]
-{\footnotesize\goldtext{Scenario analysis}}\\
-{\scriptsize\mutedtext{Test any market assumption}}
-\end{column}
-\begin{column}{0.33\textwidth}
-\centering
-\includegraphics[width=3.6cm]{assets/pricebands.png}\\[4pt]
-{\footnotesize\goldtext{Forecast ranges}}\\
-{\scriptsize\mutedtext{Confidence bands per property}}
-\end{column}
-\begin{column}{0.33\textwidth}
-\centering
-\includegraphics[width=3.6cm]{assets/explainable.png}\\[4pt]
-{\footnotesize\goldtext{Explainable outputs}}\\
-{\scriptsize\mutedtext{Built for investment memos}}
-\end{column}
-\end{columns}
 
 \end{frame}
 
