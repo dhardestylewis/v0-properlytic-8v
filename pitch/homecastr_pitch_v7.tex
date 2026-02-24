@@ -108,14 +108,32 @@
 \end{frame}
 
 % ─── Default background for remaining slides ─────────────────
-\usebackgroundtemplate{%
-  \begin{tikzpicture}[remember picture,overlay]
-    \fill[hcBg] (current page.south west) rectangle (current page.north east);
-  \end{tikzpicture}
-}
+% Reset background template — setbeamercolor{background canvas} handles the fill
+\usebackgroundtemplate{}
+\setbeamercolor{background canvas}{bg=hcBg}
 
 
-% ─── SLIDE 2: The Gap ────────────────────────────────────────
+% ─── SLIDE 2: Live Today ─────────────────────────────────────
+\begin{frame}{Live today}
+\vspace{8pt}
+
+\begin{columns}[c]
+\begin{column}{0.63\textwidth}
+\includegraphics[width=\linewidth,height=5.2cm,keepaspectratio=false]{assets/dashboard_screenshot.png}
+\end{column}
+\begin{column}{0.34\textwidth}
+\centering
+\statbox{14\%}{Median Error}\\[14pt]
+\statbox{4yr}{Forecast Horizon}\\[14pt]
+\statbox{1M+}{Properties Indexed}
+\end{column}
+\end{columns}
+
+\slidetagline{Houston metro. Live. Free.}
+\end{frame}
+
+
+% ─── SLIDE 3: The Gap ────────────────────────────────────────
 \begin{frame}{Everyone knows what a home is worth today}
 \vspace{4pt}
 
@@ -398,25 +416,7 @@
 \end{frame}
 
 
-% ─── SLIDE 9: Where We Are ─────────────────────────
-\begin{frame}{Where we are}
-\vspace{8pt}
-
-\begin{columns}[c]
-\begin{column}{0.63\textwidth}
-% Drop your screenshot into assets/dashboard_screenshot.png
-\includegraphics[width=\linewidth,height=5.2cm,keepaspectratio=false]{assets/dashboard_screenshot.png}
-\end{column}
-\begin{column}{0.34\textwidth}
-\centering
-\statbox{14\%}{Median Error}\\[14pt]
-\statbox{4yr}{Forecast Horizon}\\[14pt]
-\statbox{1M+}{Properties Indexed}
-\end{column}
-\end{columns}
-
-\slidetagline{Houston metro live.}
-\end{frame}
+% (Where We Are moved to slide 2 — see above)
 
 
 % ─── SLIDE 10: Flywheel ─────────────────────────────────────
