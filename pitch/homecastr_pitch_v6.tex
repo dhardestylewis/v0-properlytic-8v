@@ -1,5 +1,5 @@
-% Homecastr Investor Pitch Deck - V5 Cited TAM + Honest Numbers
-% Compile with: xelatex homecastr_pitch_v5.tex
+% Homecastr Investor Pitch Deck - V6
+% Compile with: xelatex homecastr_pitch_v6.tex
 
 \documentclass[aspectratio=169,12pt]{beamer}
 
@@ -183,19 +183,19 @@
 \centering
 \includegraphics[width=4cm]{assets/scenarios.png}\\[4pt]
 {\footnotesize\goldtext{Scenario analysis}}\\
-{\scriptsize\mutedtext{Probabilistic ranges}}
+{\scriptsize\mutedtext{Test any market assumption}}
 \end{column}
 \begin{column}{0.33\textwidth}
 \centering
 \includegraphics[width=4cm]{assets/pricebands.png}\\[4pt]
-{\footnotesize\goldtext{Forecast bands}}\\
-{\scriptsize\mutedtext{Confidence intervals per property}}
+{\footnotesize\goldtext{Forecast ranges}}\\
+{\scriptsize\mutedtext{Confidence bands per property}}
 \end{column}
 \begin{column}{0.33\textwidth}
 \centering
 \includegraphics[width=4cm]{assets/explainable.png}\\[4pt]
 {\footnotesize\goldtext{Explainable outputs}}\\
-{\scriptsize\mutedtext{For investment memos}}
+{\scriptsize\mutedtext{Built for investment memos}}
 \end{column}
 \end{columns}
 
@@ -222,13 +222,13 @@
     {\scriptsize census, zoning}
   };
   \node[block] (model) at (5,0) {
-    \goldtext{\textbf{Diffusion Model}}\\[4pt]
-    {\scriptsize Foundation model}\\
-    {\scriptsize trained on 1M+ lots}
+    \goldtext{\textbf{ML Foundation Model}}\\[4pt]
+    {\scriptsize Trained on}\\
+    {\scriptsize 1M+ lots}
   };
   \node[block] (output) at (10,0) {
-    \goldtext{\textbf{Forecast Bands}}\\[4pt]
-    {\scriptsize Probabilistic ranges}\\
+    \goldtext{\textbf{Forecast Ranges}}\\[4pt]
+    {\scriptsize Confidence bands}\\
     {\scriptsize per property, per year}
   };
 
@@ -236,7 +236,7 @@
   \draw[arr] (model) -- (output);
 \end{tikzpicture}
 \end{center}
-\slidetagline{Public data in. Probabilistic ranges out.}
+\slidetagline{Public data in. Forecast ranges out.}
 \end{frame}
 
 
@@ -251,7 +251,7 @@
   % Right card
   \fill[hcCard, rounded corners=8pt] (6.8,0) rectangle (13.0,5.2);
 
-  % -- Left card text (absolute coords) --
+  % -- Left card text --
   \node[anchor=north, text width=5.2cm, align=center] at (3.1,4.9) {
     {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} 300bps\\[6pt]Swing}
   };
@@ -259,18 +259,24 @@
     {\large\bfseries\color{hcText} Rate Volatility}
   };
   \node[anchor=north, text width=5.2cm, align=center] at (3.1,1.9) {
-    {\scriptsize\color{hcMuted} Rate swings repriced every market.\\[3pt]Static models can't keep up.\\[3pt]Buyers need scenario forecasts.}
+    {\scriptsize\color{hcMuted}
+      A 300bps swing repriced every market overnight.\par\smallskip
+      Buyers need scenario-based forecasts,\par
+      not static point estimates.}
   };
 
-  % -- Right card text (same y-coords, shifted x by 6.8) --
+  % -- Right card text --
   \node[anchor=north, text width=5.2cm, align=center] at (9.9,4.9) {
-    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} Diffusion\\[6pt]Models}
+    {\fontsize{28}{34}\selectfont\bfseries\color{hcGold} ML\\[6pt]Forecasting}
   };
   \node[anchor=north, text width=5.2cm, align=center] at (9.9,2.6) {
     {\large\bfseries\color{hcText} Now Feasible at Scale}
   };
   \node[anchor=north, text width=5.2cm, align=center] at (9.9,1.9) {
-    {\scriptsize\color{hcMuted} GPU costs dropped 10x.\\[3pt]Training on 1M+ parcels\\[3pt]is now practical.}
+    {\scriptsize\color{hcMuted}
+      GPU costs dropped 10{\texttimes}.\par\smallskip
+      Training on 1M+ parcels is now\par
+      practical — and improving fast.}
   };
 \end{tikzpicture}
 \end{center}
@@ -381,9 +387,9 @@
 \begin{column}{0.48\textwidth}
 \begin{center}
 \begin{tikzpicture}
-  \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,3.4);
-  \node[font=\large\bfseries, text=hcText] at (3.25,2.9) {Free};
-  \node[font=\small, text=hcMuted, align=center] at (3.25,1.6) {Dashboard + basic forecasts\\Builds audience, captures demand};
+  \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,3.8);
+  \node[font=\large\bfseries, text=hcText] at (3.25,3.3) {Free};
+  \node[font=\small, text=hcMuted, align=center] at (3.25,1.8) {Dashboard \& basic forecasts\\[4pt]Builds audience, captures demand};
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -395,9 +401,9 @@
 \begin{column}{0.48\textwidth}
 \begin{center}
 \begin{tikzpicture}
-  \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,3.4);
-  \node[font=\large\bfseries, text=hcGold] at (3.25,2.9) {\$99/mo};
-  \node[font=\small, text=hcMuted, align=center] at (3.25,1.6) {Bulk forecasts + API access\\Full portfolio analytics};
+  \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,3.8);
+  \node[font=\large\bfseries, text=hcGold] at (3.25,3.3) {\$99/mo};
+  \node[font=\small, text=hcMuted, align=center] at (3.25,1.8) {Bulk forecasts \& API access\\[4pt]Full portfolio analytics};
 \end{tikzpicture}
 \end{center}
 \end{column}
@@ -412,11 +418,10 @@
 
 \begin{columns}[c]
 \begin{column}{0.52\textwidth}
-% TODO: Replace with actual dashboard screenshot or demo video
+% Drop your screenshot into assets/dashboard_screenshot.png
 \begin{tikzpicture}
   \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.8,4.6);
-  \node[font=\small\bfseries, text=hcMuted] at (3.4,2.6) {[Dashboard Screenshot / Demo Video]};
-  \node[font=\scriptsize, text=hcGold] at (3.4,1.8) {\href{https://homecastr.com}{homecastr.com --- Free. Live. Interactive.}};
+  \node[anchor=center] at (3.4,2.3) {\includegraphics[width=6.6cm,height=4.4cm,keepaspectratio]{assets/dashboard_screenshot.png}};
 \end{tikzpicture}
 \end{column}
 \begin{column}{0.44\textwidth}
@@ -441,9 +446,9 @@
     minimum width=3.6cm, minimum height=1.4cm, align=center, font=\small},
   arr/.style={-{Stealth[length=5pt]}, very thick, color=hcGold}
 ]
-  \node[block] (consumers) at (-3.0,1.8) {\textbf{Free users}\\{\scriptsize drive adoption}};
-  \node[block] (signal) at (3.0,1.8) {\textbf{Conversational data}\\{\scriptsize reveal intent signals}};
-  \node[block] (model) at (3.0,-1.8) {\textbf{Better model}\\{\scriptsize improve accuracy}};
+  \node[block] (consumers) at (-3.0,1.8) {\textbf{Free users}\\{\scriptsize grow the audience}};
+  \node[block] (signal) at (3.0,1.8) {\textbf{Usage signals}\\{\scriptsize reveal buyer intent}};
+  \node[block] (model) at (3.0,-1.8) {\textbf{Better model}\\{\scriptsize improves accuracy}};
   \node[block] (value) at (-3.0,-1.8) {\textbf{Operator revenue}\\{\scriptsize funds growth}};
 
   \draw[arr] (consumers) -- (signal);

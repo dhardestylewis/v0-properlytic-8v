@@ -513,7 +513,7 @@ export function FanChart({
           <path d={histPath} fill="none" stroke="#fb923c" strokeWidth={2.5} />
         )}
         {comparisonHistPath && (
-          <path d={comparisonHistPath} fill="none" stroke="#a3e635" strokeWidth={2} strokeDasharray="3 3" />
+          <path d={comparisonHistPath} fill="none" stroke="#a3e635" strokeWidth={2} />
         )}
 
         {connectorPath && (
@@ -556,12 +556,12 @@ export function FanChart({
         {/* Preview Layer (Fuchsia for visibility) */}
         {previewFanPath && <path d={previewFanPath} fill="#d946ef" fillOpacity={0.15} />}
         {previewHistPath && (
-          <path d={previewHistPath} fill="none" stroke="#d946ef" strokeWidth={2} strokeDasharray="3 3" />
+          <path d={previewHistPath} fill="none" stroke="#d946ef" strokeWidth={2} />
         )}
         {previewConnectorPath && (
           <path d={previewConnectorPath} fill="none" stroke="#d946ef" strokeWidth={2} />
         )}
-        {previewP50Line && <path d={previewP50Line} fill="none" stroke="#d946ef" strokeWidth={2} />}
+        {previewP50Line && <path d={previewP50Line} fill="none" stroke="#d946ef" strokeWidth={2} strokeDasharray="5 3" />}
 
         {/* X-axis labels */}
         {labelYears.map((yr) => (
