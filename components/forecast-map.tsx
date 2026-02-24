@@ -54,17 +54,19 @@ function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHei
     top = Math.max(10, Math.min(top, windowHeight - TOOLTIP_HEIGHT - 10))
     left = Math.max(10, left)
 
-    // Desktop: avoid the top-left UI zone (logo, mode badge, zoom controls occupy ~220px wide × 140px tall)
+    // Desktop: sidebar control panel occupies the top-left column.
+    // Width = SIDEBAR_WIDTH (340px), height ≈ 260px (4 stacked rows).
+    // Prevent the tooltip from overlapping this zone.
     if (!isMobileView) {
-        const TOP_LEFT_BLOCK_W = 220
-        const TOP_LEFT_BLOCK_H = 140
-        const overlapsTopLeft = left < TOP_LEFT_BLOCK_W && top < TOP_LEFT_BLOCK_H
-        if (overlapsTopLeft) {
-            // Prefer pushing right; if no room, push down
-            if (left + TOOLTIP_WIDTH + TOP_LEFT_BLOCK_W < windowWidth) {
-                left = TOP_LEFT_BLOCK_W + 10
+        const CONTROL_PANEL_H = 260
+        if (left < SIDEBAR_WIDTH + 10 && top < CONTROL_PANEL_H) {
+            // Prefer pushing left edge past sidebar
+            const pushedRight = SIDEBAR_WIDTH + 10
+            if (pushedRight + TOOLTIP_WIDTH <= windowWidth - 10) {
+                left = pushedRight
             } else {
-                top = TOP_LEFT_BLOCK_H + 10
+                // No room to the right — push below the panel instead
+                top = CONTROL_PANEL_H + 10
             }
         }
     }
