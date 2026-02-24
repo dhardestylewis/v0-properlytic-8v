@@ -5,19 +5,24 @@
 
 /* Updated theme for geospatial analytics dashboard - dark mode first */
 :root {
-  --background: oklch(0.96 0.015 85); /* Premium Beige / Cream */
-  --foreground: oklch(0.25 0.02 85); /* Deep Earth / Charcoal */
+  --background: oklch(0.96 0.015 85);
+  /* Premium Beige / Cream */
+  --foreground: oklch(0.25 0.02 85);
+  /* Deep Earth / Charcoal */
   --card: oklch(0.98 0.01 85);
   --card-foreground: oklch(0.25 0.02 85);
   --popover: oklch(0.98 0.01 85);
   --popover-foreground: oklch(0.25 0.02 85);
-  --primary: oklch(0.45 0.05 85); /* Taupe / Sophisticated Gray-Brown */
+  --primary: oklch(0.45 0.05 85);
+  /* Taupe / Sophisticated Gray-Brown */
   --primary-foreground: oklch(0.98 0.01 85);
-  --secondary: oklch(0.92 0.02 85); /* Slightly darker beige */
+  --secondary: oklch(0.92 0.02 85);
+  /* Slightly darker beige */
   --secondary-foreground: oklch(0.25 0.02 85);
   --muted: oklch(0.92 0.02 85);
   --muted-foreground: oklch(0.5 0.01 85);
-  --accent: oklch(0.88 0.03 85); /* Light sandy accent */
+  --accent: oklch(0.88 0.03 85);
+  /* Light sandy accent */
   --accent-foreground: oklch(0.25 0.02 85);
   --destructive: oklch(0.55 0.15 25);
   --destructive-foreground: oklch(0.98 0.01 85);
@@ -29,14 +34,17 @@
   --chart-negative: oklch(0.6 0.15 25);
   --chart-low: oklch(0.7 0.1 60);
   --chart-mid: oklch(0.8 0.08 90);
-  --chart-high: oklch(0.65 0.12 165); /* Sage/Teal */
-  --chart-very-high: oklch(0.55 0.15 200); /* Muted Blue */
+  --chart-high: oklch(0.65 0.12 165);
+  /* Sage/Teal */
+  --chart-very-high: oklch(0.55 0.15 200);
+  /* Muted Blue */
 
   /* Warning colors */
   --warning: oklch(0.85 0.12 85);
   --warning-foreground: oklch(0.3 0.03 85);
 
-  --radius: 0.75rem; /* Slightly more rounded for premium feel */
+  --radius: 0.75rem;
+  /* Slightly more rounded for premium feel */
   --sidebar: oklch(0.94 0.02 85);
   --sidebar-foreground: oklch(0.25 0.02 85);
   --sidebar-primary: oklch(0.45 0.05 85);
@@ -116,6 +124,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -141,4 +150,295 @@
 /* Glass effect for panels */
 .glass-panel {
   @apply bg-card/80 backdrop-blur-md border border-border/50;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Onboarding Intro — Cinematic Animated Cursor Demo
+   ═══════════════════════════════════════════════════════ */
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  overflow: hidden;
+}
+
+.onboarding-fade-in {
+  animation: onboardingFadeIn 0.6s ease-out forwards;
+}
+
+.onboarding-fade-out {
+  animation: onboardingFadeOut 1.5s ease-in forwards;
+}
+
+@keyframes onboardingFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes onboardingFadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+/* Subtle dark vignette at edges */
+.onboarding-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 70% at 50% 50%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.3) 100%);
+  pointer-events: none;
+}
+
+/* ── Animated Cursor ── */
+.onboarding-cursor-container {
+  position: absolute;
+  animation: cursorPath 7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform;
+  z-index: 10;
+}
+
+.onboarding-cursor {
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  animation: cursorPulse 2s ease-in-out infinite;
+}
+
+.onboarding-cursor-trail {
+  position: absolute;
+  top: 8px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.5) 0%, transparent 70%);
+  animation: trailFade 0.8s ease-out infinite;
+}
+
+/* Cursor now travels to center (map has flown to user's neighborhood) */
+@keyframes cursorPath {
+  0% {
+    top: 30%;
+    left: 20%;
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  10% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  35% {
+    top: 38%;
+    left: 38%;
+  }
+
+  55% {
+    top: 45%;
+    left: 50%;
+  }
+
+  70% {
+    top: 45%;
+    left: 50%;
+    transform: scale(1.1);
+  }
+
+  85% {
+    top: 45%;
+    left: 50%;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    top: 45%;
+    left: 50%;
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes cursorPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes trailFade {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2.5);
+  }
+}
+
+/* ── Ripple at destination ── */
+.onboarding-ripple-center {
+  top: calc(45% + 4px);
+  left: calc(50% + 4px);
+}
+
+.onboarding-ripple-container {
+  position: absolute;
+  z-index: 5;
+}
+
+.onboarding-ripple {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(251, 191, 36, 0.6);
+  transform: translate(-50%, -50%);
+}
+
+.onboarding-ripple-1 {
+  animation: ripplePulse 2s ease-out infinite;
+}
+
+.onboarding-ripple-2 {
+  animation: ripplePulse 2s ease-out 0.5s infinite;
+}
+
+.onboarding-ripple-3 {
+  animation: ripplePulse 2s ease-out 1s infinite;
+}
+
+@keyframes ripplePulse {
+  0% {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+  }
+
+  100% {
+    width: 80px;
+    height: 80px;
+    opacity: 0;
+  }
+}
+
+/* ── Caption Sequence — positioned bottom-left, above Chat/Talk buttons ── */
+.onboarding-captions {
+  position: absolute;
+  bottom: 90px;
+  left: 24px;
+  text-align: left;
+  z-index: 15;
+  width: 90%;
+  max-width: 420px;
+}
+
+.onboarding-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  text-align: left;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8),
+    0 1px 4px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.02em;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  /* Dark pill backdrop for contrast */
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  padding: 12px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: fit-content;
+}
+
+.onboarding-caption-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.onboarding-caption-hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+/* ── Tooltip Highlight — pulsing golden glow on the real tooltip ── */
+.onboarding-tooltip-highlight {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5),
+    0 0 20px rgba(251, 191, 36, 0.3) !important;
+  animation: tooltipHighlightPulse 1.5s ease-in-out infinite !important;
+}
+
+@keyframes tooltipHighlightPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5),
+      0 0 20px rgba(251, 191, 36, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.7),
+      0 0 30px rgba(251, 191, 36, 0.4);
+  }
+}
+
+/* ── Skip Button ── */
+.onboarding-skip {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 20;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboarding-skip:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive — mobile adjustments */
+@media (max-width: 640px) {
+  .onboarding-caption {
+    font-size: 1rem;
+    padding: 10px 18px;
+  }
+
+  .onboarding-captions {
+    bottom: 80px;
+    left: 16px;
+    max-width: 85%;
+  }
 }

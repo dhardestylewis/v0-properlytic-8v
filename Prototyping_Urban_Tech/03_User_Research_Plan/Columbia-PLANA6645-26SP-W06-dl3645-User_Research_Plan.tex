@@ -1,0 +1,341 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{titling}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{amssymb}
+\usepackage{needspace}
+
+\title{User Research Plan \\ \large PLANA6645 -- Prototyping in Urban Tech}
+\author{Daniel Lewis}
+\date{February 24, 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Overview}
+
+This document outlines a two-to-three-week user research plan for \textbf{Homecastr}, a probabilistic home price forecasting tool live at \href{https://homecastr.com}{homecastr.com}. The plan covers outreach methods, a research schedule, target participants, and interview and survey materials that will guide the discovery phase of the project.
+
+Homecastr's go-to-market strategy sequences in two phases: consumer-first, where free forecasts attract homeowners and buyers at scale and generate the intent data that becomes the product's long-term data moat, followed by operator monetization, selling forecast access and intent signals to SFR operators and RE investors. This means homeowners and buyers are the primary focus for product-led growth and interface design, while operators and investors are the primary focus for the revenue-generating tier: and what data outputs must look like to be actionable.
+
+This plan follows the course's User Research Principles \& Tactics, prioritizing transparency, accessible language, data privacy, and meaningful inclusion of the users most affected by information asymmetry in housing markets.
+
+\section*{Types of Outreach}
+
+Three complementary channels adapted to each user group:
+
+\subsection*{1. Organizational Outreach (Primary)}
+
+Direct contact with housing counseling nonprofits and real-estate professional organizations to recruit participants actively engaged in property decisions. The ask is either permission to attend a session and recruit participants afterward, or an introduction to recent program participants willing to speak for 20--30 minutes.
+
+\subsection*{2. Snowball / Network Outreach (Secondary)}
+
+Leveraging personal and academic networks to reach participants through warm introductions. Each interviewee will be asked at the end of their session: ``Is there anyone else you think I should talk to?''
+
+\subsection*{3. Digital Survey Distribution (Supplementary)}
+
+A short online survey distributed via direct links to organizational contacts, Columbia student listservs, Slack and Discord communities, LinkedIn, and relevant Reddit communities:
+
+\begin{itemize}[leftmargin=2em]
+    \item \mbox{r/RealEstate}
+    \item \mbox{r/FirstTimeHomeBuyer}
+    \item \mbox{r/realestateinvesting}
+\end{itemize}
+
+The survey broadens the sample and pre-screens potential interview candidates who indicate interest in a follow-up conversation.
+
+\needspace{12\baselineskip}
+\section*{Research Schedule}
+
+\begin{center}
+\begin{tabular}{@{} l >{\raggedright\arraybackslash}p{9.5cm} @{}}
+\toprule
+\textbf{Period} & \textbf{Activities} \\
+\midrule
+\textbf{Week 6} & \textbf{Preparation \& Initial Outreach} \\
+Feb 24--28 & \begin{itemize}[nosep, leftmargin=*]
+    \item Draft informed consent form
+    \item Finalize interview scripts and survey instrument
+    \item Send initial outreach emails to all identified contacts
+    \item Launch online survey
+    \item Schedule first interviews for Week 7
+\end{itemize} \\
+\midrule
+\textbf{Week 7} & \textbf{Primary Research Execution} \\
+Mar 3--7 & \begin{itemize}[nosep, leftmargin=*]
+    \item Conduct 4--6 interviews across both user groups
+    \item Follow up with non-respondents from initial outreach
+    \item Begin snowball recruitment from early interviewees
+    \item Promote survey; target 15--20 completions
+\end{itemize} \\
+\midrule
+\textbf{Week 8} & \textbf{Continued Research \& Early Synthesis} \\
+Mar 10--14 & \begin{itemize}[nosep, leftmargin=*]
+    \item Conduct 3--5 additional interviews to close sample gaps
+    \item Close survey
+    \item Transcribe and code interview notes
+    \item Begin affinity mapping and thematic analysis
+    \item Draft preliminary insights for Research Synthesis
+\end{itemize} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Target sample size:} 8--12 interviews total across both user groups, plus 15--20 survey responses: enough to identify consistent patterns across different user types.
+
+\section*{Identified Participants and Groups}
+
+\subsection*{User Group A: Homeowners, Buyers, and Sellers}
+
+Individuals making personal residential real-estate decisions. Priority sub-segment: first-time homebuyers in high-variance markets, who face the highest stakes and the least informational support.
+
+\textit{Houston:}
+\begin{itemize}
+    \item \textbf{Avenue CDC}: HUD-certified homebuyer education and one-on-one counseling
+    \item \textbf{Houston Area Urban League (HAUL)}: First-time homebuyer workshops for low-to-moderate-income families
+    \item \textbf{Fifth Ward CRC}: Homebuyer education in a historically underinvested neighborhood undergoing rapid change
+\end{itemize}
+
+\textit{New York:}
+\begin{itemize}
+    \item \textbf{NHSNYC}: Homebuyer counseling for New York City residents
+    \item \textbf{Center for NYC Neighborhoods}: Advocates for affordable homeownership for middle- and working-class families
+    \item \textbf{NYC Homeownership Network / LISC NY}: Counseling and financial coaching for aspiring homeowners
+    \item \textbf{Columbia GSAPP classmates}: Accessible early interviewees navigating housing decisions in New York City
+\end{itemize}
+
+\subsection*{User Group B: Institutional Investors, Lenders, and Portfolio Managers}
+
+Data-literate professionals: SFR operators, RE investors, and mortgage lenders: who require auditable, scenario-level forecasts for underwriting, portfolio monitoring, and risk surveillance. This is the revenue-generating user group.
+
+\textit{New York (Columbia network):}
+\begin{itemize}
+    \item \textbf{CBS Real Estate Association}: Aspiring investors, lenders, and fund managers connected to the Paul Milstein Center
+    \item \textbf{Columbia MSRED PropTech Club}: Students evaluating PropTech products from both technology and industry perspectives
+    \item \textbf{MetaProp accelerator portfolio}: Peer PropTech founders including PropRise and Aren
+\end{itemize}
+
+\textit{Houston (firms identified by running our forecast model against public Houston property acquisition records):}
+\begin{itemize}
+    \item \textbf{Candlewood Homes}: 310 acquisitions in the backtest period; model outperformed in all four years
+    \item \textbf{Sunrise Property Partners}: 104 acquisitions; model outperformed in all four years
+    \item \textbf{Open House Texas Realty}: Active local investor; directly reachable
+    \item \textbf{Fairport Ventures}: 120 acquisitions; local investment fund
+\end{itemize}
+
+Outreach hook for Houston entities: \textit{``We analyzed your Houston acquisition history. Here's what our model sees.''}
+
+\section*{Research Materials}
+
+\subsection*{Informed Consent Protocol}
+
+Before each interview, participants will receive a brief consent form explaining:
+
+\begin{itemize}
+    \item The purpose of the research (academic coursework at Columbia GSAPP exploring how people engage with home price data)
+    \item That participation is entirely voluntary and can be withdrawn at any time for any reason
+    \item That interviews will be recorded only with explicit consent; participants may decline
+    \item That all responses will be anonymized; no personal identifiers will appear in any written materials
+    \item That all information shared will remain confidential within this academic project; there are no anticipated circumstances under which confidentiality would be broken
+    \item How data will be stored and used (solely for this academic project, then deleted after course completion)
+    \item The researcher's contact information for any follow-up questions
+\end{itemize}
+
+\subsection*{Semi-Structured Interview Script: Consumer Users}
+
+\textbf{Duration:} 20--30 minutes \quad \textbf{Format:} Zoom or in-person
+
+\textbf{Introduction} (2 min)
+
+Thank you for taking the time to speak with me. My name is Daniel Lewis and I'm a graduate student at Columbia University. I'm working on a project exploring how people use data when making decisions about homes. This conversation will take about 20--30 minutes. There are no right or wrong answers: I'm interested in your honest experience. [Review consent form; confirm recording permission.]
+
+\textbf{Part 1: Current Experience} (8--10 min)
+\begin{enumerate}
+    \item Can you tell me a little about your current housing situation: are you a homeowner, renting, or in the process of buying?
+    \item When you last looked up information about a home's value, what tools or resources did you use?
+    \item What questions did those tools answer well? What was left unanswered?
+    \item How confident did you feel in the information you found? What made you trust or distrust it?
+\end{enumerate}
+
+\textbf{Part 2: Forward-Looking Needs} (8--10 min)
+\begin{enumerate}[resume]
+    \item When thinking about a property: buying, selling, or holding it: how much do you think about what might happen to its value in the future?
+    \item If you could see a range of possible future values for a property: an optimistic, expected, and pessimistic scenario over the next four years: how would that change the way you approach the decision?
+    \item What would make you trust a home-price forecast? What would you need to see to feel confident acting on it?
+    \item Is there information about a property or neighborhood that you wish you could access but can't?
+\end{enumerate}
+
+\textbf{Part 3: Concept Reaction} (5 min)
+
+\textit{[Introduce Homecastr:]} ``I've been building a tool called Homecastr. It shows a range of possible future values for any specific property: an optimistic, expected, and pessimistic scenario over the next four years: based on public data about the property, the neighborhood, and the broader market. You can look up any Houston-area address and see that forecast right now at homecastr.com. It's free.''
+
+\begin{enumerate}[resume]
+    \item Based on what I've described, is this something you'd use? Why or why not?
+    \item At what point in your decision-making process would you want to use it?
+\end{enumerate}
+
+\textbf{Wrap-Up} (2 min)
+\begin{enumerate}[resume]
+    \item Is there anything else about your experience with home price information that I haven't asked about?
+    \item Is there anyone else you think I should talk to about this?
+\end{enumerate}
+
+\subsection*{Semi-Structured Interview Script: Institutional Users}
+
+\textbf{Duration:} 20--30 minutes \quad \textbf{Format:} Zoom or in-person
+
+\textbf{Introduction} (2 min)
+
+Thank you for making the time. I'm Daniel Lewis, a graduate student at Columbia GSAPP. I'm researching how real-estate professionals use data to evaluate properties and markets: specifically looking at where current tools fall short. This will take about 20--30 minutes. There are no right or wrong answers; I'm looking to understand your actual workflow, not pitch anything. [Review consent form; confirm recording permission.]
+
+\textbf{Part 1: Current Workflow} (8--10 min)
+\begin{enumerate}
+    \item Can you walk me through how you currently evaluate a potential acquisition or underwrite a deal?
+    \item What data sources do you rely on most heavily? How do you access them?
+    \item Where in your workflow do you feel least confident about the data you're using? What would better data look like?
+    \item How do you currently account for future price movements or market uncertainty?
+\end{enumerate}
+
+\textbf{Part 2: Forecast Needs} (8--10 min)
+\begin{enumerate}[resume]
+    \item If you had access to property-level probabilistic forecasts: a range of likely outcomes over a four-year horizon: how would you integrate them into your process?
+    \item What level of geographic granularity matters most: individual property, block, ZIP code, or metro?
+    \item What would you need to see to trust a third-party forecast model?
+    \item How do you currently handle scenario analysis or stress testing? What tools do you use?
+\end{enumerate}
+
+\textbf{Part 3: Product Fit \& Intent Data} (5 min)
+
+\textit{[Introduce Homecastr:]} ``We've built a tool that generates property-level probabilistic forecasts: optimistic, expected, and pessimistic scenarios over four years: for any property in the Houston metro, based entirely on public records. We're live at homecastr.com with over a million properties indexed. There's a free consumer tier and a paid operator tier planned at \$99/month for bulk access and API integration.''
+
+\begin{enumerate}[resume]
+    \item How does what I've described compare to what you currently use?
+    \item Would you prefer a dashboard, an API, or exportable reports? Why?
+    \item We also capture conversational signals from users asking about specific properties. Would aggregate buyer intent data: knowing which properties or neighborhoods are being actively researched: be useful in your workflow? How?
+    \item What would be a dealbreaker that would prevent you from adopting a tool like this?
+\end{enumerate}
+
+\textbf{Wrap-Up} (2 min)
+\begin{enumerate}[resume]
+    \item Is there anything about your data or forecasting needs that I haven't asked about?
+    \item Is there anyone else in your organization or network who would be worth speaking with?
+\end{enumerate}
+
+\subsection*{Online Survey Instrument}
+
+\textbf{Duration:} 5--7 minutes \quad \textbf{Platform:} Google Forms
+
+\vspace{8pt}
+\textbf{Section 1: About You}
+
+\textbf{1.} Which best describes you?
+
+\begin{itemize}[label=$\square$, leftmargin=2em, itemsep=2pt]
+    \item Homeowner
+    \item Renter looking to buy
+    \item Real estate investor
+    \item Lender or mortgage professional
+    \item Property manager
+    \item Other: \underline{\hspace{5cm}}
+\end{itemize}
+
+\vspace{6pt}
+\textbf{2.} In what metro area are you primarily looking at properties?
+
+\underline{\hspace{10cm}}
+
+\vspace{6pt}
+\textbf{3.} How often do you look up home value information?
+
+\begin{itemize}[label=$\square$, leftmargin=2em, itemsep=2pt]
+    \item Weekly
+    \item Monthly
+    \item A few times a year
+    \item Rarely
+\end{itemize}
+
+\vspace{8pt}
+\textbf{Section 2: Current Tools and Pain Points}
+
+\textbf{4.} Which tools do you use to research property values? \textit{(Select all that apply)}
+
+\begin{itemize}[label=$\square$, leftmargin=2em, itemsep=2pt]
+    \item Zillow
+    \item Redfin
+    \item Realtor.com
+    \item CoreLogic
+    \item HouseCanary
+    \item PropStream
+    \item County appraisal district website
+    \item My real estate agent
+    \item Other: \underline{\hspace{5cm}}
+\end{itemize}
+
+\vspace{6pt}
+\textbf{5.} How satisfied are you with the tools you currently use?
+
+\begin{center}
+1 \quad 2 \quad 3 \quad 4 \quad 5 \\[2pt]
+{\small Very unsatisfied \hfill Very satisfied}
+\end{center}
+
+\textbf{6.} What is the biggest gap in the property data you currently have access to?
+
+\underline{\hspace{\linewidth}}
+
+\underline{\hspace{\linewidth}}
+
+\vspace{8pt}
+\textbf{Section 3: Forecast Interest}
+
+\textbf{7.} How valuable would it be to see a range of possible future values (optimistic, expected, pessimistic) for a specific property over the next four years?
+
+\begin{center}
+1 \quad 2 \quad 3 \quad 4 \quad 5 \\[2pt]
+{\small Not at all valuable \hfill Extremely valuable}
+\end{center}
+
+\textbf{8.} What would make you trust a home-price forecast? \textit{(Select all that apply)}
+
+\begin{itemize}[label=$\square$, leftmargin=2em, itemsep=2pt]
+    \item A track record of accuracy
+    \item Transparency about the methodology
+    \item Endorsement by a known institution
+    \item Ability to see the underlying data
+    \item Comparison to other forecasts
+    \item Other: \underline{\hspace{5cm}}
+\end{itemize}
+
+\vspace{6pt}
+\textbf{9.} Would you be interested in a 20--30 minute follow-up interview?
+
+\begin{itemize}[label=$\square$, leftmargin=2em, itemsep=2pt]
+    \item Yes
+    \item No
+\end{itemize}
+
+\textbf{10.} If yes, please share your email address so I can follow up: \textit{(optional)}
+
+\underline{\hspace{10cm}}
+
+\section*{Ethical Considerations}
+
+Consistent with the course's User Research Principles \& Tactics, this plan incorporates the following safeguards:
+
+\begin{description}[leftmargin=0.5cm]
+    \item[\textbf{Transparency:}] All participants will receive a clear, jargon-free explanation of the research purpose, how their data will be used, and what outcomes they can and cannot expect.
+    \item[\textbf{Power Shift:}] The plan prioritizes outreach to HUD-certified counseling organizations serving low-to-moderate-income and first-time homebuyers, centering the voices of those most affected by information asymmetry in housing markets.
+    \item[\textbf{Data Privacy:}] Only directly relevant information will be collected. All responses will be anonymized. Interview recordings will be stored securely and deleted after transcription and course completion.
+    \item[\textbf{Voluntary Participation:}] Participants can opt out at any time for any reason. Consent will be confirmed before each interview.
+    \item[\textbf{Accessible Language:}] Scripts and survey questions avoid technical jargon. Probabilistic forecasts will be introduced using plain-language descriptions before any technical terms are used.
+\end{description}
+
+\end{document}
+

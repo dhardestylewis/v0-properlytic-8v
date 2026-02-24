@@ -197,6 +197,7 @@ export function FanChart({
         fanPath = `${p90Path} ${p10PathReverse} Z`
       }
 
+      // p50 solid anchor at 2026, then dashed from 2027 onward
       p50Line = forecastYears
         .map((year, i) => {
           if (!Number.isFinite(p50[i])) return null
@@ -522,9 +523,35 @@ export function FanChart({
           <path d={comparisonConnectorPath} fill="none" stroke="#a3e635" strokeWidth={2} />
         )}
 
-        {/* P50 forecast line */}
-        {p50Line && <path d={p50Line} fill="none" stroke="#fb923c" strokeWidth={2.5} />}
-        {comparisonP50Line && <path d={comparisonP50Line} fill="none" stroke="#a3e635" strokeWidth={2} />}
+        {/* P50 forecast line — solid at 2026, dashed from 2027 onward (forecast) */}
+        {p50Line && (() => {
+          // Split: first segment is solid (2026 anchor), rest is dashed forecast
+          const solidEnd = `M ${xScale(forecastYears[0])} ${yScale(p50[0])}`
+          const dashedStart = forecastYears.slice(1).map((year, i) => {
+            if (!Number.isFinite(p50[i + 1])) return null
+            return `${i === 0 ? `M ${xScale(forecastYears[0])} ${yScale(p50[0])} L` : "L"} ${xScale(year)} ${yScale(p50[i + 1])}`
+          }).filter(Boolean).join(" ")
+          return (
+            <>
+              <path d={solidEnd} fill="none" stroke="#fb923c" strokeWidth={2.5} />
+              {dashedStart && <path d={dashedStart} fill="none" stroke="#fb923c" strokeWidth={2.5} strokeDasharray="5 3" />}
+            </>
+          )
+        })()}
+        {comparisonP50Line && comparisonData?.p50 && (() => {
+          const p50Comp = comparisonData.p50
+          const solidDot = `M ${xScale(forecastYears[0])} ${yScale(p50Comp[0])}`
+          const dashedComp = forecastYears.slice(1).map((year, i) => {
+            if (!Number.isFinite(p50Comp[i + 1])) return null
+            return `${i === 0 ? `M ${xScale(forecastYears[0])} ${yScale(p50Comp[0])} L` : "L"} ${xScale(year)} ${yScale(p50Comp[i + 1])}`
+          }).filter(Boolean).join(" ")
+          return (
+            <>
+              <path d={solidDot} fill="none" stroke="#a3e635" strokeWidth={2} />
+              {dashedComp && <path d={dashedComp} fill="none" stroke="#a3e635" strokeWidth={2} strokeDasharray="5 3" />}
+            </>
+          )
+        })()}
 
         {/* Preview Layer (Fuchsia for visibility) */}
         {previewFanPath && <path d={previewFanPath} fill="#d946ef" fillOpacity={0.15} />}

@@ -20,7 +20,8 @@ import { geocodeAddress, reverseGeocode } from "@/app/actions/geocode"
 
 import { cellToLatLng, latLngToCell } from "h3-js"
 import { getH3CellDetails } from "@/app/actions/h3-details"
-import { ExplainerPopup } from "@/components/explainer-popup"
+// import { ExplainerPopup } from "@/components/explainer-popup"  // Deactivated — replaced by OnboardingIntro
+import { OnboardingIntro } from "@/components/onboarding-intro"
 import { ChatPanel, type MapAction } from "@/components/chat-panel"
 
 import { createTavusConversation } from "@/app/actions/tavus"
@@ -607,7 +608,7 @@ function DashboardContent() {
               }}
               className="flex-1"
             />
-            <ExplainerPopup />
+            {/* <ExplainerPopup /> */}  {/* Deactivated — replaced by OnboardingIntro */}
           </div>
 
           {/* 3. Legend & (Selection Buttons + Vertical Zoom Controls) Row */}
@@ -685,7 +686,7 @@ function DashboardContent() {
           "fixed z-[9999] flex items-center gap-2 transition-all duration-300",
           // Shift right of whichever panel is open (both are ~340px wide at left-5 → right edge ~365px)
           tavusConversationUrl || isChatOpen ? "left-[365px]" : "left-5",
-          mapState.selectedId && filters.useForecastMap ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
+          mapState.selectedId && filters.useForecastMap && forecastData !== null ? "bottom-[calc(25vh+12px)] md:bottom-5" : "bottom-5"
         )}>
           {/* Chat button — visible when chat panel is closed */}
           {!isChatOpen && (
@@ -743,6 +744,9 @@ function DashboardContent() {
           )
         }
       </main >
+
+      {/* Cinematic onboarding intro — first-visit only */}
+      <OnboardingIntro />
     </div >
   )
 }
