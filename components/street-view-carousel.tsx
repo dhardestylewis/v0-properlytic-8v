@@ -83,9 +83,9 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                             />
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                                <div className="flex items-center gap-1 text-white text-[10px] font-medium">
-                                    <MapPin className="w-3 h-3" />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent pt-6 pb-2 px-2">
+                                <div className="flex items-center gap-1 text-white text-xs font-semibold drop-shadow">
+                                    <MapPin className="w-3 h-3 shrink-0" />
                                     <span>{loc.label}</span>
                                 </div>
                             </div>
@@ -93,6 +93,13 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
                     ))}
                 </div>
             </div>
+
+            {/* Slide counter — top right */}
+            {locations.length > 1 && (
+                <div className="absolute top-2 right-2 z-10 bg-black/40 backdrop-blur-sm text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                    {selectedIndex + 1} / {locations.length}
+                </div>
+            )}
 
             {/* Navigation Dots */}
             {locations.length > 1 && (

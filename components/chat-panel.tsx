@@ -186,7 +186,7 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                     : "opacity-0 pointer-events-none"
                 }
         bottom-0 left-0 right-0 w-full rounded-t-xl overflow-hidden
-        md:bottom-5 md:left-5 md:right-auto md:w-[340px] md:h-[520px] md:rounded-2xl
+        md:bottom-5 md:left-5 md:right-auto md:w-[340px] md:h-[520px] md:max-h-[min(520px,calc(100vh-160px))] md:rounded-2xl
       `}
             style={isKeyboardOpen ? {
                 height: `${kbPanelHeight}px`,

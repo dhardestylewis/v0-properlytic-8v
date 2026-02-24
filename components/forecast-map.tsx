@@ -1550,7 +1550,7 @@ export function ForecastMap({
                     } : {
                         left: displayPos.globalX,
                         top: displayPos.globalY,
-                        maxHeight: 'calc(100vh - 40px)',
+                        maxHeight: `calc(100vh - ${(displayPos.globalY ?? 40) + 20}px)`,
                         overflowY: 'auto',
                     }}
                     onMouseDown={!isMobile && selectedId ? (e) => {
