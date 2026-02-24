@@ -355,6 +355,8 @@ export function ForecastMap({
 
     // Selected feature's properties (locked when clicked)
     const [selectedProps, setSelectedProps] = useState<any>(null)
+    const selectedPropsRef = useRef<any>(null)
+    useEffect(() => { selectedPropsRef.current = selectedProps }, [selectedProps])
 
     // Reverse geocoded name for tooltip header
     const [geocodedName, setGeocodedName] = useState<string | null>(null)
@@ -818,6 +820,12 @@ export function ForecastMap({
                     setComparisonData(null)
                     setComparisonHistoricalValues(undefined)
                     comparisonFetchRef.current = null
+                    // Restore tooltip to show selected feature's props (not last-hovered)
+                    setTooltipData(prev => {
+                        if (!prev) return prev
+                        const sp = selectedPropsRef.current
+                        return sp ? { ...prev, properties: sp } : prev
+                    })
                 }
             }
             map.getCanvas().style.cursor = ""
@@ -1635,7 +1643,24 @@ export function ForecastMap({
                                         <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[8px] font-semibold uppercase tracking-wider rounded">Locked</span>
                                     )}
                                 </div>
-                                {selectedId && <span className="text-[9px] text-muted-foreground">ESC to exit</span>}
+                                <div className="flex items-center gap-1.5">
+                                    {selectedId && selectedCoordsRef.current && (
+                                        <button
+                                            title="Re-center on selection"
+                                            onClick={() => {
+                                                const coords = selectedCoordsRef.current
+                                                if (coords && mapRef.current) {
+                                                    mapRef.current.flyTo({ center: [coords[1], coords[0]], speed: 1.2 })
+                                                }
+                                            }}
+                                            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
+                                        >
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><line x1="12" y1="2" x2="12" y2="6" /><line x1="12" y1="18" x2="12" y2="22" /><line x1="2" y1="12" x2="6" y2="12" /><line x1="18" y1="12" x2="22" y2="12" /></svg>
+                                            Find
+                                        </button>
+                                    )}
+                                    {selectedId && <span className="text-[9px] text-muted-foreground">ESC to exit</span>}
+                                </div>
                             </div>
 
                             {/* Subheader - geography level */}
@@ -1743,6 +1768,8 @@ export function ForecastMap({
                                 {/* Current → Forecast header with % change */}
                                 {(() => {
                                     const currentVal = historicalValues?.[historicalValues.length - 1] ?? null
+                                    // At zcta/tract/block zoom levels the tile stores the area median as p50.
+                                    // At parcel level, value is the individual estimate; p50 may not exist.
                                     const forecastVal = displayProps.p50 ?? displayProps.value ?? null
                                     const isPast = year < originYear + 1
                                     const isPresent = year === originYear + 1 // 2026 = "now"
