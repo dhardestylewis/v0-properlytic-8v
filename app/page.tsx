@@ -78,6 +78,15 @@ function DashboardContent() {
       return
     }
 
+    // Handle set_color_mode — switch between value and growth views
+    if ((action as any).action === 'set_color_mode') {
+      const mode = (action as any).mode === 'growth' ? 'growth' : 'value'
+      console.log('[PAGE] set_color_mode from chat:', mode)
+      setFilters({ colorMode: mode })
+      toast({ title: `Map view: ${mode}`, duration: 2000 })
+      return
+    }
+
     // Handle set_forecast_year — change the timeline year
     if ((action as any).action === 'set_forecast_year') {
       const yr = Math.max(2026, Math.min(2030, (action as any).year || 2029))

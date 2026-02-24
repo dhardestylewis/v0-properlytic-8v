@@ -384,6 +384,20 @@ const FORECAST_TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
                 required: ["year"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "set_color_mode",
+            description: "Switch the map coloring between 'value' (absolute predicted home values) and 'growth' (percentage growth rate). Use when the user asks to see growth, value, switch view, or toggle the map display.",
+            parameters: {
+                type: "object",
+                properties: {
+                    mode: { type: "string", enum: ["value", "growth"], description: "The color mode to display" }
+                },
+                required: ["mode"]
+            }
+        }
     }
 ]
 
@@ -541,6 +555,21 @@ export async function POST(req: NextRequest) {
                         role: "tool",
                         tool_call_id: tc.id,
                         content: JSON.stringify({ status: "ok", message: `Timeline changed to forecast year ${JSON.parse(toolFn.arguments).year || 2029}.` }),
+                    })
+                } else if (toolFn.name === "set_color_mode") {
+                    // UI tool — switch map between value and growth views
+                    try {
+                        const args = JSON.parse(toolFn.arguments)
+                        const mode = args.mode === "growth" ? "growth" : "value"
+                        allMapActions.push({ action: "set_color_mode", mode })
+                        console.log(`[Chat API] set_color_mode: ${mode}`)
+                    } catch (e) {
+                        console.error(`[Chat API] Failed to parse set_color_mode args:`, toolFn.arguments)
+                    }
+                    conversationMessages.push({
+                        role: "tool",
+                        tool_call_id: tc.id,
+                        content: JSON.stringify({ status: "ok", message: `Map view switched to ${JSON.parse(toolFn.arguments).mode || "value"} mode.` }),
                     })
                 } else {
                     // API tool — query real data
