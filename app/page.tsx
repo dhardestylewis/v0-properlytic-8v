@@ -325,9 +325,9 @@ function DashboardContent() {
         } else {
           ;[lat, lng] = cellToLatLng(mapState.selectedId!)
         }
-        // Pass actual map zoom so the geocoder adapts detail level:
-        // ZIP→city/zip, tract→neighborhood, block→street, parcel→address
-        const address = await reverseGeocode(lat, lng, mapState.zoom ?? 16)
+        // Always request max detail for the search bar — the tooltip handles
+        // scale-appropriate display, so the search bar should show the best address.
+        const address = await reverseGeocode(lat, lng, 18)
         if (address) {
           setSearchBarValue(address)
         } else {
