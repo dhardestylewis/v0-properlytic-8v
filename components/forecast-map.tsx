@@ -966,7 +966,19 @@ export function ForecastMap({
                                 setSelectedId(id)
                                 setSelectedProps(feature.properties)
                                 setSelectedCoords([params.lat, params.lng])
+                                setTooltipCoords([params.lat, params.lng])
                                 onFeatureSelect(id)
+
+                                // Position tooltip at center of viewport (no mouse event)
+                                const centerScreen = map.project(map.getCenter())
+                                const rect = map.getCanvas().getBoundingClientRect()
+                                const screenX = rect.left + centerScreen.x
+                                const screenY = rect.top + centerScreen.y
+                                const smartPos = getSmartTooltipPos(screenX, screenY, window.innerWidth, window.innerHeight)
+                                setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
+                                setTooltipData({ globalX: smartPos.x, globalY: smartPos.y, properties: feature.properties })
+                                userDraggedRef.current = false
+
                                     ;["forecast-a", "forecast-b"].forEach((s) => {
                                         try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
                                     })
@@ -991,7 +1003,7 @@ export function ForecastMap({
                         zoom: Math.max(map.getZoom(), 13),
                         duration: 2000,
                     })
-                    map.once("idle", () => {
+                    const attemptLocSelect = (retries: number) => {
                         const zoom = map.getZoom()
                         const sourceLayer = getSourceLayer(zoom)
                         const activeSuffix = (map as any)._activeSuffix || "a"
@@ -1013,14 +1025,30 @@ export function ForecastMap({
                                 setSelectedId(id)
                                 setSelectedProps(feature.properties)
                                 setSelectedCoords([lat, lng])
+                                setTooltipCoords([lat, lng])
                                 onFeatureSelect(id)
+
+                                // Position tooltip at center of viewport
+                                const centerScreen = map.project(map.getCenter())
+                                const rect = map.getCanvas().getBoundingClientRect()
+                                const screenX = rect.left + centerScreen.x
+                                const screenY = rect.top + centerScreen.y
+                                const smartPos = getSmartTooltipPos(screenX, screenY, window.innerWidth, window.innerHeight)
+                                setFixedTooltipPos({ globalX: smartPos.x, globalY: smartPos.y })
+                                setTooltipData({ globalX: smartPos.x, globalY: smartPos.y, properties: feature.properties })
+                                userDraggedRef.current = false
+
                                     ;["forecast-a", "forecast-b"].forEach((s) => {
                                         try { map.setFeatureState({ source: s, sourceLayer, id }, { selected: true }) } catch { }
                                     })
                                 fetchForecastDetail(id, sourceLayer)
                             }
+                        } else if (retries > 0) {
+                            console.log(`[ForecastMap] location_to_area: No features at center, retrying... (${retries} left)`)
+                            setTimeout(() => attemptLocSelect(retries - 1), 500)
                         }
-                    })
+                    }
+                    map.once("idle", () => attemptLocSelect(3))
                 }
             }
         }
