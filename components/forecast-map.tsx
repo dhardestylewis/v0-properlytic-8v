@@ -240,13 +240,13 @@ export function ForecastMap({
         }
         setGeocodedName(null) // Show loading
         const [lat, lng] = selectedCoords
-        // Always request max detail from Nominatim (zoom=16) so we get
-        // suburb/neighbourhood/road data. We pick the right field below.
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
-            headers: { 'User-Agent': 'HomecastrUI/1.0' }
-        })
-            .then(r => r.ok ? r.json() : null)
+        const url = `/api/geocode?lat=${lat}&lng=${lng}`
+        console.log('[GEOCODE] Fetching primary:', url)
+        // Proxy through our API route to avoid CORS issues with Nominatim
+        fetch(url)
+            .then(r => { console.log('[GEOCODE] Response status:', r.status); return r.ok ? r.json() : null })
             .then(data => {
+                console.log('[GEOCODE] Data:', data?.address)
                 if (!data) return
                 const addr = data.address || {}
                 let name: string | null = null
@@ -257,12 +257,13 @@ export function ForecastMap({
                     // Block/Parcel: show street/road
                     name = addr.road || addr.suburb || addr.neighbourhood || data.display_name?.split(',')[0] || null
                 }
+                console.log('[GEOCODE] Resolved name:', name)
                 if (name) {
                     geocodeCacheRef.current[cacheKey] = name
                     setGeocodedName(name)
                 }
             })
-            .catch(() => { })
+            .catch((err) => { console.error('[GEOCODE] Error:', err) })
     }, [selectedId, selectedCoords])
 
     // Comparison hover coordinates (separate from tooltipCoords which stays pinned)
@@ -292,9 +293,7 @@ export function ForecastMap({
         }
         setComparisonGeocodedName(null)
         const [lat, lng] = comparisonCoords
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
-            headers: { 'User-Agent': 'HomecastrUI/1.0' }
-        })
+        fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (!data) return
