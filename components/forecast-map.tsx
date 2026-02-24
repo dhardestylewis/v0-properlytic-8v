@@ -1610,7 +1610,7 @@ export function ForecastMap({
                                 {comparisonData && tooltipData?.properties?.id && tooltipData.properties.id !== selectedId && (
                                     <div className="mt-1 flex items-center gap-1">
                                         <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[8px] font-semibold uppercase tracking-wider rounded">
-                                            vs {comparisonGeocodedName || tooltipData.properties.id}
+                                            vs {comparisonGeocodedName && comparisonGeocodedName !== geocodedName ? comparisonGeocodedName : tooltipData.properties.id}
                                         </span>
                                     </div>
                                 )}
