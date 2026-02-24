@@ -260,9 +260,9 @@
   };
   \node[anchor=north, text width=5.2cm, align=center] at (3.1,1.9) {
     {\scriptsize\color{hcMuted}
-      A 300bps swing repriced every market overnight.\par\smallskip
-      Buyers need scenario-based forecasts,\par
-      not static point estimates.}
+      A 300bps swing repriced\\[3pt]
+      every market overnight.\\[3pt]
+      Buyers need scenario-based forecasts.}
   };
 
   % -- Right card text --
@@ -274,9 +274,9 @@
   };
   \node[anchor=north, text width=5.2cm, align=center] at (9.9,1.9) {
     {\scriptsize\color{hcMuted}
-      GPU costs dropped 10{\texttimes}.\par\smallskip
-      Training on 1M+ parcels is now\par
-      practical — and improving fast.}
+      GPU costs dropped 10{\texttimes}.\\[3pt]
+      Training on 1M+ parcels\\[3pt]
+      is now practical and improving.}
   };
 \end{tikzpicture}
 \end{center}
@@ -417,14 +417,11 @@
 \vspace{8pt}
 
 \begin{columns}[c]
-\begin{column}{0.52\textwidth}
+\begin{column}{0.63\textwidth}
 % Drop your screenshot into assets/dashboard_screenshot.png
-\begin{tikzpicture}
-  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.8,4.6);
-  \node[anchor=center] at (3.4,2.3) {\includegraphics[width=6.6cm,height=4.4cm,keepaspectratio]{assets/dashboard_screenshot.png}};
-\end{tikzpicture}
+\includegraphics[width=\linewidth,height=5.2cm,keepaspectratio=false]{assets/dashboard_screenshot.png}
 \end{column}
-\begin{column}{0.44\textwidth}
+\begin{column}{0.34\textwidth}
 \centering
 \statbox{14\%}{Median Error}\\[14pt]
 \statbox{4yr}{Forecast Horizon}\\[14pt]
@@ -520,7 +517,7 @@
 \begin{center}
 \begin{tikzpicture}
   \node[circle, inner sep=0pt, minimum size=2.4cm, path picture={
-    \node at (path picture bounding box.center) {\includegraphics[width=2.4cm]{assets/dhl.jpg}};
+    \node at (path picture bounding box.center) {\includegraphics[width=2.4cm]{assets/dhl.png}};
   }] {};
 \end{tikzpicture}\\[6pt]
 {\Large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[3pt]
