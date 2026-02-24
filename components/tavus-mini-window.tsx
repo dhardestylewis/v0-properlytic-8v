@@ -111,6 +111,38 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                   detail: { action: "fly_to_location", params: parsedParams }
                 }))
                 resultJson = JSON.stringify({ success: true, action: "panning and zooming map" })
+              } else if (toolName === "set_forecast_year") {
+                // UI Tool: Change the forecast year
+                console.log("[TAVUS] Handling set_forecast_year in client", parsedParams)
+                window.dispatchEvent(new CustomEvent("tavus-map-action", {
+                  detail: { action: "set_forecast_year", params: parsedParams }
+                }))
+                resultJson = JSON.stringify({ success: true, year: parsedParams.year })
+              } else if (toolName === "set_color_mode") {
+                // UI Tool: Switch between value/growth view
+                console.log("[TAVUS] Handling set_color_mode in client", parsedParams)
+                window.dispatchEvent(new CustomEvent("tavus-map-action", {
+                  detail: { action: "set_color_mode", params: parsedParams }
+                }))
+                resultJson = JSON.stringify({ success: true, mode: parsedParams.mode })
+              } else if (toolName === "clear_comparison") {
+                // UI Tool: Clear comparison overlay only
+                console.log("[TAVUS] Handling clear_comparison in client")
+                window.dispatchEvent(new CustomEvent("tavus-map-action", {
+                  detail: { action: "clear_comparison", params: {} }
+                }))
+                resultJson = JSON.stringify({ success: true, action: "comparison cleared" })
+              } else if (toolName === "end_session") {
+                // UI Tool: Close the video call
+                console.log("[TAVUS] Handling end_session in client")
+                resultJson = JSON.stringify({ success: true, action: "ending session" })
+                // Delay leave slightly so the agent can say goodbye first
+                setTimeout(() => {
+                  if (callRef.current) {
+                    callRef.current.leave().catch(() => { })
+                  }
+                  onClose()
+                }, 3000)
               } else {
                 // Server Tool: Proxy via Server Action
                 console.log(`[TAVUS] Proxying server tool: ${toolName} (forecastMode=${forecastMode})`)

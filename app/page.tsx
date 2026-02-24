@@ -348,6 +348,30 @@ function DashboardContent() {
     [toast],
   )
 
+  // Listen for Tavus-dispatched map actions that affect page-level state
+  // (set_forecast_year, set_color_mode come directly from Tavus, not through chat)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      const action = detail?.action
+      const params = detail?.params
+
+      if (action === "set_forecast_year" && params?.year) {
+        const yr = Math.max(2019, Math.min(2030, params.year))
+        console.log('[PAGE] set_forecast_year from Tavus:', yr)
+        setCurrentYear(yr)
+        toast({ title: `Timeline set to ${yr}`, duration: 2000 })
+      } else if (action === "set_color_mode" && params?.mode) {
+        const mode = params.mode === 'growth' ? 'growth' : 'value'
+        console.log('[PAGE] set_color_mode from Tavus:', mode)
+        setFilters({ colorMode: mode })
+        toast({ title: `Map view: ${mode}`, duration: 2000 })
+      }
+    }
+    window.addEventListener("tavus-map-action", handler)
+    return () => window.removeEventListener("tavus-map-action", handler)
+  }, [toast, setFilters])
+
   const handleSearch = useCallback(async (query: string) => {
     try {
       const result = await geocodeAddress(query)

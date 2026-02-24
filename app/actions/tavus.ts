@@ -57,9 +57,11 @@ export async function createTavusConversation({
     3. NEVER mention technical IDs. Say "this neighborhood" or "this zip code" instead.
     4. Speak naturally like a human. Report 1-2 metrics max per turn.
     5. CONCISE: Report only predicted value (p50) and horizon. Wait for the user to ask for prediction intervals.
-    6. To compare locations, use 'add_location_to_selection'. To reset, use 'clear_selection'.
+    6. To compare locations, use 'add_location_to_selection'. To reset the primary selection, use 'clear_selection'. To remove just the comparison overlay, use 'clear_comparison'.
     7. BIAS TO ACTION: If the user says "select something", "show me anything", or gives a vague request, IMMEDIATELY pick a popular Houston neighborhood (e.g. Montrose, Heights, River Oaks, EaDo, Midtown) and call 'location_to_area'. NEVER ask the user to be more specific — just pick and go.
-    8. When calling 'location_to_area', the map will automatically fly there and select the area. You do NOT need to call 'fly_to_location' separately.`
+    8. When calling 'location_to_area', the map will automatically fly there and select the area. You do NOT need to call 'fly_to_location' separately.
+    9. To change the forecast year, use 'set_forecast_year'. To switch between value and growth view, use 'set_color_mode'.
+    10. When the user says goodbye or wants to end the call, use 'end_session'.`
       : `The user is exploring properties ${locationContext} in Houston, TX. 
     IMPORTANT: You have zero initial metrics. You MUST call 'location_to_hex' or 'get_h3_hex' immediately to find the real market data for the current selection.
     
@@ -333,7 +335,74 @@ export async function createTavusConversation({
             type: "function",
             function: {
               name: "clear_selection",
-              description: "Clear all current map selections and reset the view.",
+              description: "Clear the current map selection, dismissing the tooltip, fan chart, and deselecting any highlighted geometry. Use when the user asks to clear, reset, dismiss, or close the current selection or tooltip.",
+              parameters: {
+                type: "object",
+                properties: {},
+                required: []
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "clear_comparison",
+              description: "Clear only the comparison overlay while keeping the primary selection and tooltip visible. Use when the user asks to remove or clear just the comparison.",
+              parameters: {
+                type: "object",
+                properties: {},
+                required: []
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "explain_metric",
+              description: "Explain a forecast metric in plain language.",
+              parameters: {
+                type: "object",
+                properties: {
+                  metric: { type: "string" },
+                  audience: { type: "string" }
+                },
+                required: ["metric"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "set_forecast_year",
+              description: "Change the forecast timeline year displayed on the map and charts. Valid years: 2019 through 2030. Use when the user asks to change the year, set the timeline, or view a different forecast horizon.",
+              parameters: {
+                type: "object",
+                properties: {
+                  year: { type: "integer", description: "The forecast year to display (2019-2030)" }
+                },
+                required: ["year"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "set_color_mode",
+              description: "Switch the map color scheme between 'value' (property values) and 'growth' (growth potential).",
+              parameters: {
+                type: "object",
+                properties: {
+                  mode: { type: "string", enum: ["value", "growth"], description: "Color mode to display" }
+                },
+                required: ["mode"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "end_session",
+              description: "End the current video call session. Use when the user says goodbye, thanks you and wants to leave, or asks to close/end the call.",
               parameters: {
                 type: "object",
                 properties: {},
