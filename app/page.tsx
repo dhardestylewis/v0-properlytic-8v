@@ -542,6 +542,7 @@ function DashboardContent() {
             className="absolute inset-0 z-0"
             onConsultAI={handleConsultAI}
             isChatOpen={isChatOpen}
+            isTavusOpen={!!tavusConversationUrl && !isTavusLoading}
           />
         ) : filters.useVectorMap ? (
           <VectorMap

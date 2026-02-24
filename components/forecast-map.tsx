@@ -100,6 +100,7 @@ interface ForecastMapProps {
     opportunityScore?: number | null
     capRate?: number | null
     isChatOpen?: boolean
+    isTavusOpen?: boolean
 }
 
 export function ForecastMap({
@@ -113,6 +114,7 @@ export function ForecastMap({
     className,
     onConsultAI,
     isChatOpen = false,
+    isTavusOpen = false,
 }: ForecastMapProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null)
     const mapRef = useRef<maplibregl.Map | null>(null)
@@ -1517,7 +1519,7 @@ export function ForecastMap({
                         transition: swipeTouchStart === null ? 'transform 0.3s ease-out' : 'none',
                         height: '25vh',
                         maxHeight: '25vh',
-                        bottom: isChatOpen ? '25vh' : '0px',
+                        bottom: (isChatOpen || isTavusOpen) ? '25vh' : '0px',
                         overflowY: 'hidden',
                     } : {
                         left: displayPos.globalX,
