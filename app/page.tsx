@@ -89,7 +89,7 @@ function DashboardContent() {
 
     // Handle set_forecast_year — change the timeline year
     if ((action as any).action === 'set_forecast_year') {
-      const yr = Math.max(2026, Math.min(2030, (action as any).year || 2029))
+      const yr = Math.max(2019, Math.min(2030, (action as any).year || 2029))
       console.log('[PAGE] set_forecast_year from chat:', yr)
       setCurrentYear(yr)
       toast({ title: `Timeline set to ${yr}`, duration: 2000 })

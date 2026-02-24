@@ -265,6 +265,51 @@ export function ForecastMap({
             .catch(() => { })
     }, [selectedId, selectedCoords])
 
+    // Reverse geocode comparison feature when hovering
+    useEffect(() => {
+        const compId = tooltipData?.properties?.id
+        if (!compId || compId === selectedId || !tooltipCoords) {
+            setComparisonGeocodedName(null)
+            return
+        }
+        const map = mapRef.current
+        const zoom = map?.getZoom() || 10
+        const geoLevel = getSourceLayer(zoom)
+
+        if (geoLevel === "zcta") {
+            const zip = compId?.length === 5 ? compId : compId?.slice(-5)
+            setComparisonGeocodedName(`ZIP ${zip}`)
+            return
+        }
+
+        const cacheKey = `${geoLevel}:${tooltipCoords[0].toFixed(4)},${tooltipCoords[1].toFixed(4)}`
+        if (geocodeCacheRef.current[cacheKey]) {
+            setComparisonGeocodedName(geocodeCacheRef.current[cacheKey])
+            return
+        }
+        setComparisonGeocodedName(null)
+        const [lat, lng] = tooltipCoords
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&zoom=16&format=json`, {
+            headers: { 'User-Agent': 'HomecastrUI/1.0' }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return
+                const addr = data.address || {}
+                let name: string | null = null
+                if (geoLevel === "tract") {
+                    name = addr.suburb || addr.neighbourhood || addr.city_district || null
+                } else {
+                    name = addr.road || addr.suburb || addr.neighbourhood || data.display_name?.split(',')[0] || null
+                }
+                if (name) {
+                    geocodeCacheRef.current[cacheKey] = name
+                    setComparisonGeocodedName(name)
+                }
+            })
+            .catch(() => { })
+    }, [tooltipData?.properties?.id, selectedId, tooltipCoords])
+
     // Fan chart detail state
     const [fanChartData, setFanChartData] = useState<FanChartData | null>(null)
     const [historicalValues, setHistoricalValues] = useState<number[] | undefined>(undefined)
@@ -284,6 +329,7 @@ export function ForecastMap({
     // Comparison state: hover overlay when a feature is selected
     const [comparisonData, setComparisonData] = useState<FanChartData | null>(null)
     const [comparisonHistoricalValues, setComparisonHistoricalValues] = useState<number[] | undefined>(undefined)
+    const [comparisonGeocodedName, setComparisonGeocodedName] = useState<string | null>(null)
     const comparisonFetchRef = useRef<string | null>(null)
     const comparisonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const hoverDetailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -1564,7 +1610,7 @@ export function ForecastMap({
                                 {comparisonData && tooltipData?.properties?.id && tooltipData.properties.id !== selectedId && (
                                     <div className="mt-1 flex items-center gap-1">
                                         <span className="px-1.5 py-0.5 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[8px] font-semibold uppercase tracking-wider rounded">
-                                            vs {tooltipData.properties.id}
+                                            vs {comparisonGeocodedName || tooltipData.properties.id}
                                         </span>
                                     </div>
                                 )}

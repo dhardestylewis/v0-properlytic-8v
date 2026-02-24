@@ -375,11 +375,11 @@ const FORECAST_TOOL_DEFINITIONS: OpenAI.ChatCompletionTool[] = [
         type: "function",
         function: {
             name: "set_forecast_year",
-            description: "Change the forecast timeline year displayed on the map and charts. Valid years: 2026, 2027, 2028, 2029, 2030. Use when the user asks to change the year, set the timeline, or view a different forecast horizon.",
+            description: "Change the forecast timeline year displayed on the map and charts. Valid years: 2019 through 2030. Use when the user asks to change the year, set the timeline, or view a different forecast horizon.",
             parameters: {
                 type: "object",
                 properties: {
-                    year: { type: "integer", enum: [2026, 2027, 2028, 2029, 2030], description: "The forecast year to display" }
+                    year: { type: "integer", minimum: 2019, maximum: 2030, description: "The forecast year to display (2019-2030)" }
                 },
                 required: ["year"]
             }
