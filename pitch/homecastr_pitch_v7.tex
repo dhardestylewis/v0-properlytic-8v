@@ -122,13 +122,13 @@
 \end{column}
 \begin{column}{0.34\textwidth}
 \centering
-\statbox{15\%}{median error (p50)}\\[14pt]
+\statbox{15\%}{median error}\\[14pt]
 \statbox{4yr}{forecast horizon}\\[14pt]
-\statbox{1M+}{lots forecasted}
+\statbox{1M+}{properties forecasted}
 \end{column}
 \end{columns}
 
-\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free.}
+\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free. {\tiny $^{*}$50\% of properties fall below this error.}}
 \end{frame}
 
 
@@ -204,7 +204,7 @@
   \node[block] (model) at (5,0) {
     \goldtext{\textbf{ML Foundation Model}}\\[4pt]
     {\scriptsize Trained on}\\
-    {\scriptsize 1M+ lots}
+    {\scriptsize 1M+ properties}
   };
   \node[block] (output) at (10,0) {
     \goldtext{\textbf{Forecast Ranges}}\\[4pt]
@@ -357,9 +357,8 @@
   \node[inner sep=2pt, fill=hcCard, rounded corners=2pt] at (-2.5,2.2)
     {\includegraphics[height=0.40cm]{assets/logo_reventure.png}};
 
-  % Homecastr — golden quadrant
-  \fill[hcGold] (3.5,2.5) circle (8pt);
-  \node[anchor=south west] at (3.8,2.5) {\includegraphics[height=0.55cm]{assets/homecastr-logo-horizontal.png}};
+  % Homecastr — golden quadrant (logo replaces text label)
+  \node[anchor=south west] at (3.2,2.3) {\includegraphics[height=0.55cm]{assets/homecastr-logo-horizontal.png}};
 
 \end{tikzpicture}
 \end{center}
@@ -489,7 +488,7 @@
   \includegraphics[height=0.85cm]{assets/logo_summit.png} &
   \begin{tabular}[c]{@{}l@{}}
     \textbf{Summit Geospatial}\\
-    \mutedtext{\scriptsize Founder --- highest-quality terrain data, Texas}
+    \mutedtext{\scriptsize Founder: highest-quality terrain data, Texas}
   \end{tabular}\\[14pt]
   \colorbox{hcCard}{\includegraphics[height=0.7cm]{assets/logo_tacc.png}} &
   \begin{tabular}[c]{@{}l@{}}
