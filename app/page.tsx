@@ -325,9 +325,9 @@ function DashboardContent() {
         } else {
           ;[lat, lng] = cellToLatLng(mapState.selectedId!)
         }
-        // Always request zoom=16 from Nominatim for detailed address data.
-        // The reverseGeocode function formats the response appropriately.
-        const address = await reverseGeocode(lat, lng, 16)
+        // Pass actual map zoom so the geocoder adapts detail level:
+        // ZIP→city/zip, tract→neighborhood, block→street, parcel→address
+        const address = await reverseGeocode(lat, lng, mapState.zoom ?? 16)
         if (address) {
           setSearchBarValue(address)
         } else {
