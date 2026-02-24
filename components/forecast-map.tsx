@@ -137,6 +137,8 @@ export function ForecastMap({
     const [tooltipCoords, setTooltipCoords] = useState<[number, number] | null>(null)
     // Coordinates locked to the selected area (for StreetView — doesn't follow hover)
     const [selectedCoords, setSelectedCoords] = useState<[number, number] | null>(null)
+    const selectedCoordsRef = useRef<[number, number] | null>(null)
+    useEffect(() => { selectedCoordsRef.current = selectedCoords }, [selectedCoords])
 
     // Notify parent of coordinate changes (for search bar geocoding)
     useEffect(() => { onCoordsChange?.(selectedCoords) }, [selectedCoords, onCoordsChange])
@@ -998,9 +1000,9 @@ export function ForecastMap({
                 const newLng = result?.chosen?.lng || result?.location?.lng || result?.area?.location?.lng || params?.lng
                 const map = mapRef.current
                 if (map && newLat && newLng) {
-                    if (selectedIdRef.current && selectedCoords) {
+                    if (selectedIdRef.current && selectedCoordsRef.current) {
                         // Primary is locked — zoom to fit both areas
-                        const [selLat, selLng] = selectedCoords
+                        const [selLat, selLng] = selectedCoordsRef.current!
                         const latMin = Math.min(selLat, newLat)
                         const latMax = Math.max(selLat, newLat)
                         const lngMin = Math.min(selLng, newLng)
