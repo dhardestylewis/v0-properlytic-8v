@@ -321,11 +321,14 @@ export function ChatPanel({ isOpen, onClose, onMapAction, forecastMode, onTavusR
                     <div className="flex items-center gap-2 bg-muted/30 rounded-xl px-3 py-1.5 border border-border/50 focus-within:border-primary/50 transition-colors">
                         <input
                             ref={inputRef}
+                            id="chat-input"
+                            name="chat-input"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="Ask about a neighborhood, address, or metric..."
                             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 py-1.5"
+                            autoComplete="off"
                             disabled={isLoading}
                         />
                         {onTavusRequest && (

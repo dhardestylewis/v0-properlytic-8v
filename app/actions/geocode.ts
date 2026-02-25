@@ -4,6 +4,10 @@ interface GeocodeResult {
     lat: number
     lng: number
     displayName: string
+    /** Nominatim type: "house", "street", "suburb", "city", etc. */
+    resultType: string
+    /** Nominatim class: "building", "highway", "place", "boundary", etc. */
+    resultClass: string
 }
 
 /**
@@ -41,6 +45,8 @@ export async function geocodeAddress(query: string): Promise<GeocodeResult | nul
                 lat: Number.parseFloat(result.lat),
                 lng: Number.parseFloat(result.lon),
                 displayName: result.display_name,
+                resultType: result.type || "",
+                resultClass: result.class || "",
             }
         }
 

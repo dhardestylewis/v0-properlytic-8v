@@ -40,7 +40,7 @@ function DashboardContent() {
   const { filters, setFilters, resetFilters } = useFilters()
   const { mapState, setMapState, selectFeature, hoverFeature } = useMapState()
   const [forecastData, setForecastData] = useState<{ acct: string; data: PropertyForecast[] } | null>(null)
-  const [currentYear, setCurrentYear] = useState(2027)
+  const [currentYear, setCurrentYear] = useState(2026)
   const [isUsingMockData, setIsUsingMockData] = useState(false)
   const [searchBarValue, setSearchBarValue] = useState<string>("")
   const [mobileSelectionMode, setMobileSelectionMode] = useState<'replace' | 'add' | 'range'>('replace')
@@ -377,15 +377,33 @@ function DashboardContent() {
     try {
       const result = await geocodeAddress(query)
       if (result) {
+        // Adaptive zoom based on Nominatim result type/class
+        const t = result.resultType?.toLowerCase() || ""
+        const c = result.resultClass?.toLowerCase() || ""
+        let zoom = 14 // default
+        if (t === "house" || t === "building" || t === "apartments" || c === "building") {
+          zoom = 18  // full address → parcel scale
+        } else if (t === "road" || t === "street" || t === "residential" || c === "highway") {
+          zoom = 16  // street → block scale
+        } else if (t === "suburb" || t === "neighbourhood" || t === "neighborhood" || t === "quarter") {
+          zoom = 14  // neighborhood
+        } else if (t === "postcode" || t === "postal_code") {
+          zoom = 14  // zip code
+        } else if (t === "city" || t === "town" || t === "village") {
+          zoom = 12  // city scale
+        } else if (t === "county" || t === "state" || t === "country") {
+          zoom = 10
+        }
+
         setMapState({
           center: [result.lng, result.lat],
-          zoom: 14
+          zoom,
         })
         // Dispatch fly_to_location so forecast-map auto-selects the center feature
         window.dispatchEvent(new CustomEvent("tavus-map-action", {
           detail: {
             action: "fly_to_location",
-            params: { lat: result.lat, lng: result.lng, zoom: 14 }
+            params: { lat: result.lat, lng: result.lng, zoom }
           }
         }))
         toast({ title: "Found Address", description: result.displayName })
