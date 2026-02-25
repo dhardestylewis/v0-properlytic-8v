@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   description: OG_DESCRIPTION,
   metadataBase: new URL(APP_URL),
   icons: {
-    icon: "/homecastr-icon.png",
+    icon: [
+      { url: "/homecastr-icon.svg", type: "image/svg+xml" },
+      { url: "/homecastr-icon.png", type: "image/png" },
+    ],
     apple: "/homecastr-icon.png",
   },
   openGraph: {
