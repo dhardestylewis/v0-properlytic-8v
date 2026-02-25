@@ -10,7 +10,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 const APP_URL = "https://homecastr.com"
 const OG_DESCRIPTION =
-  "AI price forecasts for every Houston home, lot by lot. Built for buyers, agents, and investors."
+  "Know where home prices are headed. Built for buyers, agents, and investors."
 
 export const metadata: Metadata = {
   title: "Homecastr Home Forecasts",
