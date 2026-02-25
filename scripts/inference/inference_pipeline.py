@@ -1362,12 +1362,25 @@ def _run_one_origin(
                 print(f"[{_ts()}] ⚠️  Async DB write failed: {exc}")
             _pending_db_future = None
 
-    for chunk_idx, acct_chunk in enumerate(_chunk_list(all_accts_prod, int(ACCT_BATCH_SIZE_OUTER)), start=chunk_start):
+    # ── Thread pool for context prefetch (overlaps CPU ctx build with GPU sampling) ──
+    _ctx_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ctx_prefetch")
+    _all_chunks = list(_chunk_list(all_accts_prod, int(ACCT_BATCH_SIZE_OUTER)))
+    _prefetched_ctx: Future = None  # type: ignore
+
+    def _build_ctx_for_chunk(acct_chunk_raw):
+        """Build inference context — safe to run on a background thread (read-only Polars + local numpy)."""
+        ac = [str(a) for a in acct_chunk_raw]
+        return ac, _build_inference_for_accounts_at_origin(
+            accts_batch=ac,
+            origin=int(origin_year),
+            global_medians=global_medians,
+        )
+
+    for chunk_idx, acct_chunk_raw in enumerate(_all_chunks, start=chunk_start):
         # Wait for prior chunk's DB write to finish before reusing counters
         _wait_for_pending_db()
 
         t0 = time.time()
-        acct_chunk = [str(a) for a in acct_chunk]
         used_prop_batch_size = None
 
         # ---------------------------------------------------------------------
@@ -1376,12 +1389,14 @@ def _run_one_origin(
         hist_chunk_df = pd.DataFrame()
         hist_rows_upserted = 0
         hist_agg_rows_upserted = 0
+        # Need acct_chunk early for history; derive from raw or prefetched
+        _acct_chunk_for_hist = [str(a) for a in acct_chunk_raw]
 
         do_hist_this_run = (mode == "forecast" and write_history_series) or (mode == "backtest" and WRITE_BACKTEST_HISTORY_VARIANTS)
 
         if do_hist_this_run:
             hist_chunk_df = _build_history_rows_for_chunk(
-                acct_chunk=acct_chunk,
+                acct_chunk=_acct_chunk_for_hist,
                 run_id=run_id,
                 max_year=int(origin_year),
                 series_kind=series_kind_history,
@@ -1413,7 +1428,7 @@ def _run_one_origin(
                         hist_agg_rows_upserted = _aggregate_history_levels_for_chunk(
                             conn=conn,
                             schema=schema,
-                            acct_chunk=acct_chunk,
+                            acct_chunk=_acct_chunk_for_hist,
                             run_id=run_id,
                             series_kind=series_kind_history,
                             variant_id=(hist_variant_id if hist_variant_id is not None else "__history__"),
@@ -1429,15 +1444,25 @@ def _run_one_origin(
                 history_agg_rows_total += int(hist_agg_rows_upserted)
 
         # ---------------------------------------------------------------------
-        # 2) Build inference context (no DB connection held)
+        # 2) Retrieve prefetched context or build synchronously (first chunk)
         # ---------------------------------------------------------------------
-        print(f"[{_ts()}] Chunk {chunk_idx}: building inference context for {len(acct_chunk)} accts "
-              f"[{acct_chunk[0]}..{acct_chunk[-1]}] origin={origin_year}")
-        ctx = _build_inference_for_accounts_at_origin(
-            accts_batch=acct_chunk,
-            origin=int(origin_year),
-            global_medians=global_medians,
-        )
+        if _prefetched_ctx is not None:
+            try:
+                acct_chunk, ctx = _prefetched_ctx.result(timeout=600)
+            except Exception as _pf_exc:
+                print(f"[{_ts()}] Chunk {chunk_idx}: prefetch failed ({_pf_exc}), building synchronously")
+                acct_chunk = [str(a) for a in acct_chunk_raw]
+                ctx = _build_inference_for_accounts_at_origin(
+                    accts_batch=acct_chunk, origin=int(origin_year), global_medians=global_medians,
+                )
+            _prefetched_ctx = None
+        else:
+            acct_chunk = [str(a) for a in acct_chunk_raw]
+            print(f"[{_ts()}] Chunk {chunk_idx}: building inference context for {len(acct_chunk)} accts "
+                  f"[{acct_chunk[0]}..{acct_chunk[-1]}] origin={origin_year}")
+            ctx = _build_inference_for_accounts_at_origin(
+                accts_batch=acct_chunk, origin=int(origin_year), global_medians=global_medians,
+            )
 
         # Detailed diagnostic on the return value
         if ctx is None:
@@ -1509,6 +1534,11 @@ def _run_one_origin(
             S=int(S),
             origin=int(origin_year),
         )
+
+        # ── Prefetch: start building context for the NEXT chunk on a background thread ──
+        _next_chunk_idx = chunk_idx - chunk_start + 1  # 0-based index into _all_chunks
+        if _next_chunk_idx < len(_all_chunks):
+            _prefetched_ctx = _ctx_pool.submit(_build_ctx_for_chunk, _all_chunks[_next_chunk_idx])
 
         if inf_out is None:
             n_done += len(acct_chunk)
@@ -1695,6 +1725,7 @@ def _run_one_origin(
     # Drain any pending async DB write before final refresh
     _wait_for_pending_db()
     _db_pool.shutdown(wait=True)
+    _ctx_pool.shutdown(wait=False)  # no pending work; just cleanup
 
     try:
         with _pg_tx(retries=5, label="final_agg_refresh") as conn:
