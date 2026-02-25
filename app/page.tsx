@@ -395,6 +395,13 @@ function DashboardContent() {
           zoom = 10
         }
 
+        // Clear any existing selection so fly_to_location will auto-select at destination
+        if (mapState.selectedId) {
+          window.dispatchEvent(new CustomEvent("tavus-map-action", {
+            detail: { action: "clear_selection" }
+          }))
+        }
+
         setMapState({
           center: [result.lng, result.lat],
           zoom,
@@ -413,7 +420,7 @@ function DashboardContent() {
     } catch (e) {
       handleSearchError("Search failed")
     }
-  }, [setMapState, toast, handleSearchError])
+  }, [setMapState, toast, handleSearchError, mapState.selectedId])
 
 
 
