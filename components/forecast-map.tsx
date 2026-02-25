@@ -995,6 +995,30 @@ export function ForecastMap({
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [onFeatureSelect])
 
+    // Dynamic hover outline color: amber (primary) when nothing selected,
+    // lime (comparison) when a feature is locked
+    useEffect(() => {
+        const map = mapRef.current
+        if (!map || !isLoaded) return
+        const hoverColor = selectedId ? "#a3e635" : "#fbbf24"
+        for (const suffix of ["a", "b"]) {
+            for (const lvl of GEO_LEVELS) {
+                const layerId = `forecast-outline-${lvl.name}-${suffix}`
+                if (!map.getLayer(layerId)) continue
+                try {
+                    map.setPaintProperty(layerId, "line-color", [
+                        "case",
+                        ["boolean", ["feature-state", "selected"], false],
+                        "#fbbf24",   // amber — always for locked selection
+                        ["boolean", ["feature-state", "hover"], false],
+                        hoverColor,  // amber when previewing, lime when comparing
+                        "rgba(0,0,0,0)",
+                    ])
+                } catch { /* layer may not exist yet */ }
+            }
+        }
+    }, [selectedId, isLoaded])
+
     // Tavus map-action handler: clear_selection, fly_to_location
     useEffect(() => {
         const handleTavusAction = (e: Event) => {
