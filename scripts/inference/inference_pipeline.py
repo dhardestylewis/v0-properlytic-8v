@@ -1703,6 +1703,54 @@ else:
     ckpt_pairs = _filtered or ckpt_pairs  # fallback to all if no baseline found
     print(f"[{_ts()}] CKPT_VARIANT_SUFFIX='' (baseline) — using {len(ckpt_pairs)} checkpoint(s)")
 
+# ── SF-only filter: apply same auto-detect logic as retrain_sample_sweep.py ──
+# The SF* checkpoints were trained on state_class == "A1" (HCAD single-family) only.
+# Applying them to commercial / condo / vacant parcels produces garbage forecasts.
+# We re-filter all_accts here so the inference targets match the training distribution.
+_lf_global = globals().get("lf")
+_all_accts_input = list(all_accts)
+
+_sf_col, _sf_vals = None, None
+if _lf_global is not None:
+    try:
+        _panel_cols = set(_lf_global.collect_schema().names())
+        for _cand_col, _cand_vals in [
+            ("state_class",   ["A1"]),
+            ("property_type", ["SF", "SFR", "SINGLE"]),
+            ("prop_type_cd",  ["A1"]),
+            ("impr_tp_cd",    ["1001", "1002", "1003"]),
+        ]:
+            if _cand_col in _panel_cols:
+                _sf_col, _sf_vals = _cand_col, _cand_vals
+                break
+    except Exception as _e:
+        print(f"[{_ts()}] ⚠️  Could not inspect lf schema for SF filter: {_e}")
+
+if _sf_col and CKPT_VARIANT_SUFFIX:
+    import polars as _pl
+    _sf_accts_set = set(
+        _lf_global
+        .filter(_pl.col(_sf_col).cast(_pl.Utf8).str.strip_chars().is_in(_sf_vals))
+        .select(_pl.col("acct").cast(_pl.Utf8).str.strip_chars())
+        .unique()
+        .collect()["acct"]
+        .to_list()
+    )
+    _filtered_accts = [a for a in _all_accts_input if str(a).strip() in _sf_accts_set]
+    print(
+        f"[{_ts()}] SF filter '{_sf_col}' in {_sf_vals}: "
+        f"{len(_filtered_accts):,} / {len(_all_accts_input):,} accounts retained"
+    )
+    all_accts = _filtered_accts
+elif CKPT_VARIANT_SUFFIX:
+    print(
+        f"[{_ts()}] ⚠️  SF filter: no recognised property-type column found in lf. "
+        f"Proceeding with all {len(_all_accts_input):,} accounts — "
+        f"non-SF forecasts may be unreliable with a SF-trained checkpoint."
+    )
+else:
+    print(f"[{_ts()}] CKPT_VARIANT_SUFFIX='' (baseline): skipping SF filter, using all accounts.")
+
 # Account order (replace with geography-sorted order if you want more contiguous live map fill)
 all_accts_prod = [str(a) for a in all_accts]
 n_total = len(all_accts_prod)
