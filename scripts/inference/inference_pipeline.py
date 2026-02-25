@@ -1285,14 +1285,14 @@ def _materialize_actual_prices_for_accounts(lf_obj=None, accts=None, year_min=19
     rows = (
         _lf_ref
         .filter(pl.col("acct").cast(pl.Utf8).is_in(accts))
-        .filter(pl.col("year").is_between(int(year_min), int(year_max)))
-        .select(["acct", "year", "market_total_val"])
+        .filter(pl.col("yr").is_between(int(year_min), int(year_max)))
+        .select(["acct", "yr", "tot_appr_val"])
         .collect()
     )
     if rows.is_empty():
         return None
     df = rows.to_pandas()
-    df = df.rename(columns={"market_total_val": "actual_price"})
+    df = df.rename(columns={"yr": "year", "tot_appr_val": "actual_price"})
     return df
 
 
