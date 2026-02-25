@@ -126,6 +126,7 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
                             !canScrollPrev && "pointer-events-none"
                         )}
                         disabled={!canScrollPrev}
+                        aria-label="Previous image"
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -136,6 +137,7 @@ export function StreetViewCarousel({ h3Ids, apiKey, className, coordinates }: St
                             !canScrollNext && "pointer-events-none"
                         )}
                         disabled={!canScrollNext}
+                        aria-label="Next image"
                     >
                         <ChevronRight className="w-5 h-5" />
                     </button>

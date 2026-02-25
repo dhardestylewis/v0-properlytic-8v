@@ -69,6 +69,7 @@ export function TimeControls({
                 size="icon"
                 className="h-8 w-8 shrink-0 text-primary hover:bg-primary/10"
                 onClick={() => setIsPlaying(!isPlaying)}
+                aria-label={isPlaying ? "Pause timeline" : "Play timeline"}
             >
                 {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
             </Button>
@@ -86,6 +87,7 @@ export function TimeControls({
                         step={1}
                         onValueChange={handleSliderChange}
                         className="cursor-pointer"
+                        aria-label="Forecast year"
                     />
                     <div className="flex justify-between text-[9px] text-muted-foreground font-mono w-full px-0.5">
                         <span>{minYear}</span>
