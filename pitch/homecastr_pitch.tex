@@ -1,5 +1,5 @@
-% Homecastr Investor Pitch Deck
-% Compile with: pdflatex homecastr_pitch.tex
+% Homecastr Investor Pitch Deck - V6
+% Compile with: xelatex homecastr_pitch_v6.tex
 
 \documentclass[aspectratio=169,12pt]{beamer}
 
@@ -9,9 +9,12 @@
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{footline}{%
   \ifnum\thepage>1\relax%
-    \hfill\usebeamercolor[fg]{page number in head/foot}%
-    \usebeamerfont{page number in head/foot}%
-    \insertframenumber\kern1em\vskip2pt%
+    \hbox to \paperwidth{%
+      \kern1em\href{https://homecastr.com}{\includegraphics[height=0.35cm]{assets/homecastr-logo-horizontal.png}}%
+      \hfill%
+      {\usebeamercolor[fg]{page number in head/foot}\usebeamerfont{page number in head/foot}\insertframenumber}%
+      \kern1em%
+    }\vskip2pt%
   \fi%
 }
 \setbeamertemplate{frametitle}{
@@ -23,13 +26,16 @@
   \end{beamercolorbox}
 }
 
-% Homecastr brand palette — matches website beige theme
-\definecolor{hcBg}{HTML}{F2EDE0}
-\definecolor{hcText}{HTML}{3D3830}
-\definecolor{hcGold}{HTML}{CA8A04}
+% Homecastr brand palette — matched to website CSS
+\definecolor{hcBg}{HTML}{F2EDE4}        % --background
+\definecolor{hcText}{HTML}{3D3830}       % --foreground
+\definecolor{hcGold}{HTML}{CA8A04}       % accent gold (CTAs, stats)
 \definecolor{hcGoldLight}{HTML}{E8D5A0}
-\definecolor{hcMuted}{HTML}{7E7B74}
-\definecolor{hcCard}{HTML}{EBE4D6}
+\definecolor{hcMuted}{HTML}{7E7B74}      % --muted-foreground
+\definecolor{hcCard}{HTML}{E8E2D8}       % --muted / card bg
+\definecolor{hcPrimary}{HTML}{6B6356}    % --primary (taupe)
+\definecolor{hcRed}{HTML}{B91C1C}
+\definecolor{hcGreen}{HTML}{15803D}
 
 \setbeamercolor{background canvas}{bg=hcBg}
 \setbeamercolor{normal text}{fg=hcText}
@@ -55,185 +61,210 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{hyperref}
+\hypersetup{colorlinks=true, urlcolor=hcGold, linkcolor=hcGold}
 
 % ─── Macros ──────────────────────────────────────────────────
 \newcommand{\goldtext}[1]{{\color{hcGold}#1}}
 \newcommand{\mutedtext}[1]{{\color{hcMuted}#1}}
 \newcommand{\statbox}[2]{%
-  \begin{minipage}[t]{0.22\textwidth}
+  \begin{minipage}[t]{\linewidth}
     \centering
-    {\Huge\bfseries\color{hcGold}#1}\\[4pt]
+    {\LARGE\bfseries\color{hcGold}#1}\\[2pt]
     {\small\color{hcMuted}#2}
   \end{minipage}%
 }
 
-% Building icon macro (matches website Building2 icon)
+% Logo image macro (cropped to content)
 \newcommand{\buildingicon}{%
-\begin{tikzpicture}[scale=0.35, baseline=-2pt]
-  \draw[hcGold, line width=1.2pt] (0,0) rectangle (0.8,1.2);
-  \draw[hcGold, line width=1.2pt] (0.15,0.3) rectangle (0.35,0.5);
-  \draw[hcGold, line width=1.2pt] (0.45,0.3) rectangle (0.65,0.5);
-  \draw[hcGold, line width=1.2pt] (0.15,0.65) rectangle (0.35,0.85);
-  \draw[hcGold, line width=1.2pt] (0.45,0.65) rectangle (0.65,0.85);
-  \draw[hcGold, line width=1.2pt] (0.3,0) rectangle (0.5,0.2);
-\end{tikzpicture}%
+\includegraphics[height=1.4cm]{assets/homecastr-icon.png}%
+}
+
+% Bottom-of-slide tagline — pushes to bottom of remaining frame space
+\newcommand{\slidetagline}[1]{%
+  \vspace*{0pt plus 1fill}%
+  \begin{center}{\small\color{hcMuted}#1}\end{center}%
+}
+
+% Big stat macro for single-stat visual slides
+\newcommand{\bigstat}[2]{%
+  {\fontsize{64}{72}\selectfont\bfseries\color{hcGold}#1}\\[8pt]
+  {\Large\color{hcText}#2}%
 }
 
 % ══════════════════════════════════════════════════════════════
 \begin{document}
 
-\usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{title_bg.png}}
+% ─── SLIDE 1: Title ──────────────────────────────────────────
+\usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{assets/title_bg.png}}
 \begin{frame}[plain]
 \vfill
 \begin{center}
-{\buildingicon}\quad{\fontsize{42}{48}\selectfont\bfseries\color{hcGold} Homecastr}\\[16pt]
-{\Large\color{hcText} The foundation model for residential real estate}
+\includegraphics[height=2cm]{assets/homecastr-logo-horizontal.png}\\[16pt]
+{\Large\color{hcText} The foundation model for property forecasting}\\[24pt]
+\mutedtext{\small \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}}}
 \end{center}
 \vfill
 \end{frame}
 
-\usebackgroundtemplate{%
-  \begin{tikzpicture}[remember picture,overlay]
-    \fill[hcBg] (current page.south west) rectangle (current page.north east);
-    % Optional subtle pattern
-    %\node[opacity=0.03] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{city_lots.png}};
-  \end{tikzpicture}
-}
+% ─── Default background for remaining slides ─────────────────
+% Use \color+\rule fill — works in one pass, no TikZ overlay needed
+\usebackgroundtemplate{\color{hcBg}\rule{\paperwidth}{\paperheight}}
 
 
-% ─── SLIDE 2: Problem ───────────────────────────────────────
-\begin{frame}{The Problem}
+% ─── SLIDE 2: Live Today ─────────────────────────────────────
+\begin{frame}{Live today}
 \vspace{8pt}
 
-{\large Owners and investors now prioritize \goldtext{growth}.\\
-Everyone can tell you what a home is worth \textit{today}.\\
-Nobody can affordably show you where it's \goldtext{going}.}\\[14pt]
-
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
+\begin{columns}[c]
+\begin{column}{0.63\textwidth}
 \centering
-\textbf{What exists}\\[8pt]
-\begin{itemize}\setlength{\itemsep}{6pt}
-  \item Zestimates, CMAs, appraisals
-  \item Present value, not future
-  \item Zip-level forecast indexes
-\end{itemize}
+\href{https://homecastr.com}{\includegraphics[width=\linewidth,height=5cm,keepaspectratio=true]{assets/dashboard_screenshot.png}}
 \end{column}
-\begin{column}{0.48\textwidth}
+\begin{column}{0.34\textwidth}
 \centering
-\textbf{What's missing}\\[8pt]
-\begin{itemize}\setlength{\itemsep}{6pt}
-  \item \textbf{Lot-level forecasts}\\\mutedtext{with forward-looking ranges}
-  \item \textbf{Explainable outputs}\\\mutedtext{for investment memos}
-  \item \textbf{Self-serve access}\\\mutedtext{for instant underwriting}
-\end{itemize}
+\statbox{15\%$^{*}$}{median error at 4yr}\\[14pt]
+\statbox{4yr}{forecast horizon}\\[14pt]
+\statbox{1M+}{properties forecasted}\\[14pt]
+{\tiny\color{hcMuted}\centering $^{*}$50\% of properties fall below this error.}
 \end{column}
 \end{columns}
 
-\vspace{6pt}
-\begin{center}
-
-\end{center}
+\slidetagline{\href{https://homecastr.com}{\textcolor{hcGold}{homecastr.com}} \textbar{} Houston metro. Live. Free.}
 \end{frame}
 
-% ─── SLIDE 3: Solution ──────────────────────────────────────
-\begin{frame}{Our Solution}
-\vspace{16pt}
+
+% ─── SLIDE 3: The Gap ────────────────────────────────────────
+\begin{frame}{Everyone knows what a home is worth today}
+\vspace{4pt}
+
 \begin{center}
-{\large A diffusion-based foundation model\\
-generating \goldtext{probable futures} for every residential property.}
+{\large\color{hcText} Nobody can affordably show you where it's \goldtext{going}.}
 \end{center}
 
-\vspace{20pt}
+\vspace{12pt}
 
 \begin{columns}[c]
-\begin{column}{0.33\textwidth}
-\centering
-\includegraphics[width=3.5cm]{scenarios.png}
-\end{column}
-\begin{column}{0.33\textwidth}
-\centering
-\includegraphics[width=3.5cm]{pricebands.png}
-\end{column}
-\begin{column}{0.33\textwidth}
-\centering
-\includegraphics[width=3.5cm]{explainable.png}
-\end{column}
-\end{columns}
-
-\vspace{16pt}
+\begin{column}{0.44\textwidth}
 \begin{center}
-\goldtext{Forecast accuracy as strong as 14\% median error}
+\begin{tikzpicture}
+  % "Today" box — static point estimate
+  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.0,4.2);
+  \node[anchor=north, font=\small\bfseries, text=hcMuted] at (3.0,4.0) {WHAT EXISTS};
+  \draw[hcMuted, thick] (0.5,0.8) -- (1.2,1.2) -- (2.0,1.0) -- (2.8,1.5) -- (3.5,1.4) -- (4.2,1.8) -- (5.0,1.6);
+  \node[font=\footnotesize, text=hcMuted, align=center] at (3.0,3.2) {Today's estimate};
+  \node[font=\normalsize\bfseries, text=hcMuted] at (2.0,2.2) {\$425K};
+  \node[font=\scriptsize, text=hcMuted] at (3.0,0.4) {One number. No forecast.};
+\end{tikzpicture}
 \end{center}
-\end{frame}
-
-% ─── SLIDE 4: Product ───────────────────────────────────────
-\begin{frame}{Product}
-\vspace{12pt}
-\begin{columns}[T]
-\begin{column}{0.49\textwidth}
-\textbf{\large\goldtext{Consumer Dashboard}}\\[8pt]
-Free, interactive map\\[6pt]
-\begin{itemize}\setlength{\itemsep}{4pt}
-  \item Search any address
-  \item 4-year forecast with price bands
-  \item Compare neighborhoods
-  \item Export PDF reports
-  \item AI voice agent
-\end{itemize}
-\vspace{4pt}
-\mutedtext{\small \href{https://homecastr.com}{homecastr.com}}
 \end{column}
-\begin{column}{0.45\textwidth}
-\textbf{\large\goldtext{REST API}}\\[6pt]
-Programmatic access for pros\\[4pt]
-\begin{itemize}\setlength{\itemsep}{4pt}
-  \item Property-level forecasts
-  \item Neighborhood metrics
-  \item Sub-second responses
-\end{itemize}
-\vspace{4pt}
-\mutedtext{\small \href{https://homecastr.com/api-docs}{homecastr.com/api-docs}}
+\begin{column}{0.08\textwidth}
+\begin{center}
+{\fontsize{28}{32}\selectfont\color{hcGold}\textbf{→}}
+\end{center}
+\end{column}
+\begin{column}{0.44\textwidth}
+\begin{center}
+\begin{tikzpicture}
+  % "Tomorrow" box — forecast bands
+  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (6.0,4.2);
+  \node[anchor=north, font=\small\bfseries, text=hcGold] at (3.0,4.0) {WHAT'S MISSING};
+  % Forecast band fill
+  \fill[hcGoldLight, opacity=0.3] (0.5,0.6) -- (1.2,1.0) -- (2.0,0.8) -- (2.8,1.3) -- (3.5,1.2) -- (4.2,1.6) -- (5.5,2.4)
+    -- (5.5,1.0) -- (4.2,0.8) -- (3.5,0.6) -- (2.8,0.7) -- (2.0,0.4) -- (1.2,0.5) -- (0.5,0.2) -- cycle;
+  % Median forecast line
+  \draw[hcGold, thick] (0.5,0.4) -- (1.2,0.75) -- (2.0,0.6) -- (2.8,1.0) -- (3.5,0.9) -- (4.2,1.2) -- (5.5,1.7);
+  \node[font=\footnotesize, text=hcGold, align=center] at (3.0,3.2) {Homecastr's forecast};
+  \node[font=\normalsize\bfseries, text=hcGold, anchor=east] at (2.4,2.2) {\$425K};
+  \node[font=\normalsize, text=hcGold] at (2.9,2.2) {→};
+  \node[font=\normalsize\bfseries, text=hcGold, align=center, anchor=west] at (3.3,2.2) {\$460K\\[1pt]{\scriptsize to}\\[1pt]\$520K};
+  \node[font=\scriptsize, text=hcGold] at (3.0,0.4) {4-year probabilistic range.};
+\end{tikzpicture}
+\end{center}
 \end{column}
 \end{columns}
+
 \end{frame}
 
-% ─── SLIDE 5: Our Moat ──────────────────────────────────────
-\begin{frame}{Flywheel and Moat}
-\vspace{4pt}
 
+% ─── SLIDE 3: How It Works (expanded) ───────────────────────
+\begin{frame}{How it works}
+\vspace{8pt}
+
+% ── Pipeline row ──
 \begin{center}
 \begin{tikzpicture}[
-  block/.style={rounded corners=6pt, fill=hcCard, text=hcText,
-    minimum width=3cm, minimum height=1cm, align=center, font=\footnotesize},
-  arr/.style={-{Stealth[length=4pt]}, thick, color=hcGold}
+  block/.style={rounded corners=8pt, fill=hcCard, text=hcText,
+    minimum width=3.2cm, minimum height=1.6cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=6pt]}, very thick, color=hcGold}
 ]
-  \node[block] (consumers) at (-2.2,1.2) {\textbf{Free Users}\\{\scriptsize Drives adoption}};
-  \node[block] (signal) at (2.2,1.2) {\textbf{Conversational Data}\\{\scriptsize Reveals intent}};
-  \node[block] (model) at (2.2,-1.2) {\textbf{Better Model}\\{\scriptsize Enhances accuracy}};
-  \node[block] (value) at (-2.2,-1.2) {\textbf{Pro Revenue}\\{\scriptsize Funds growth}};
-
-  \draw[arr] (consumers) -- (signal);
-  \draw[arr] (signal) -- (model);
-  \draw[arr] (model) -- (value);
-  \draw[arr] (value) -- (consumers);
+  \node[block] (data) at (0,0) {
+    \goldtext{\textbf{Property Data}}\\[4pt]
+    {\scriptsize Sales, permits,}\\
+    {\scriptsize census, zoning}
+  };
+  \node[block] (model) at (5,0) {
+    \goldtext{\textbf{ML Foundation Model}}\\[4pt]
+    {\scriptsize Trained on}\\
+    {\scriptsize 1M+ properties}
+  };
+  \node[block] (output) at (10,0) {
+    \goldtext{\textbf{Forecast Ranges}}\\[4pt]
+    {\scriptsize Confidence bands}\\
+    {\scriptsize per property, per year}
+  };
+  \draw[arr] (data) -- (model);
+  \draw[arr] (model) -- (output);
 \end{tikzpicture}
 \end{center}
 
-\vspace{4pt}
-\textcolor{hcGoldLight}{\rule{\textwidth}{0.5pt}}
-\vspace{4pt}
-
-\textbf{Defensibility}\\[6pt]
-\begin{description}\setlength{\itemsep}{2pt}
-  \item[\goldtext{Data Asset}] \quad\phantom{...}Intention reveals buyer needs
-  \item[\goldtext{Switching Costs}] \phantom{.}Transparency locks in trust
-  \item[\goldtext{Network Effects}] \phantom{}Market prices against model
-\end{description}
 \end{frame}
 
-% ─── SLIDE 6: Market Opportunity ─────────────────────────────
-\begin{frame}{Market: The \$15B Forecast Layer}
+
+% ─── SLIDE 5: Why Now ────────────────────────────────────────
+\begin{frame}{Why now}
+\vspace{12pt}
+
+\begin{columns}[c]
+\begin{column}{0.50\textwidth}
+\begin{center}
+\begin{tikzpicture}
+  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (7.4,5.0);
+  \node at (3.7,2.5) {%
+    \begin{minipage}[c][4.2cm][c]{6.8cm}\centering
+      {\fontsize{30}{34}\selectfont\bfseries\color{hcGold} 300bps}\par
+      \vspace{14pt}
+      {\small\setlength{\baselineskip}{15pt}\color{hcMuted}
+        Large rate swings baked into\\our training data.\\Our model learned to price rate cycles.\\Others weren't trained on this.}
+    \end{minipage}%
+  };
+\end{tikzpicture}
+\end{center}
+\end{column}
+\begin{column}{0.50\textwidth}
+\begin{center}
+\begin{tikzpicture}
+  \fill[hcCard, rounded corners=8pt] (0,0) rectangle (7.4,5.0);
+  \node at (3.7,2.5) {%
+    \begin{minipage}[c][4.2cm][c]{6.8cm}\centering
+      {\fontsize{30}{34}\selectfont\bfseries\color{hcGold} ML Forecasting}\par
+      \vspace{14pt}
+      {\small\setlength{\baselineskip}{15pt}\color{hcMuted}
+        Now feasible at property scale.\\GPU costs dropped 10{\texttimes}.\\Training at US residential scale\\is now within reach.}
+    \end{minipage}%
+  };
+\end{tikzpicture}
+\end{center}
+\end{column}
+\end{columns}
+
+
+\end{frame}
+
+
+
+
+% ─── SLIDE 6: Market ─────────────────────────────────────────
+\begin{frame}{Market}
 \vspace{12pt}
 
 \begin{center}
@@ -245,212 +276,233 @@ Programmatic access for pros\\[4pt]
   % SAM
   \fill[hcBg] (0,-0.3) circle (1.8cm);
   \fill[hcGoldLight!40] (0,-0.3) circle (1.8cm);
-  \node[text=hcMuted] at (0, 1.0) {\small SFR Operators \& Lenders};
+  \node[text=hcMuted] at (0, 1.0) {\small SFR Analytics};
 
   % SOM
   \fill[hcGold!40] (0,-0.5) circle (1.1cm);
-  \node[text=hcText, font=\small\bfseries, align=center] at (0, -0.5) {5 Key\\Metros};
+  \node[text=hcText, font=\small\bfseries, align=center] at (0, -0.5) {SFR\\Analytics};
 
   % Labels
   \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, 1.8) {\$15B};
-  \node[text=hcMuted, font=\small, align=left, anchor=west] at (3.5, 1.3) {TAM};
+  \node[text=hcMuted, font=\small, align=left, anchor=west] at (3.5, 1.3) {TAM\textsuperscript{1}};
 
-  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, 0.2) {\$1.2B};
-  \node[text=hcMuted, font=\small, anchor=west] at (3.5, -0.3) {SAM};
+  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, 0.2) {\$200M};
+  \node[text=hcMuted, font=\small, anchor=west] at (3.5, -0.3) {SAM\textsuperscript{2}};
 
-  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, -1.4) {\$10M};
-  \node[text=hcMuted, font=\small, anchor=west] at (3.5, -1.9) {SOM};
+  \node[text=hcGold, font=\Large\bfseries, anchor=west] at (3.5, -1.4) {\$1.5M};
+  \node[text=hcMuted, font=\small, anchor=west] at (3.5, -1.9) {SOM\textsuperscript{3}};
 \end{tikzpicture}
 \end{center}
 
-\vspace{4pt}
-\begin{center}
-\mutedtext{\scriptsize *TAM based on 8M+ investors. SOM reflects Year 3 target in initial metros.}
-\end{center}
-\end{frame}
-
-% ─── SLIDE 7: Competitive Landscape ─────────────────────────
-\begin{frame}{Landscape}
-\vspace{6pt}
-
-{\footnotesize
-\begin{center}
-\begin{tabular}{l c c c c}
-\toprule
-& \textbf{CoreLogic\textsuperscript{1}} & \textbf{HouseCanary\textsuperscript{2}} & \textbf{PropStream\textsuperscript{3}} & \goldtext{\textbf{Homecastr}} \\
-\midrule
-\textbf{Model} & Legacy ML & ML & Database & \goldtext{\textbf{Diffusion}} \\
-\textbf{Output} & History & Value & Lists & \goldtext{\textbf{Forecast}} \\
-\textbf{Forecasts?} & No & Point & No & \goldtext{\textbf{Bands}} \\
-\textbf{Context} & None & Manual & Manual & \goldtext{\textbf{Automated}} \\
-\textbf{Access} & Enterprise & Enterprise & Self-serve & \goldtext{\textbf{Self-serve}} \\
-\textbf{Price} & Contract & Contract & \$99/mo & \goldtext{\textbf{Freemium}} \\
-\bottomrule
-\end{tabular}
-\end{center}
-}
-
 \vspace{2pt}
-{\scriptsize
-\mutedtext{\textsuperscript{1}CoreLogic. \textsuperscript{2}HouseCanary. \textsuperscript{3}PropStream.}
-}
-
-\vspace{6pt}
 \begin{center}
-\goldtext{\textbf{Only foundation model forecasts}}\\
-\goldtext{with explainable outputs and self-serve GTM.}
+\mutedtext{\tiny\parbox{0.9\textwidth}{\setlength{\baselineskip}{7pt}%
+\textsuperscript{1}\href{https://www.precedenceresearch.com/proptech-market}{US PropTech data market} (Precedence Research, 2025).\par
+\textsuperscript{2}Est. SFR analytics segment: \href{https://www.corelogic.com}{CoreLogic} SFR div., \href{https://www.housecanary.com}{HouseCanary} (\$18M+), \href{https://www.attomdata.com}{ATTOM} (\$28M+), \href{https://www.propstream.com}{PropStream} (\$25M+).\par
+\textsuperscript{3}{\raise.17ex\hbox{$\scriptstyle\sim$}}12K operators {\texttimes} \$99/mo {\texttimes} 10\% penetration, 10 metros. Annual revenue.}}
 \end{center}
 \end{frame}
 
-% ─── SLIDE 8: Business Model ────────────────────────────────
-\begin{frame}{Business Model}
-\vspace{4pt}
 
-\begin{columns}[T]
-\begin{column}{0.58\textwidth}
-\textbf{\large\goldtext{Target Customer}}\\[4pt]
-\textbf{Individual real estate investors}\\in 5 high-growth metros\\[4pt]
-\begin{itemize}\setlength{\itemsep}{2pt}
-  \item Time exits with forward-looking data
-  \item Underserved by enterprise tools
-  \item Pay for edge over Zillow estimates
-\end{itemize}
+% ─── SLIDE 7: Positioning (2x2 Quadrant) ────────────────────
+\begin{frame}{Positioning}
+\vspace{8pt}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.9]
+  % Axes
+  \draw[hcMuted, thick, -{Stealth[length=5pt]}] (-4.5,0) -- (4.8,0);
+  \draw[hcMuted, thick, -{Stealth[length=5pt]}] (0,-3.2) -- (0,3.8);
+
+  % Axis labels
+  \node[font=\footnotesize, text=hcMuted, anchor=north] at (-3.0,-0.15) {Backward-Looking};
+  \node[font=\footnotesize, text=hcGold, anchor=north] at (3.8,-0.15) {Predictive};
+  \node[font=\footnotesize, text=hcMuted, anchor=east, rotate=90] at (-0.2,-1.5) {Sales-Led};
+  \node[font=\footnotesize, text=hcGold, anchor=east, rotate=90] at (-0.2,3.5) {Product-Led};
+
+  % Quadrant shading — golden quadrant (top-right)
+  \fill[hcGoldLight, opacity=0.15] (0.1,0.1) rectangle (4.5,3.5);
+
+  % CoreLogic: data infrastructure, moderately predictive, deeply sales-led
+  \node[inner sep=1pt] at (1.5,-2.2)
+    {\includegraphics[width=1.8cm,height=0.45cm,keepaspectratio]{assets/logo_corelogic.png}};
+
+  % HouseCanary
+  \node[inner sep=1pt] at (2.8,-1.8)
+    {\includegraphics[width=1.8cm,height=0.45cm,keepaspectratio]{assets/logo_housecanary.png}};
+
+  % PropStream: launched AI/predictive features late 2024 (foreclosure factor, wholesale value)
+  \node[inner sep=1pt] at (-3.2,1.5)
+    {\includegraphics[width=1.8cm,height=0.45cm,keepaspectratio]{assets/logo_propstream.png}};
+
+  % Zillow: mostly current-state Zestimate, very product-led
+  \node[inner sep=1pt] at (-2.5,2.8)
+    {\includegraphics[width=1.8cm,height=0.45cm,keepaspectratio]{assets/logo_zillow_v2.png}};
+
+  % Reventure: now has 12-month ZIP-level forecasts (30K+ ZIPs), self-serve product
+  % Shifted right to avoid covering the 'Product-Led' y-axis label near x=0
+  \node[inner sep=2pt, fill=hcCard, rounded corners=2pt] at (1.2,2.5)
+    {\includegraphics[width=1.8cm,height=0.45cm,keepaspectratio]{assets/logo_reventure.png}};
+
+  % Homecastr — golden quadrant hero (slightly larger bounding box)
+  \node[anchor=south west] at (3.6,2.8) {\includegraphics[width=2.2cm,height=0.55cm,keepaspectratio]{assets/homecastr-logo-horizontal.png}};
+
+\end{tikzpicture}
+\end{center}
+
+
+\end{frame}
+
+
+% ─── SLIDE 8: Business Model ────────────────────────
+\begin{frame}{Business model}
+\vspace{12pt}
+
+\begin{columns}[c]
+\begin{column}{0.48\textwidth}
+\begin{center}
+\begin{tikzpicture}
+  \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,4.5);
+  \node[font=\large\bfseries, text=hcText] at (3.25,3.9) {Free};
+  \node[font=\small, text=hcMuted, align=center, text width=5.5cm] at (3.25,2.1) {Dashboard \& basic forecasts\\[10pt]Builds audience. Every chat trains the model.};
+\end{tikzpicture}
+\end{center}
 \end{column}
-\begin{column}{0.40\textwidth}
-\textbf{\large\goldtext{Target Unit Economics}}\\[6pt]
-\begin{tabular}{l r}
-\textbf{Pricing} & \$99/mo Operator \\
-\textbf{Target LTV} & \textbf{\$1,188}\textsuperscript{*} \\
-\textbf{Target CAC} & \textbf{\$150} \\
-\textbf{LTV:CAC} & \textbf{8x} \\
-\textbf{Payback} & \textbf{1.5 months} \\
-\end{tabular}
+\begin{column}{0.04\textwidth}
+\begin{center}
+{\color{hcGold}\textbf{$\rightarrow$}}
+\end{center}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{center}
+\begin{tikzpicture}
+  \fill[hcCard, rounded corners=6pt] (0,0) rectangle (6.5,4.5);
+  \node[font=\large\bfseries, text=hcGold] at (3.25,3.9) {\$99/mo};
+  \node[font=\small, text=hcMuted, align=center, text width=5.5cm] at (3.25,2.1) {Bulk forecasts \& API access\\[10pt]Full portfolio analytics};
+\end{tikzpicture}
+\end{center}
 \end{column}
 \end{columns}
 
-\vspace{6pt}
-{\footnotesize
-\begin{center}
-\begin{tabular}{l l l l l}
-\toprule
-\textbf{Plan} & \textbf{Price} & \textbf{Target} & \textbf{Revenue} & \textbf{Value} \\
-\midrule
-Free & \$0 & 50K+ users & Lead Gen & Basic \\
-\textbf{Operator} & \textbf{\$99/mo} & 1,700 subs & \textbf{\$2.0M} & \textbf{Bulk/API}\\
-\bottomrule
-\end{tabular}
-\end{center}
-}
-\begin{center}
-\mutedtext{\scriptsize *Assumes 12-month retention.}
-\end{center}
 \end{frame}
 
-% ─── SLIDE 9: Go-to-Market ──────────────────────────────────
-\begin{frame}{Go-to-Market}
-\vspace{12pt}
+
+% (Where We Are moved to slide 2 — see above)
+
+
+% ─── SLIDE 10: Flywheel ─────────────────────────────────────
+\begin{frame}{Flywheel}
+\vspace{8pt}
 
 \begin{center}
 \begin{tikzpicture}[
-  phase/.style={rounded corners=6pt, fill=hcCard, text=hcText,
-    minimum width=3.4cm, minimum height=2cm, align=center, font=\small},
-  arr/.style={-{Stealth[length=5pt]}, thick, color=hcGold}
+  block/.style={rounded corners=8pt, fill=hcCard, text=hcText,
+    minimum width=3.6cm, minimum height=1.4cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=5pt]}, very thick, color=hcGold}
 ]
-  \node[phase] (p1) at (0,0) {
-    \goldtext{\textbf{Now}}\\[4pt]
-    Free dashboard\\RE investors (Houston)
-  };
-  \node[phase] (p2) at (5,0) {
-    \goldtext{\textbf{Q2--Q3}}\\[4pt]
-    5 Key Metros\\[2pt]
-    SFR Operator Pilots\\[2pt]
-     \$99/mo
-  };
-  \node[phase] (p3) at (10,0) {
-    \goldtext{\textbf{Q4+}}\\[4pt]
-    National Scale\\[2pt]
-    \$100K MRR\\[2pt]
-    1 Institutional Pilot
-  };
+  \node[block] (consumers) at (-3.0,1.8) {\textbf{Free users}\\{\scriptsize grow the audience}};
+  \node[block] (signal) at (3.0,1.8) {\textbf{Conversations}\\{\scriptsize reveal buyer intent}};
+  \node[block] (model) at (3.0,-1.8) {\textbf{Better model}\\{\scriptsize improves accuracy}};
+  \node[block] (value) at (-3.0,-1.8) {\textbf{Operator revenue}\\{\scriptsize funds growth}};
 
-  \draw[arr] (p1) -- (p2);
-  \draw[arr] (p2) -- (p3);
+  \draw[arr] (consumers) -- (signal);
+  \draw[arr] (signal) -- (model);
+  \draw[arr] (model) -- (value);
+  \draw[arr] (value) -- (consumers);
+
+  % Center label
+  \node[font=\large\bfseries, text=hcGold] at (0,0) {Chat Data Moat};
 \end{tikzpicture}
 \end{center}
 
-\vspace{12pt}
-\begin{center}
-\mutedtext{\begin{itemize}\setlength{\itemsep}{10pt}
-  \item \textbf{Programmatic SEO}\\\mutedtext{Capture high-intent search traffic}
-  \item \textbf{Broker-Client Share Loops}\\\mutedtext{Agents send forecasts to leads}
-  \item \textbf{Index against Forecasts}\\\mutedtext{SEO for "Will [Address] appreciate?"}
-\end{itemize}}
-\end{center}
 \end{frame}
 
-% ─── SLIDE 9: Traction ──────────────────────────────────────
-\begin{frame}{Where We Are}
-\vspace{20pt}
 
+% ─── SLIDE 11: Go-to-Market ─────────────────────────────────
+\begin{frame}{Go-to-market}
+\vspace{16pt}
+
+\begin{columns}[T, totalwidth=\textwidth]
+\begin{column}{0.33\textwidth}
 \begin{center}
-\statbox{14\%}{Median Error}
-\hfill
-\statbox{4yr}{Forecast Horizon}
-\hfill
-\statbox{Live}{Dashboard}
-\hfill
-\statbox{Ready}{API}
+{\goldtext{\textbf{Direct outreach}}}\\[8pt]
+{\small\color{hcMuted} Direct calls to SFR operators. Referrals close pilots.}
 \end{center}
-
-\vspace{20pt}
-
-\begin{itemize}
-  \item Houston metro: 1M+ properties indexed
-  \item Diffusion-based foundation model producing forecast bands
-  \item AI voice agent for hands-free exploration
-\end{itemize}
-\end{frame}
-
-% ─── SLIDE 1: Title ────────────────────────────────────────────
-\begin{frame}[plain]{Team}
-\vspace{4pt}
-
-\begin{columns}[c]
-\begin{column}{0.25\textwidth}
-\centering
-\begin{tikzpicture}
-  \node[circle, inner sep=0pt, minimum size=2.5cm, path picture={
-    \node at (path picture bounding box.center) {\includegraphics[width=2.5cm]{dhl.jpg}};
-  }] {};
-\end{tikzpicture}
 \end{column}
-\begin{column}{0.70\textwidth}
-{\Large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[4pt]
-{\large Founder \& CEO}\\[2pt]
-\mutedtext{\small \href{https://linkedin.com/in/dhardestylewis}{linkedin.com/in/dhardestylewis}}
+\begin{column}{0.01\textwidth}
+\centering{\color{hcCard!60}\vrule height 4cm}
+\end{column}
+\begin{column}{0.31\textwidth}
+\begin{center}
+{\goldtext{\textbf{Broker sharing}}}\\[8pt]
+{\small\color{hcMuted} Agents share Homecastr's forecasts with clients, creating organic word-of-mouth.}
+\end{center}
+\end{column}
+\begin{column}{0.01\textwidth}
+\centering{\color{hcCard!60}\vrule height 4cm}
+\end{column}
+\begin{column}{0.33\textwidth}
+\begin{center}
+{\goldtext{\textbf{Operator upsell}}}\\[8pt]
+{\small\color{hcMuted} Try free. Upgrade to \$99/mo when you need bulk forecasts or API access.}
+\end{center}
 \end{column}
 \end{columns}
 
+\end{frame}
+
+
+% ─── SLIDE 12: Team ──────────────────────────────────────────
+\begin{frame}{Team}
 \vspace{8pt}
 
-\begin{columns}[T]
-\begin{column}{\textwidth}
-\begin{itemize}\setlength{\itemsep}{3pt}
-  \item \textbf{Founder, Summit Geospatial}\\\mutedtext{Highest quality terrain in Texas}
-  \item \textbf{Sr. Data Scientist, TACC}\\\mutedtext{Principal on \$40M resiliency project}
-  \item \textbf{Scientific ML}\\\mutedtext{Bagnold Medal Research Contributor}
-  \item \textbf{Teaching}\\\mutedtext{ML for Petrobras Geoscientists}
-\end{itemize}
+\begin{columns}[c]
+
+% Left: headshot + name
+\begin{column}{0.38\textwidth}
+\begin{center}
+\begin{tikzpicture}
+  \node[circle, inner sep=0pt, minimum size=2.8cm, path picture={
+    \node at (path picture bounding box.center) {\includegraphics[width=2.8cm]{assets/dhl.png}};
+  }] {};
+\end{tikzpicture}\\[8pt]
+{\Large\bfseries\color{hcGold} Daniel Hardesty Lewis}\\[4pt]
+{\large Founder \& CEO}\\[4pt]
+\mutedtext{\small \href{https://linkedin.com/in/dhardestylewis}{linkedin.com/in/dhardestylewis}}
+\end{center}
 \end{column}
+
+% Right: credential rows
+\begin{column}{0.58\textwidth}
+\begin{tabular}{@{}rl@{}}
+  \includegraphics[height=0.85cm]{assets/logo_summit.png} &
+  \begin{tabular}[c]{@{}l@{}}
+    \textbf{Summit Geospatial}\\
+    \mutedtext{\scriptsize Founder: highest-quality terrain data, Texas}
+  \end{tabular}\\[14pt]
+  \colorbox{hcCard}{\includegraphics[height=0.7cm]{assets/logo_tacc.png}} &
+  \begin{tabular}[c]{@{}l@{}}
+    \textbf{Data Scientist, TACC}\\
+    \mutedtext{\scriptsize Lead on \$40M FEMA resiliency project}
+  \end{tabular}\\[14pt]
+  \includegraphics[height=0.7cm]{assets/logo_egu.png} &
+  \begin{tabular}[c]{@{}l@{}}
+    \textbf{Scientific ML}\\
+    \mutedtext{\scriptsize Bagnold Medal contributor, EGU}
+  \end{tabular}\\
+\end{tabular}
+\end{column}
+
 \end{columns}
 \end{frame}
 
-% ─── SLIDE 11: The Ask ──────────────────────────────────────
+
+% ─── SLIDE 13: The Ask ──────────────────────────────────────
 \begin{frame}[c]
 \vspace{4pt}
 
 \begin{center}
-{\fontsize{36}{42}\selectfont\bfseries\color{hcGold} Raising \$1M}\\[8pt]
+{\fontsize{36}{42}\selectfont\bfseries\color{hcGold} Raising \$1.75M}\\[8pt]
 {\large Pre-Seed}
 \end{center}
 
@@ -460,18 +512,19 @@ Free & \$0 & 50K+ users & Lead Gen & Basic \\
 \begin{column}{0.49\textwidth}
 \textbf{Use of Funds}\\[6pt]
 \begin{itemize}\setlength{\itemsep}{6pt}
-  \item \textbf{ML Engineer}\\\mutedtext{transfer learning to new markets}
-  \item \textbf{GTM / Sales}\\\mutedtext{scale to 1,700+ Operators}
-  \item \textbf{Data, compute}\\\mutedtext{CoreLogic, GPUs, 5 metros}
+  \item \textbf{ML Engineer}\\\mutedtext{Expand model to 10 metros}
+  \item \textbf{GTM / Sales}\\\mutedtext{Land first 300 paying operators}
+  \item \textbf{Data \& Compute}\\\mutedtext{Data licenses + GPU compute}
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
 \textbf{18-Month Milestones}\\[6pt]
-\begin{itemize}\setlength{\itemsep}{4pt}
-  \item 5 metros, 8M+ properties
-  \item \$50K MRR
-  \item 1 institutional pilot or LOI
+\begin{itemize}\setlength{\itemsep}{6pt}
+  \item \goldtext{\textbf{10 metros}}\\\mutedtext{20M+ properties}
+  \item \goldtext{\textbf{\$30K MRR}}\\\mutedtext{from operator tier}
+  \item \goldtext{\textbf{1 institutional pilot}}\\\mutedtext{or LOI}
 \end{itemize}
+
 \end{column}
 \end{columns}
 
@@ -479,17 +532,17 @@ Free & \$0 & 50K+ users & Lead Gen & Basic \\
 \begin{center}
 \href{https://homecastr.com}{\goldtext{homecastr.com}} \quad|\quad \href{mailto:daniel@homecastr.com}{\mutedtext{daniel@homecastr.com}}
 \end{center}
-\vfill
-\begin{center}
-% ─── SLIDE 12: Contact / Title Repeat ────────────────────────
-\usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{title_bg.png}}
+\end{frame}
+
+
+% ─── SLIDE 14: Closing Title (Mirror of Slide 1) ────────────
+\usebackgroundtemplate{\includegraphics[width=\paperwidth,height=\paperheight]{assets/title_bg.png}}
 \begin{frame}[plain]
 \vfill
 \begin{center}
-{\buildingicon}\quad{\fontsize{42}{48}\selectfont\bfseries\color{hcGold} Homecastr}\\[16pt]
-{\Large\color{hcText} The foundation model for residential real estate}\\[24pt]
-\mutedtext{Pre-Seed Deck \quad|\quad 2026}\\[8pt]
-\mutedtext{\small Live Demo: \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}}}
+\includegraphics[height=2cm]{assets/homecastr-logo-horizontal.png}\\[16pt]
+{\Large\color{hcText} The foundation model for property forecasting}\\[24pt]
+\mutedtext{\small \href{https://homecastr.com}{\textcolor{hcGold}{\textbf{homecastr.com}}}}
 \end{center}
 \vfill
 \end{frame}
