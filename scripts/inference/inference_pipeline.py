@@ -26,6 +26,7 @@ import json
 import uuid
 import math
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime, date
 
 import numpy as np
@@ -94,7 +95,7 @@ PROP_BATCH_SIZE_SAMPLER = int(globals().get("PROP_BATCH_SIZE_SAMPLER", 512))
 PROP_BATCH_SIZE_MIN = int(globals().get("PROP_BATCH_SIZE_MIN", 64))
 
 # Chunking
-ACCT_BATCH_SIZE_OUTER = 5000
+ACCT_BATCH_SIZE_OUTER = 20000     # ← increased from 5000: reduces Polars is_in scans 4×
 PG_BATCH_ROWS = 5000
 
 # Timeout / Retry
@@ -1210,6 +1211,25 @@ def _run_one_origin(
     ckpt = _load_ckpt_into_live_objects(ckpt_path)
     global_medians = ckpt.get("global_medians", {})
 
+    # ── torch.compile: kernel fusion for 20-40% faster DDIM sampling ──
+    try:
+        import torch as _torch
+        if hasattr(_torch, 'compile') and _torch.cuda.is_available():
+            _compile_mode = globals().get("COMPILE_MODE", "reduce-overhead")
+            # The compiled model replaces the sampler's forward pass in-place
+            _model_ref = globals().get("model") or globals().get("_model")
+            if _model_ref is not None and not getattr(_model_ref, '_compiled', False):
+                print(f"[{_ts()}] torch.compile(model, mode='{_compile_mode}') — first batch will be slow (warmup)")
+                _compiled = _torch.compile(_model_ref, mode=_compile_mode)
+                # Patch the compiled model back into the global so the sampler uses it
+                if 'model' in globals():
+                    globals()['model'] = _compiled
+                elif '_model' in globals():
+                    globals()['_model'] = _compiled
+                _compiled._compiled = True  # mark to avoid re-compiling on resume
+    except Exception as _e:
+        print(f"[{_ts()}] torch.compile skipped: {_e}")
+
     with _pg_tx() as conn:
         _run_insert_start(
             conn=conn,
@@ -1328,7 +1348,24 @@ def _run_one_origin(
             print(f"[{_ts()}] ✅ Spot check passed: expect ~{est_new:,} new forecasts")
         # ── end spot check ──
 
+    # ── Thread pool for async DB writes ──
+    _db_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="db_write")
+    _pending_db_future: Future = None  # type: ignore
+
+    def _wait_for_pending_db():
+        """Block until prior async DB write completes; propagate exceptions."""
+        nonlocal _pending_db_future
+        if _pending_db_future is not None:
+            try:
+                _pending_db_future.result(timeout=600)  # 10 min max wait
+            except Exception as exc:
+                print(f"[{_ts()}] ⚠️  Async DB write failed: {exc}")
+            _pending_db_future = None
+
     for chunk_idx, acct_chunk in enumerate(_chunk_list(all_accts_prod, int(ACCT_BATCH_SIZE_OUTER)), start=chunk_start):
+        # Wait for prior chunk's DB write to finish before reusing counters
+        _wait_for_pending_db()
+
         t0 = time.time()
         acct_chunk = [str(a) for a in acct_chunk]
         used_prop_batch_size = None
@@ -1534,68 +1571,80 @@ def _run_one_origin(
         print(f"[{_ts()}] Chunk {chunk_idx}: wrote forecast chunk rows={len(forecast_chunk_df)} -> {fc_fp}")
 
         # ---------------------------------------------------------------------
-        # 5) Upsert parcel forecast + aggregate higher zooms + progress (single short DB tx)
+        # 5) Upsert parcel forecast + aggregate higher zooms + progress
+        #    → dispatched to background thread so GPU can start next chunk
         # ---------------------------------------------------------------------
         parcel_rows_upserted = 0
         agg_rows_upserted = 0
 
-        try:
-            with _pg_tx(label=f"forecast_chunk_{chunk_idx}") as conn:
-                if not forecast_chunk_df.empty:
-                    parcel_forecast_update_cols = [
-                        "forecast_year", "value", "p10", "p25", "p50", "p75", "p90",
-                        "run_id", "backtest_id", "model_version", "as_of_date", "n_scenarios",
-                        "is_backtest", "updated_at"
-                    ]
-                    if PARCEL_FORECAST_HAS_N_COL:
-                        parcel_forecast_update_cols.insert(7, "n")
+        # Capture loop-local values for the closure
+        _fc_df = forecast_chunk_df
+        _ac = list(acct_chunk)
+        _ci = chunk_idx
+        _hr = int(len(hist_chunk_df)) if do_hist_this_run else 0
 
-                    parcel_rows_upserted = _upsert_df_pg(
+        def _do_db_write(_fc_df=_fc_df, _ac=_ac, _ci=_ci, _hr=_hr):
+            nonlocal parcel_rows_total, agg_rows_total, n_done
+            _pru = 0
+            _aru = 0
+            try:
+                with _pg_tx(label=f"forecast_chunk_{_ci}") as conn:
+                    if not _fc_df.empty:
+                        parcel_forecast_update_cols = [
+                            "forecast_year", "value", "p10", "p25", "p50", "p75", "p90",
+                            "run_id", "backtest_id", "model_version", "as_of_date", "n_scenarios",
+                            "is_backtest", "updated_at"
+                        ]
+                        if PARCEL_FORECAST_HAS_N_COL:
+                            parcel_forecast_update_cols.insert(7, "n")
+
+                        _pru = _upsert_df_pg(
+                            conn=conn,
+                            schema=schema,
+                            table="metrics_parcel_forecast",
+                            df=_fc_df,
+                            conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id"],
+                            update_cols=parcel_forecast_update_cols,
+                        )
+
+                        _aru = _aggregate_forecast_levels_for_chunk(
+                            conn=conn,
+                            schema=schema,
+                            acct_chunk=_ac,
+                            run_id=run_id,
+                            origin_year=int(origin_year),
+                            series_kind=series_kind_forecast,
+                            variant_id=variant_id,
+                            backtest_id=backtest_id,
+                            as_of_date=as_of_date,
+                        )
+
+                    parcel_rows_total += int(_pru)
+                    agg_rows_total += int(_aru)
+                    n_done += len(_ac)
+
+                    _run_progress_upsert(
                         conn=conn,
                         schema=schema,
-                        table="metrics_parcel_forecast",
-                        df=forecast_chunk_df,
-                        conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id"],
-                        update_cols=parcel_forecast_update_cols,
-                    )
-
-                    agg_rows_upserted = _aggregate_forecast_levels_for_chunk(
-                        conn=conn,
-                        schema=schema,
-                        acct_chunk=acct_chunk,
                         run_id=run_id,
-                        origin_year=int(origin_year),
+                        chunk_seq=_ci,
+                        level_name="parcel",
+                        status="running",
                         series_kind=series_kind_forecast,
                         variant_id=variant_id,
-                        backtest_id=backtest_id,
-                        as_of_date=as_of_date,
+                        origin_year=int(origin_year),
+                        chunk_rows=int(_hr + len(_fc_df)),
+                        chunk_keys=int(len(_ac)),
+                        rows_upserted_total=int(parcel_rows_total + agg_rows_total + history_rows_total + history_agg_rows_total),
+                        keys_upserted_total=int(n_done),
+                        min_key=min(_ac) if _ac else None,
+                        max_key=max(_ac) if _ac else None,
                     )
+            except Exception as exc:
+                print(f"[{_ts()}] Chunk {_ci}: ⚠️  FORECAST DB write failed after retries, SKIPPING: {exc}")
+                n_done += len(_ac)  # still count as processed
 
-                parcel_rows_total += int(parcel_rows_upserted)
-                agg_rows_total += int(agg_rows_upserted)
-
-                n_done += len(acct_chunk)
-
-                _run_progress_upsert(
-                    conn=conn,
-                    schema=schema,
-                    run_id=run_id,
-                    chunk_seq=chunk_idx,
-                    level_name="parcel",
-                    status="running",
-                    series_kind=series_kind_forecast,
-                    variant_id=variant_id,
-                    origin_year=int(origin_year),
-                    chunk_rows=int((len(hist_chunk_df) if do_hist_this_run else 0) + len(forecast_chunk_df)),
-                    chunk_keys=int(len(acct_chunk)),
-                    rows_upserted_total=int(parcel_rows_total + agg_rows_total + history_rows_total + history_agg_rows_total),
-                    keys_upserted_total=int(n_done),
-                    min_key=min(acct_chunk) if acct_chunk else None,
-                    max_key=max(acct_chunk) if acct_chunk else None,
-                )
-        except Exception as exc:
-            print(f"[{_ts()}] Chunk {chunk_idx}: ⚠️  FORECAST DB write failed after retries, SKIPPING: {exc}")
-            n_done += len(acct_chunk)  # still count as processed so we don't retry forever
+        _pending_db_future = _db_pool.submit(_do_db_write)
 
         # ---------------------------------------------------------------------
         # 6) Optional local backtest scoring summary (no DB)
@@ -1643,6 +1692,10 @@ def _run_one_origin(
     # -------------------------------------------------------------------------
     # 7) Final exact aggregate refresh + finalize run status
     # -------------------------------------------------------------------------
+    # Drain any pending async DB write before final refresh
+    _wait_for_pending_db()
+    _db_pool.shutdown(wait=True)
+
     try:
         with _pg_tx(retries=5, label="final_agg_refresh") as conn:
             if RUN_FINAL_EXACT_AGG_REFRESH:

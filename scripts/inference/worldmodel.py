@@ -204,12 +204,12 @@ SCALE_FLOOR_NUM = 1e-2
 SCALE_FLOOR_TGT = 1e-2
 
 # Sampling stability controls
-SAMPLER_DISABLE_AUTOCAST = True
+SAMPLER_DISABLE_AUTOCAST = False   # BF16 autocast on A100 — 2× matmul throughput; safe with nan_to_num guards
 SAMPLER_Z_CLIP = 20.0        # conditioning z-score clip (sampling only)
 SAMPLER_NOISE_CLIP = 10.0    # clamp noise_hat each step
 SAMPLER_X0_CLIP = 50.0       # clamp x0_pred each step
 SAMPLER_X_CLIP = 50.0        # clamp x each step
-SAMPLER_REPORT_BAD_STEP = True
+SAMPLER_REPORT_BAD_STEP = False    # suppresses per-step GPU→CPU syncs (.item() calls)
 
 # Scaled shard dtype
 SCALED_SHARDS_FLOAT16 = False  # keep float32 until stability is proven
@@ -1714,10 +1714,11 @@ def sample_ddim_v102_coherent_stable(
     xn_absmax = float(np.max(np.abs(xn_np))) if xn_np.size > 0 else 0.0
     print(f"[{ts()}] SAMPLER conditioning absmax hy={hy_absmax:.3f} xn={xn_absmax:.3f} N={N} S={S}")
 
-    hy = torch.from_numpy(hy_np).to(device=device, dtype=torch.float32)
-    xn = torch.from_numpy(xn_np).to(device=device, dtype=torch.float32) if xn_np.shape[1] > 0 else torch.zeros((N, 0), device=device, dtype=torch.float32)
-    xc = torch.from_numpy(cur_cat_b.astype(np.int64)).to(device=device)
-    rid = torch.from_numpy(region_id_b.astype(np.int64)).to(device=device)
+    # pin_memory + non_blocking: overlap CPU→GPU transfer with compute
+    hy = torch.from_numpy(hy_np).pin_memory().to(device=device, dtype=torch.float32, non_blocking=True)
+    xn = torch.from_numpy(xn_np).pin_memory().to(device=device, dtype=torch.float32, non_blocking=True) if xn_np.shape[1] > 0 else torch.zeros((N, 0), device=device, dtype=torch.float32)
+    xc = torch.from_numpy(cur_cat_b.astype(np.int64)).pin_memory().to(device=device, non_blocking=True)
+    rid = torch.from_numpy(region_id_b.astype(np.int64)).pin_memory().to(device=device, non_blocking=True)
 
     # Expand across scenarios
     hy_exp = hy.repeat_interleave(S, dim=0)
