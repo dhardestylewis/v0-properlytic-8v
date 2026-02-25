@@ -1808,9 +1808,12 @@ try:
     # -------------------------------------------------------------------------
     if RUN_FULL_BACKTEST:
         if BACKTEST_ORIGINS is None:
-            backtest_origins = [int(o) for o, _ in ckpt_pairs if int(o) < int(FORECAST_ORIGIN_YEAR)]
+            backtest_origins = sorted(
+                (int(o) for o, _ in ckpt_pairs if int(o) < int(FORECAST_ORIGIN_YEAR)),
+                reverse=True,   # most recent backtest first → live map fills with recent history first
+            )
         else:
-            backtest_origins = sorted(set(int(x) for x in BACKTEST_ORIGINS))
+            backtest_origins = sorted(set(int(x) for x in BACKTEST_ORIGINS), reverse=True)
 
         bt_suite_short = uuid.uuid4().hex
         print(f"[{_ts()}] Backtest origins -> {backtest_origins}")
