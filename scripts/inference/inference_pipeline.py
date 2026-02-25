@@ -1263,27 +1263,37 @@ def _sample_scenarios_for_inference_context(ctx, H: int, S: int, origin: int, pr
     }
 
 
-def _materialize_actual_prices_for_accounts(accts, origin: int, max_horizon: int = 5):
+def _materialize_actual_prices_for_accounts(lf_obj=None, accts=None, year_min=1900, year_max=2100,
+                                             origin=None, max_horizon=None):
     """
-    Pull actual observed prices for backtest evaluation.
-    Used by the optional backtest eval summary.
+    Pull actual observed prices for history rows and backtest evaluation.
+    Returns DataFrame with columns: acct, year, actual_price.
     """
     import polars as pl
 
-    _lf_ref = globals().get("lf")
+    _lf_ref = lf_obj or globals().get("lf")
     if _lf_ref is None:
         return None
+    if accts is None:
+        return None
+
+    # Support the old origin+max_horizon calling convention
+    if origin is not None and max_horizon is not None:
+        year_min = int(origin) + 1
+        year_max = int(origin) + int(max_horizon)
 
     rows = (
         _lf_ref
         .filter(pl.col("acct").cast(pl.Utf8).is_in(accts))
-        .filter(pl.col("year").is_between(origin + 1, origin + max_horizon))
+        .filter(pl.col("year").is_between(int(year_min), int(year_max)))
         .select(["acct", "year", "market_total_val"])
         .collect()
     )
     if rows.is_empty():
         return None
-    return rows.to_pandas()
+    df = rows.to_pandas()
+    df = df.rename(columns={"market_total_val": "actual_price"})
+    return df
 
 
 # -----------------------------------------------------------------------------
