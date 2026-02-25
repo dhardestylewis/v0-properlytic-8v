@@ -74,7 +74,10 @@ from psycopg2.extras import execute_values
 # -----------------------------------------------------------------------------
 # >>>> REQUIRED <<<<
 TARGET_SCHEMA = "forecast_20260220_7f31c6e4"   # set this to your created schema
-SUPABASE_DB_URL = os.environ.get("SUPABASE_DB_URL", "")  # transaction pooler URL is fine
+SUPABASE_DB_URL = (os.environ.get("SUPABASE_DB_URL")
+                   or os.environ.get("POSTGRES_URL")
+                   or os.environ.get("POSTGRES_URL_NON_POOLING")
+                   or "")  # transaction pooler URL is fine
 
 # Checkpoint directory — auto-detect from worldmodel.py OUT_DIR if not set explicitly
 CKPT_DIR = globals().get("CKPT_DIR") or globals().get("OUT_DIR") or os.environ.get("CKPT_DIR", "")
