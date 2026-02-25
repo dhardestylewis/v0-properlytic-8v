@@ -52,7 +52,10 @@ try:
         import os as _os
         _cpu_count = _os.cpu_count() or 4
         _torch.set_num_threads(_cpu_count)
-        _torch.set_num_interop_threads(max(1, _cpu_count // 2))
+        try:
+            _torch.set_num_interop_threads(max(1, _cpu_count // 2))
+        except RuntimeError:
+            pass  # already set by worldmodel.py
         print(f"[PERF] CUDA: {_torch.cuda.get_device_name(0)} | "
               f"cudnn.benchmark=on | grad=off | CPU threads={_cpu_count}")
     else:
