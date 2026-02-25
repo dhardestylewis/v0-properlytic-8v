@@ -37,6 +37,30 @@ try:
 except Exception:
     _HAS_PARQUET = False
 
+# -----------------------------------------------------------------------------
+# CUDA / PyTorch performance setup
+# -----------------------------------------------------------------------------
+try:
+    import torch as _torch
+    if _torch.cuda.is_available():
+        # Let cuDNN auto-tune its conv algorithms for fixed input shapes — free win.
+        _torch.backends.cudnn.benchmark = True
+        # Avoid storing gradients during inference — halves VRAM use and skips grad ops.
+        _torch.set_grad_enabled(False)
+        # Use all available CPU threads for intra-op parallelism.
+        import os as _os
+        _cpu_count = _os.cpu_count() or 4
+        _torch.set_num_threads(_cpu_count)
+        _torch.set_num_interop_threads(max(1, _cpu_count // 2))
+        print(f"[PERF] CUDA: {_torch.cuda.get_device_name(0)} | "
+              f"cudnn.benchmark=on | grad=off | CPU threads={_cpu_count}")
+    else:
+        import os as _os
+        _cpu_count = _os.cpu_count() or 4
+        _torch.set_num_threads(_cpu_count)
+except ImportError:
+    pass  # torch not available at import time; worldmodel.py will have loaded it
+
 import psycopg2
 from psycopg2.extras import execute_values
 
@@ -435,16 +459,33 @@ def _build_forecast_rows_from_inf_out(
     as_of_date = as_of_date or datetime.utcnow().date()
 
     acct_arr = np.asarray(inf_out["acct"]).astype(str)
-    _ = np.asarray(inf_out["y_levels"], dtype=np.float32)                 # kept for interface validation
-    price_levels = np.asarray(inf_out["price_levels"], dtype=np.float64)   # (N,S,H)
+    _ = inf_out["y_levels"]  # kept for interface validation
+    _raw_pl = inf_out["price_levels"]
 
-    N, S_local, H_local = price_levels.shape
-
-    q10 = np.percentile(price_levels, 10, axis=1)
-    q25 = np.percentile(price_levels, 25, axis=1)
-    q50 = np.percentile(price_levels, 50, axis=1)
-    q75 = np.percentile(price_levels, 75, axis=1)
-    q90 = np.percentile(price_levels, 90, axis=1)
+    # Prefer GPU-resident quantile computation to avoid a round-trip.
+    # Falls back to numpy if torch is unavailable or price_levels is already numpy.
+    try:
+        import torch as _torch
+        if isinstance(_raw_pl, _torch.Tensor):
+            _pt = _raw_pl.float()  # quantile needs float32 or float64
+        else:
+            _pt = _torch.as_tensor(np.asarray(_raw_pl, dtype=np.float32))
+            if _torch.cuda.is_available():
+                _pt = _pt.cuda()
+        # shape: (N, S, H) → quantile over dim=1 → (5, N, H)
+        _qs = _torch.quantile(_pt, _torch.tensor([0.10, 0.25, 0.50, 0.75, 0.90],
+                                                   device=_pt.device), dim=1)
+        q10, q25, q50, q75, q90 = (_qs[i].cpu().numpy().astype(np.float64) for i in range(5))
+        price_levels_np = _pt.cpu().numpy().astype(np.float64)
+        N, S_local, H_local = price_levels_np.shape
+    except Exception:
+        price_levels_np = np.asarray(_raw_pl, dtype=np.float64)  # (N,S,H)
+        N, S_local, H_local = price_levels_np.shape
+        q10 = np.percentile(price_levels_np, 10, axis=1)
+        q25 = np.percentile(price_levels_np, 25, axis=1)
+        q50 = np.percentile(price_levels_np, 50, axis=1)
+        q75 = np.percentile(price_levels_np, 75, axis=1)
+        q90 = np.percentile(price_levels_np, 90, axis=1)
 
     rows = []
     is_backtest = (series_kind == "backtest")
