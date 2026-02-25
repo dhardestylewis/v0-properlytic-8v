@@ -1058,6 +1058,224 @@ def _backtest_eval_summary_for_chunk(forecast_chunk_df: pd.DataFrame, acct_chunk
     g["timestamp_utc"] = datetime.utcnow().isoformat()
     return g[["timestamp_utc", "origin_year", "horizon_k", "n", "mae", "mape", "coverage_p10_p90"]]
 
+# -----------------------------------------------------------------------------
+# BRIDGE FUNCTIONS  (were previously loose Colab cells — now defined here)
+# -----------------------------------------------------------------------------
+
+def _get_checkpoint_paths(ckpt_dir: str):
+    """
+    Scan ckpt_dir for files matching  ckpt_origin_YYYY*.pt
+    Returns list of (origin_year: int, path: str) tuples.
+    """
+    import re as _re
+    pairs = []
+    _pat = _re.compile(r"ckpt_origin_(\d{4})")
+    for fn in sorted(os.listdir(ckpt_dir)):
+        if not fn.endswith(".pt"):
+            continue
+        m = _pat.search(fn)
+        if m:
+            pairs.append((int(m.group(1)), os.path.join(ckpt_dir, fn)))
+    return pairs
+
+
+def _load_ckpt_into_live_objects(ckpt_path: str):
+    """
+    torch.load a checkpoint, hydrate global model / proj_g / proj_geo / scalers.
+    Returns the raw ckpt dict (caller reads global_medians from it).
+    """
+    import torch
+
+    ckpt = torch.load(ckpt_path, map_location="cpu")
+    _cfg_ckpt = ckpt.get("cfg", {})
+
+    # Architecture dims — pull from saved config or fall back to worldmodel.py globals
+    _hist_len = int(_cfg_ckpt.get("FULL_HIST_LEN", globals().get("FULL_HIST_LEN", 21)))
+    _H = int(_cfg_ckpt.get("H", globals().get("H", 5)))
+    _num_dim = int(_cfg_ckpt.get("NUM_DIM", globals().get("NUM_DIM", 30)))
+    _n_cat = int(_cfg_ckpt.get("N_CAT", globals().get("N_CAT", 10)))
+    _g_rank = int(_cfg_ckpt.get("GLOBAL_RANK", globals().get("GLOBAL_RANK", 8)))
+    _geo_rank = int(_cfg_ckpt.get("GEO_RANK", globals().get("GEO_RANK", 4)))
+
+    _device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    # Create fresh instances
+    _model = create_denoiser_v102(target_dim=_H, hist_len=_hist_len,
+                                   num_dim=_num_dim, n_cat=_n_cat).to(_device)
+    _model.load_state_dict(ckpt["model_state_dict"])
+    _model.eval()
+
+    _proj_g = GlobalProjection(_g_rank).to(_device)
+    _proj_g.load_state_dict(ckpt["proj_g_state_dict"])
+    _proj_g.eval()
+
+    _proj_geo = GeoProjection(_geo_rank).to(_device)
+    _proj_geo.load_state_dict(ckpt["proj_geo_state_dict"])
+    _proj_geo.eval()
+
+    # Scalers
+    _y_scaler = SimpleScaler(
+        mean=np.array(ckpt["y_scaler_mean"], dtype=np.float32),
+        scale=np.array(ckpt["y_scaler_scale"], dtype=np.float32),
+    )
+    _n_scaler = SimpleScaler(
+        mean=np.array(ckpt["n_scaler_mean"], dtype=np.float32),
+        scale=np.array(ckpt["n_scaler_scale"], dtype=np.float32),
+    )
+    _t_scaler = SimpleScaler(
+        mean=np.array(ckpt["t_scaler_mean"], dtype=np.float32),
+        scale=np.array(ckpt["t_scaler_scale"], dtype=np.float32),
+    )
+
+    # Attach scalers to model (used by sampler for inverse_transform)
+    _model._y_scaler = _y_scaler
+    _model._n_scaler = _n_scaler
+    _model._t_scaler = _t_scaler
+
+    # Publish into the module-level global namespace so the sampler can find them
+    globals()["model"] = _model
+    globals()["proj_g"] = _proj_g
+    globals()["proj_geo"] = _proj_geo
+    globals()["y_scaler"] = _y_scaler
+    globals()["n_scaler"] = _n_scaler
+    globals()["t_scaler"] = _t_scaler
+
+    print(f"[{_ts()}] Loaded checkpoint: {os.path.basename(ckpt_path)} "
+          f"| H={_H} hist_len={_hist_len} num_dim={_num_dim} n_cat={_n_cat} "
+          f"| device={_device}")
+
+    return ckpt
+
+
+def _build_inference_for_accounts_at_origin(accts_batch, origin: int, global_medians: dict):
+    """
+    Wrapper around worldmodel.build_inference_context_chunked_v102.
+    Returns a context dict with keys: acct, hist_y, cur_num, cur_cat, region_id, y_anchor, anchor_year.
+    Returns None if no valid rows.
+    """
+    _lf_ref = globals().get("lf")
+    _num_use = globals().get("num_use")
+    _cat_use = globals().get("cat_use")
+
+    if _lf_ref is None or _num_use is None or _cat_use is None:
+        raise RuntimeError("Cannot find 'lf', 'num_use', or 'cat_use' in globals(). "
+                           "Did you run worldmodel.py first?")
+
+    result = build_inference_context_chunked_v102(
+        lf=_lf_ref,
+        accts=accts_batch,
+        num_use_local=_num_use,
+        cat_use_local=_cat_use,
+        global_medians=global_medians,
+        anchor_year=int(origin),
+    )
+    return result
+
+
+def _sample_scenarios_for_inference_context(ctx, H: int, S: int, origin: int, prop_batch_size: int):
+    """
+    Run DDIM sampler over the inference context in account batches of prop_batch_size.
+    Returns dict with keys: acct, y_levels (N,S,H), price_levels (N,S,H).
+    """
+    import torch
+
+    _model_ref = globals().get("model")
+    _proj_g_ref = globals().get("proj_g")
+    _proj_geo_ref = globals().get("proj_geo")
+    _y_scaler_ref = globals().get("y_scaler")
+
+    if _model_ref is None or _proj_g_ref is None or _proj_geo_ref is None:
+        raise RuntimeError("Model/projections not in globals.  Call _load_ckpt_into_live_objects first.")
+
+    _device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    N = len(ctx["acct"])
+    _H = int(H)
+    _S = int(S)
+
+    # Build scheduler
+    _diff_steps = int(globals().get("DIFF_STEPS_SAMPLE", 20))
+    _sched = Scheduler(_diff_steps, _device)
+
+    # Architecture dims for latent AR(1) paths
+    _g_rank = int(globals().get("GLOBAL_RANK", 8))
+    _geo_rank = int(globals().get("GEO_RANK", 4))
+    _phi_g = float(globals().get("PHI_GLOBAL", 0.85))
+    _phi_geo = float(globals().get("PHI_GEO", 0.70))
+
+    # Sample S global latent paths (shared across all accounts)
+    Zg_scenarios = torch.stack([
+        sample_ar1_path(_H, _g_rank, _phi_g, 1, _device).squeeze(0)
+        for _ in range(_S)
+    ])  # [S, H, Rg]
+
+    # Unique region IDs → per-region geo paths
+    unique_rids = np.unique(ctx["region_id"])
+    Zgeo_scenarios = {}
+    for rid in unique_rids:
+        Zgeo_scenarios[int(rid)] = torch.stack([
+            sample_ar1_path(_H, _geo_rank, _phi_geo, 1, _device).squeeze(0)
+            for _ in range(_S)
+        ])  # [S, H, Rgeo]
+
+    # Batch over accounts
+    all_y = []
+    all_price = []
+
+    for start in range(0, N, prop_batch_size):
+        end = min(start + prop_batch_size, N)
+
+        deltas = sample_ddim_v102_coherent_stable(
+            model=_model_ref,
+            proj_g=_proj_g_ref,
+            proj_geo=_proj_geo_ref,
+            sched=_sched,
+            hist_y_b=ctx["hist_y"][start:end],
+            cur_num_b=ctx["cur_num"][start:end],
+            cur_cat_b=ctx["cur_cat"][start:end],
+            region_id_b=ctx["region_id"][start:end],
+            Zg_scenarios=Zg_scenarios,
+            Zgeo_scenarios=Zgeo_scenarios,
+            device=_device,
+        )  # (end-start, S, H) numpy
+
+        # Convert deltas to y-levels and then price levels
+        _y_anchor_batch = ctx["y_anchor"][start:end]                 # (B,)
+        y_levels = _y_anchor_batch[:, None, None] + deltas            # (B, S, H)
+        price_levels = np.expm1(y_levels)                             # inverse log1p
+
+        all_y.append(y_levels)
+        all_price.append(price_levels)
+
+    return {
+        "acct": ctx["acct"],
+        "y_levels": np.concatenate(all_y, axis=0),
+        "price_levels": np.concatenate(all_price, axis=0),
+    }
+
+
+def _materialize_actual_prices_for_accounts(accts, origin: int, max_horizon: int = 5):
+    """
+    Pull actual observed prices for backtest evaluation.
+    Used by the optional backtest eval summary.
+    """
+    import polars as pl
+
+    _lf_ref = globals().get("lf")
+    if _lf_ref is None:
+        return None
+
+    rows = (
+        _lf_ref
+        .filter(pl.col("acct").cast(pl.Utf8).is_in(accts))
+        .filter(pl.col("year").is_between(origin + 1, origin + max_horizon))
+        .select(["acct", "year", "market_total_val"])
+        .collect()
+    )
+    if rows.is_empty():
+        return None
+    return rows.to_pandas()
+
 
 # -----------------------------------------------------------------------------
 # CHECKPOINT SELECTION + SAMPLER BACKOFF
