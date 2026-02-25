@@ -61,6 +61,10 @@ H = int(globals().get("H", 5))                 # annual horizons (1..H years ahe
 S = int(globals().get("S_SCENARIOS", 256))     # scenarios
 MODEL_VERSION = "world_model_v10_2_fullpanel"
 
+# Checkpoint variant — set to "" for baseline, "SF500K" for the 500K-sample variant,
+# "SF200K", "SFstrat200K", etc. Must match the suffix in ckpt_origin_{year}_{suffix}.pt.
+CKPT_VARIANT_SUFFIX = globals().get("CKPT_VARIANT_SUFFIX", "SF500K")
+
 # A100 / sampler tuning (adaptive backoff wrapper will use these)
 PROP_BATCH_SIZE_SAMPLER = int(globals().get("PROP_BATCH_SIZE_SAMPLER", 512))
 PROP_BATCH_SIZE_MIN = int(globals().get("PROP_BATCH_SIZE_MIN", 64))
@@ -1680,6 +1684,24 @@ if not ckpt_pairs:
     raise RuntimeError("No checkpoints found in CKPT_DIR")
 
 ckpt_pairs = sorted([(int(o), p) for o, p in ckpt_pairs], key=lambda x: x[0])
+
+# Filter to the chosen variant checkpoint suffix
+if CKPT_VARIANT_SUFFIX:
+    _suffix_tag = f"_{CKPT_VARIANT_SUFFIX}.pt"
+    _filtered = [(o, p) for o, p in ckpt_pairs if os.path.basename(p).endswith(_suffix_tag)]
+    if not _filtered:
+        raise RuntimeError(
+            f"No checkpoints found matching suffix '{_suffix_tag}' in CKPT_DIR={CKPT_DIR!r}.\n"
+            f"Available checkpoints: {[os.path.basename(p) for _, p in ckpt_pairs]}"
+        )
+    ckpt_pairs = _filtered
+    print(f"[{_ts()}] CKPT_VARIANT_SUFFIX='{CKPT_VARIANT_SUFFIX}' — using {len(ckpt_pairs)} checkpoint(s): {[os.path.basename(p) for _, p in ckpt_pairs]}")
+else:
+    # Baseline: exclude any variant-tagged checkpoints (files with >1 underscore after 'origin_YYYY')
+    _filtered = [(o, p) for o, p in ckpt_pairs
+                 if not any(p.endswith(f"_{v}.pt") for v in ("SF200K", "SF500K", "SFstrat200K"))]
+    ckpt_pairs = _filtered or ckpt_pairs  # fallback to all if no baseline found
+    print(f"[{_ts()}] CKPT_VARIANT_SUFFIX='' (baseline) — using {len(ckpt_pairs)} checkpoint(s)")
 
 # Account order (replace with geography-sorted order if you want more contiguous live map fill)
 all_accts_prod = [str(a) for a in all_accts]
