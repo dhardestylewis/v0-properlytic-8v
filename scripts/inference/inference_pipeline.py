@@ -1271,7 +1271,7 @@ def _materialize_actual_prices_for_accounts(lf_obj=None, accts=None, year_min=19
     """
     import polars as pl
 
-    _lf_ref = lf_obj or globals().get("lf")
+    _lf_ref = lf_obj if lf_obj is not None else globals().get("lf")
     if _lf_ref is None:
         return None
     if accts is None:
