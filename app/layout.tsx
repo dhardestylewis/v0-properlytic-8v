@@ -8,12 +8,38 @@ import "./globals.css"
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
+const APP_URL = "https://homecastr.com"
+const OG_DESCRIPTION =
+  "AI price forecasts for every Houston home, lot by lot. Built for buyers, agents, and investors."
+
 export const metadata: Metadata = {
-  title: "Homecastr - Home Forecasts",
-  description: "Interactive dashboard for real estate investment analysis and model diagnostics",
+  title: "Homecastr Home Forecasts",
+  description: OG_DESCRIPTION,
+  metadataBase: new URL(APP_URL),
   icons: {
-    icon: "/homecastr-logo.png",
-    apple: "/homecastr-logo.png",
+    icon: "/homecastr-icon.png",
+    apple: "/homecastr-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    url: APP_URL,
+    siteName: "Homecastr",
+    title: "Homecastr Home Forecasts",
+    description: OG_DESCRIPTION,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Homecastr - AI price forecasts for Houston real estate",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Homecastr Home Forecasts",
+    description: OG_DESCRIPTION,
+    images: ["/og-image.png"],
   },
 }
 
