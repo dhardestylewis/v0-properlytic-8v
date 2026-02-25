@@ -130,7 +130,7 @@ RUN_FINAL_EXACT_AGG_REFRESH = True
 # The script will query Supabase for accounts already written under that run_id
 # and skip them.  Everything else (upserts, aggregates, final refresh) is
 # idempotent so this is safe.
-RESUME_MODE = True
+RESUME_MODE = False
 RESUME_PROD_RUN_ID = "forecast_2025_20260221T050431Z_8cdcf33c7b7d4ee6a948ecc6bccca160"
 RESUME_SUITE_ID    = "suite_20260221T050431Z_5b263b4bbbc344fa998999209fc58549"
 
