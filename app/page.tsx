@@ -40,7 +40,7 @@ function DashboardContent() {
   const { filters, setFilters, resetFilters } = useFilters()
   const { mapState, setMapState, selectFeature, hoverFeature } = useMapState()
   const [forecastData, setForecastData] = useState<{ acct: string; data: PropertyForecast[] } | null>(null)
-  const [currentYear, setCurrentYear] = useState(2026)
+  const [currentYear, setCurrentYear] = useState(2024)
   const [isUsingMockData, setIsUsingMockData] = useState(false)
   const [searchBarValue, setSearchBarValue] = useState<string>("")
   const [mobileSelectionMode, setMobileSelectionMode] = useState<'replace' | 'add' | 'range'>('replace')
@@ -90,7 +90,7 @@ function DashboardContent() {
 
     // Handle set_forecast_year — change the timeline year
     if ((action as any).action === 'set_forecast_year') {
-      const yr = Math.max(2019, Math.min(2030, (action as any).year || 2029))
+      const yr = Math.max(2007, Math.min(2027, (action as any).year || 2025))
       console.log('[PAGE] set_forecast_year from chat:', yr)
       setCurrentYear(yr)
       toast({ title: `Timeline set to ${yr}`, duration: 2000 })
@@ -185,14 +185,14 @@ function DashboardContent() {
             highlightedIds: nextHighlightedIds
           }
         })
-        toast({ title: "Homecastr Agent", description: "Moving map..." })
+        toast({ title: "Oppcastr Agent", description: "Moving map..." })
       } else if (action === "inspect_location") {
         setMapState({
           center: [params.lng, params.lat],
           zoom: params.zoom || 15,
           selectedId: params.h3_id
         })
-        toast({ title: "Homecastr Agent", description: "Inspecting property..." })
+        toast({ title: "Oppcastr Agent", description: "Inspecting property..." })
       } else if (action === "inspect_neighborhood") {
         setMapState(prev => {
           // If we already have a selectedId and it's in the new set, keep it.
@@ -208,7 +208,7 @@ function DashboardContent() {
             selectedId: keepSelected ? prev.selectedId : (newHighlights[0] || null)
           }
         })
-        toast({ title: "Homecastr Agent", description: "Inspecting neighborhood..." })
+        toast({ title: "Oppcastr Agent", description: "Inspecting neighborhood..." })
       } else if (action === "location_to_hex") {
         if (result?.h3?.h3_id) {
           const isNeighborhood = result.h3.context === "neighborhood_average" || (result.h3.neighbors && result.h3.neighbors.length > 1)
@@ -223,7 +223,7 @@ function DashboardContent() {
             // If we have neighbors (neighborhood context), highlight them all
             highlightedIds: result.h3.neighbors || undefined
           }))
-          toast({ title: "Homecastr Agent", description: `Found ${result.chosen.label}` })
+          toast({ title: "Oppcastr Agent", description: `Found ${result.chosen.label}` })
         }
       } else if (action === "add_location_to_selection") {
         const resultIds = result?.h3?.h3_ids || (result?.h3?.h3_id ? [result.h3.h3_id] : [])
@@ -258,7 +258,7 @@ function DashboardContent() {
               } : {})
             }
           })
-          toast({ title: "Homecastr Agent", description: `Added ${result.chosen?.label || idsToAdd.length + " locations"} to comparison` })
+          toast({ title: "Oppcastr Agent", description: `Added ${result.chosen?.label || idsToAdd.length + " locations"} to comparison` })
         }
       } else if (action === "clear_selection") {
         console.log("[PAGE] clear_selection fired")
@@ -267,7 +267,7 @@ function DashboardContent() {
           selectedId: null,
           highlightedIds: undefined
         }))
-        toast({ title: "Homecastr Agent", description: "Selection cleared" })
+        toast({ title: "Oppcastr Agent", description: "Selection cleared" })
       } else if (action === "rank_h3_hexes") {
         if (result?.hexes?.length > 0) {
           const topHex = result.hexes[0]
@@ -277,7 +277,7 @@ function DashboardContent() {
             highlightedIds: result.hexes.map((h: any) => h.h3_id),
             selectedId: topHex.h3_id
           })
-          toast({ title: "Homecastr Agent", description: "Ranking locations..." })
+          toast({ title: "Oppcastr Agent", description: "Ranking locations..." })
         }
       }
       // ── Forecast-map geography-level actions ──
@@ -289,13 +289,13 @@ function DashboardContent() {
             zoom: 13,
             selectedId: result.area?.id || prev.selectedId,
           }))
-          toast({ title: "Homecastr Agent", description: `Found ${result.chosen?.label || "area"}` })
+          toast({ title: "Oppcastr Agent", description: `Found ${result.chosen?.label || "area"}` })
         } else if (result?.area) {
-          toast({ title: "Homecastr Agent", description: `Forecast data loaded for ${result.area.id}` })
+          toast({ title: "Oppcastr Agent", description: `Forecast data loaded for ${result.area.id}` })
         }
       } else if (action === "rank_forecast_areas") {
         if (result?.areas?.length > 0) {
-          toast({ title: "Homecastr Agent", description: `Found top ${result.areas.length} areas` })
+          toast({ title: "Oppcastr Agent", description: `Found top ${result.areas.length} areas` })
         }
       }
     }
@@ -358,7 +358,7 @@ function DashboardContent() {
       const params = detail?.params
 
       if (action === "set_forecast_year" && params?.year) {
-        const yr = Math.max(2019, Math.min(2030, params.year))
+        const yr = Math.max(2007, Math.min(2027, params.year))
         console.log('[PAGE] set_forecast_year from Tavus:', yr)
         setCurrentYear(yr)
         toast({ title: `Timeline set to ${yr}`, duration: 2000 })
@@ -466,8 +466,8 @@ function DashboardContent() {
     } catch (err) {
       console.error("[TAVUS] Failed to create conversation:", err)
       toast({
-        title: "Homecastr Unavailable",
-        description: err instanceof Error ? err.message : "Could not connect to Homecastr agent.",
+        title: "Oppcastr Unavailable",
+        description: err instanceof Error ? err.message : "Could not connect to Oppcastr agent.",
         variant: "destructive",
       })
     } finally {
@@ -527,8 +527,8 @@ function DashboardContent() {
     } catch (err) {
       console.error("[TAVUS] Failed to create conversation:", err)
       toast({
-        title: "Homecastr Unavailable",
-        description: err instanceof Error ? err.message : "Could not connect to Homecastr agent.",
+        title: "Oppcastr Unavailable",
+        description: err instanceof Error ? err.message : "Could not connect to Oppcastr agent.",
         variant: "destructive",
       })
     } finally {
@@ -624,8 +624,8 @@ function DashboardContent() {
           {/* TimeControls + Help Button Row */}
           <div className="flex items-center gap-2">
             <TimeControls
-              minYear={2019}
-              maxYear={2030}
+              minYear={2007}
+              maxYear={2027}
               currentYear={currentYear}
               onChange={setCurrentYear}
               onPlayStart={() => {
@@ -752,7 +752,7 @@ function DashboardContent() {
               isChatOpen ? "md:left-[365px]" : "md:left-5"
             )}>
               <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <span className="text-xs font-medium">Connecting to Homecastr...</span>
+              <span className="text-xs font-medium">Connecting to Oppcastr...</span>
             </div>
           )
         }
