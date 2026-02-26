@@ -45,10 +45,10 @@ CATEGORICAL_FEATURES = ["property_category_code", "lui_general_land_use", "counc
 
 # Quick auto-imputation and dummies (minimal reproduction of featurize)
 for num in NUMERIC_FEATURES:
-    df[num] = pd.to_numeric(df[num], errors='coerce').fillna(0.0)
+    df[num] = pd.to_numeric(df.get(num, pd.Series(0.0, index=df.index)), errors='coerce').fillna(0.0)
 
 for cat in CATEGORICAL_FEATURES:
-    df[cat] = df[cat].fillna('').astype(str)
+    df[cat] = df.get(cat, pd.Series('', index=df.index)).fillna('').astype(str)
 
 df = pd.get_dummies(df, columns=CATEGORICAL_FEATURES, dummy_na=False)
 feature_cols = [c for c in df.columns if any(c.startswith(f) for f in NUMERIC_FEATURES + CATEGORICAL_FEATURES) and c not in CATEGORICAL_FEATURES]
