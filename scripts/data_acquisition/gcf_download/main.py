@@ -42,6 +42,12 @@ def download_data(request):
         "buildings": _download_ms_buildings,
         "climate": _download_noaa_ghcnd,
         "lulc": _download_nlcd,
+        # French contextual
+        "ecb_rate": _download_ecb_rate,
+        "insee_hpi": _download_insee_hpi,
+        # UK
+        "uk_ppd": _download_uk_ppd,
+        "boe_rate": _download_boe_rate,
     }
 
     if source == "all":
@@ -400,7 +406,6 @@ def _download_epa_aqi(bucket):
 def _download_ms_buildings(bucket):
     """Microsoft Building Footprints — by state GeoJSON. ~200MB per state.
     Only download states matching our jurisdictions."""
-    # MS Footprints are organized by state
     states = set(j["state"] for j in JURISDICTIONS.values() if j["state"] != "France")
     results = {}
     for state in states:
@@ -454,11 +459,77 @@ def _download_nlcd(bucket):
     """NLCD Land Use / Land Cover — 2021 CONUS (~1GB).
     Download the national dataset; spatial filtering done in ETL."""
     results = {}
-    # NLCD 2021 CONUS land cover — MRLC direct download
     url = "https://s3-us-west-2.amazonaws.com/mrlc/nlcd_2021_land_cover_l48_20230630.zip"
     try:
         results["nlcd_2021"] = _upload_url_to_gcs(
             bucket, "lulc/nlcd_2021_land_cover_conus.zip", url, timeout=900)
     except Exception as e:
         results["nlcd_2021"] = {"error": str(e)}
+    return results
+
+
+def _download_ecb_rate(bucket):
+    """ECB key interest rates — Main Refinancing Operations rate.
+    From ECB Statistical Data Warehouse CSV export."""
+    results = {}
+    # MRO rate (Main Refinancing Operations)
+    url = "https://sdw.ecb.europa.eu/quickviewexport.do?SERIES_KEY=143.FM.B.U2.EUR.4F.KR.MRR_FR.LEV&type=csv"
+    try:
+        results["ecb_mro"] = _upload_url_to_gcs(
+            bucket, "ecb/ecb_mro_rate.csv", url, timeout=60)
+    except Exception as e:
+        results["ecb_mro"] = {"error": str(e)}
+    # Deposit facility rate
+    url2 = "https://sdw.ecb.europa.eu/quickviewexport.do?SERIES_KEY=143.FM.B.U2.EUR.4F.KR.DFR.LEV&type=csv"
+    try:
+        results["ecb_deposit"] = _upload_url_to_gcs(
+            bucket, "ecb/ecb_deposit_rate.csv", url2, timeout=60)
+    except Exception as e:
+        results["ecb_deposit"] = {"error": str(e)}
+    return results
+
+
+def _download_insee_hpi(bucket):
+    """INSEE Indice des prix des logements anciens — by département.
+    Quarterly house price indices from INSEE open data."""
+    results = {}
+    # INSEE apartment price index (quarterly, département level)
+    url = "https://www.insee.fr/fr/statistiques/serie/telecharger/csv/010605958"
+    try:
+        results["insee_hpi_national"] = _upload_url_to_gcs(
+            bucket, "insee/insee_hpi_national.csv", url, timeout=60)
+    except Exception as e:
+        results["insee_hpi_national"] = {"error": str(e)}
+    # Indices by building type (houses vs apartments)
+    url2 = "https://www.insee.fr/fr/statistiques/serie/telecharger/csv/010605959"
+    try:
+        results["insee_hpi_apartments"] = _upload_url_to_gcs(
+            bucket, "insee/insee_hpi_apartments.csv", url2, timeout=60)
+    except Exception as e:
+        results["insee_hpi_apartments"] = {"error": str(e)}
+    return results
+
+
+def _download_uk_ppd(bucket):
+    """UK Land Registry Price Paid Data — complete dataset (~4GB CSV).
+    All residential property sales in England and Wales since 1995."""
+    results = {}
+    url = "http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-complete.csv"
+    try:
+        results["ppd_complete"] = _upload_url_to_gcs(
+            bucket, "uk_ppd/pp-complete.csv", url, timeout=1200)
+    except Exception as e:
+        results["ppd_complete"] = {"error": str(e)}
+    return results
+
+
+def _download_boe_rate(bucket):
+    """Bank of England Bank Rate — official interest rate since 1975."""
+    results = {}
+    url = "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&Datefrom=01/Jan/1975&Dateto=01/Jan/2026&SeriesCodes=IUDBEDR&CSVF=TN&UsingCodes=Y&VPD=Y&VFD=N"
+    try:
+        results["bank_rate"] = _upload_url_to_gcs(
+            bucket, "boe/bank_rate.csv", url, timeout=60)
+    except Exception as e:
+        results["bank_rate"] = {"error": str(e)}
     return results
