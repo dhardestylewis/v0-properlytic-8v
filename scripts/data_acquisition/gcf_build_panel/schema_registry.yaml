@@ -1,0 +1,691 @@
+# Schema Registry — Machine-Readable ETL Config
+# Loaded by ETL pipeline to map source columns → canonical schema
+# Keep DATA_TRACKER.md for human review, this file for code.
+# Updated: 2026-02-26T13:38Z
+
+canonical_fields:
+  - parcel_id        # str   — unique parcel identifier
+  - jurisdiction     # str   — source code (e.g. cook_il, sf_ca, uk)
+  - year             # int   — assessment / transaction year
+  - sale_price       # float — transaction price
+  - sale_date        # str   — ISO-8601 transaction date
+  - assessed_value   # float — total assessed value
+  - land_value       # float — land-only component
+  - improvement_value  # float — building/improvement component
+  - dwelling_type    # str   — SF, CONDO, MULTI, COMMERCIAL, VACANT
+  - sqft             # float — building / living area
+  - land_area        # float — lot / parcel area
+  - year_built       # int   — construction year
+  - bedrooms         # int   — bedroom count
+  - bathrooms        # float — bathroom count
+  - stories          # float — number of stories
+  - address          # str   — full street address
+  - lat              # float — latitude
+  - lon              # float — longitude
+
+# Dwelling type normalization
+dwelling_type_map:
+  # Cook County class codes
+  "2-00": SF
+  "2-11": SF
+  "3-99": MULTI
+  "5-00": COMMERCIAL
+  # SF use codes
+  "DWEL": SF
+  "COND": CONDO
+  "APTS": MULTI
+  "COMR": COMMERCIAL
+  "VCNT": VACANT
+  # France
+  "Maison": SF
+  "Appartement": CONDO
+  # UK PPD
+  "D": SF          # detached
+  "S": SF          # semi-detached
+  "T": SF          # terraced
+  "F": CONDO       # flat
+  "O": OTHER
+
+# Canonical → Worldmodel v11 column mapping
+# Used by train_modal.py to adapt canonical panel for worldmodel.py
+worldmodel_column_map:
+  parcel_id: acct
+  year: yr
+  property_value: tot_appr_val
+  sqft: living_area
+  land_area: land_ar
+  year_built: yr_blt
+  bedrooms: bed_cnt
+  bathrooms: full_bath
+  stories: nbr_story
+  lat: gis_lat
+  lon: gis_lon
+  # dwelling_type: DO NOT rename to property_type for training
+  # Reason: retrain_sample_sweep.py SF filter looks for property_type in ["SF","SFR","SINGLE"]
+  # but SF Assessor raw use codes are: A, A15, A5, AC, B, C, CD, D, DA, DWEL, etc. (114 unique)
+  # Keeping as dwelling_type causes the filter to skip, using all accounts (correct for single-jurisdiction panels)
+
+# Canonical dwelling_type → worldmodel property_type codes
+# NOTE: These canonical codes are NOT currently in the panel — the panel has raw source codes.
+# The dwelling_type_map above normalizes raw→canonical but the panel builder doesn't apply it yet.
+# When it does, these worldmodel codes would be the next translation layer.
+worldmodel_dwelling_codes:
+  single_family: SF
+  condo: CONDO
+  multi_family: MF
+  townhouse: TH
+  cooperative: COOP
+  mobile_home: MH
+  commercial: COMMERCIAL
+  vacant: VACANT
+
+# SF Assessor use codes (source: closed_roll_year property_class_code)
+# These are the RAW values in the panel's dwelling_type column for sf_ca
+sf_assessor_use_codes:
+  DWEL: single_family   # dwelling
+  COND: condo            # condominium
+  APTS: multi_family     # apartments
+  COMR: commercial
+  VCNT: vacant
+  # Many more: A, A15, A5, AC, B, C, D, DA, etc. — full mapping TBD
+
+# Contextual sources and their GCS/join status
+contextual_sources_status:
+  fred: {in_gcs: true, joins_by: year, scope: national}
+  lehd: {in_gcs: true, joins_by: county+year, scope: US}
+  fema_disasters: {in_gcs: true, joins_by: county+year, scope: US}
+  fema_nri: {in_gcs: false, joins_by: county, scope: US}
+  census_acs: {in_gcs: true, joins_by: county+year, scope: US}
+  fhfa_hpi: {in_gcs: false, joins_by: state+year, scope: US}
+  epa_aqi: {in_gcs: true, joins_by: county+year, scope: US}
+  hud_fmr: {in_gcs: false, joins_by: county+year, scope: US}
+  noaa_climate: {in_gcs: false, joins_by: county+year, scope: US}
+  irs_migration: {in_gcs: false, joins_by: county+year, scope: US}
+  boe_rate: {in_gcs: true, joins_by: year, scope: UK}
+  ecb_rate: {in_gcs: false, joins_by: year, scope: EU}
+  insee_hpi: {in_gcs: false, joins_by: year, scope: France}
+
+sources:
+  hcad_houston:
+    gcs_prefix: hcad
+    format: parquet_single
+    verified: true
+    verified_against:
+      method: GCS parquet header inspection + dry-run
+      date: 2026-02-25
+      docs: https://pdata.hcad.org/
+    file: hcad_master_panel_2005_2025_leakage_strict_FIXEDYR_WITHGIS.parquet
+    columns_verbatim:
+      - acct
+      - yr
+      - tot_appr_val
+      - land_val
+      - impr_val
+      - state_class
+      - living_area
+      - land_ar
+      - yr_blt
+      - bed_cnt
+      - full_bath
+      - half_bath
+      - nbr_story
+      - site_addr_1
+      - lat
+      - lon
+    mapping:
+      parcel_id: acct
+      year: yr
+      assessed_value: tot_appr_val
+      land_value: land_val
+      improvement_value: impr_val
+      dwelling_type: state_class
+      sqft: living_area
+      land_area: land_ar
+      year_built: yr_blt
+      bedrooms: bed_cnt
+      address: site_addr_1
+      lat: lat
+      lon: lon
+    derived:
+      bathrooms: "full_bath + 0.5 * half_bath"
+      stories: nbr_story
+    missing: [sale_price, sale_date]
+
+  nyc:
+    gcs_prefix: nyc
+    format: parquet_single
+    verified_against:
+      method: Panel builder dry-run + build verification (1.86M rows)
+      date: 2026-02-26
+      docs: https://www.nyc.gov/site/finance/taxes/property-rolling-sales-data.page
+    file: nyc_sales_clean.parquet
+    columns_verbatim:   # ACTUAL names from parquet (spaces, not underscores!)
+      - BOROUGH_CODE
+      - BOROUGH_NAME
+      - BOROUGH
+      - BLOCK
+      - LOT
+      - BBL
+      - BIN
+      - ADDRESS
+      - APARTMENT NUMBER
+      - ZIP CODE
+      - RESIDENTIAL UNITS
+      - COMMERCIAL UNITS
+      - TOTAL UNITS
+      - LAND SQUARE FEET
+      - GROSS SQUARE FEET
+      - YEAR BUILT
+      - SALE PRICE
+      - SALE DATE
+      - BUILDING CLASS CATEGORY
+    mapping:
+      parcel_id: BBL                           # source → canonical
+      sale_price: "SALE PRICE"                 # source → canonical
+      sale_date: "SALE DATE"                   # source → canonical
+      dwelling_type: "BUILDING CLASS CATEGORY" # source → canonical
+      sqft: "GROSS SQUARE FEET"                # source → canonical
+      land_area: "LAND SQUARE FEET"            # source → canonical
+      year_built: "YEAR BUILT"                 # source → canonical
+      address: ADDRESS                         # source → canonical
+    derived:
+      year: "extract_year(`SALE DATE`)"
+    missing: [assessed_value, land_value, improvement_value, bedrooms, bathrooms, stories, lat, lon]
+    notes: "NYC DoF rolling sales. Column names use SPACES not underscores. No year column — must derive from SALE DATE."
+
+  cook_county_il:
+    gcs_prefix: cook_county_il/assessed_values
+    format: csv_chunked
+    verified: true
+    columns_verbatim:
+      - pin
+      - year
+      - class
+      - township_code
+      - township_name
+      - nbhd
+      - mailed_bldg
+      - mailed_land
+      - mailed_tot
+      - mailed_hie
+      - certified_bldg
+      - certified_land
+      - certified_tot
+      - certified_hie
+      - board_bldg
+      - board_land
+      - board_tot
+      - board_hie
+      - row_id
+    mapping:
+      parcel_id: pin
+      year: year
+      dwelling_type: class
+      improvement_value: certified_bldg
+      land_value: certified_land
+      assessed_value: certified_tot
+    missing: [sale_price, sale_date, sqft, year_built, bedrooms, bathrooms, address, lat, lon]
+    notes: "Assessment-only. Sales data on separate Socrata endpoint."
+
+  sf_ca:
+    gcs_prefix: sf/secured_roll
+    format: csv_chunked
+    verified: true
+    columns_verbatim:
+      - closed_roll_year
+      - property_location
+      - parcel_number
+      - block
+      - lot
+      - volume_number
+      - use_code
+      - use_definition
+      - property_class_code
+      - property_class_code_definition
+      - year_property_built
+      - number_of_bathrooms
+      - number_of_bedrooms
+      - number_of_rooms
+      - number_of_stories
+      - number_of_units
+      - zoning_code
+      - construction_type
+      - lot_depth
+      - lot_frontage
+      - property_area
+      - basement_area
+      - lot_area
+      - lot_code
+      - tax_rate_area_code
+      - percent_of_ownership
+      - exemption_code
+      - exemption_code_definition
+      - status_code
+      - misc_exemption_value
+      - homeowner_exemption_value
+      - current_sales_date
+      - assessed_fixtures_value
+      - assessed_improvement_value
+      - assessed_land_value
+      - assessed_personal_property_value
+      - assessor_neighborhood_district
+      - assessor_neighborhood_code
+      - assessor_neighborhood
+      - supervisor_district
+      - supervisor_district_2012
+      - analysis_neighborhood
+      - the_geom
+      - row_id
+      - data_as_of
+      - data_loaded_at
+    mapping:
+      parcel_id: parcel_number
+      year: closed_roll_year
+      dwelling_type: property_class_code
+      improvement_value: assessed_improvement_value
+      land_value: assessed_land_value
+      assessed_value: null  # derived: land + improvement
+      sqft: property_area
+      land_area: lot_area
+      year_built: year_property_built
+      bedrooms: number_of_bedrooms
+      bathrooms: number_of_bathrooms
+      stories: number_of_stories
+      address: property_location
+      lat: null   # extract from the_geom POINT
+      lon: null   # extract from the_geom POINT
+      sale_date: current_sales_date
+    derived:
+      assessed_value: "assessed_improvement_value + assessed_land_value"
+      lat: "parse_point(the_geom)[1]"
+      lon: "parse_point(the_geom)[0]"
+    missing: [sale_price]
+
+  france_dvf:
+    gcs_prefix: france_dvf
+    format: csv_gz_yearly
+    verified: true
+    columns_verbatim:
+      - id_mutation
+      - date_mutation
+      - nature_mutation
+      - valeur_fonciere
+      - adresse_numero
+      - adresse_suffixe
+      - adresse_nom_voie
+      - adresse_code_voie
+      - code_postal
+      - code_commune
+      - nom_commune
+      - code_departement
+      - id_parcelle
+      - type_local
+      - surface_reelle_bati
+      - nombre_pieces_principales
+      - surface_terrain
+      - longitude
+      - latitude
+    mapping:
+      parcel_id: id_parcelle
+      sale_price: valeur_fonciere
+      sale_date: date_mutation
+      dwelling_type: type_local
+      sqft: surface_reelle_bati
+      land_area: surface_terrain
+      bedrooms: nombre_pieces_principales
+      lat: latitude
+      lon: longitude
+    derived:
+      address: "adresse_numero + ' ' + adresse_nom_voie + ', ' + code_postal + ' ' + nom_commune"
+    missing: [assessed_value, land_value, improvement_value, year_built, bathrooms, stories]
+
+  massgis:
+    gcs_prefix: massgis
+    format: gdb_zip
+    verified_against:
+      method: MassGIS documentation (Layer description)
+      date: 2026-02-25
+      docs: https://www.mass.gov/info-details/massgis-data-property-tax-parcels
+    columns_verbatim:
+      - LOC_ID
+      - SITE_ADDR
+      - ADDR_NUM
+      - FULL_STR
+      - CITY
+      - ZIP
+      - LS_PRICE
+      - LS_DATE
+      - BLDG_VAL
+      - LAND_VAL
+      - OTHER_VAL
+      - TOTAL_VAL
+      - FY
+      - LOT_SIZE
+      - YEAR_BUILT
+      - BLD_AREA
+      - UNITS
+      - RES_AREA
+      - STYLE
+      - STORIES
+      - NUM_ROOMS
+      - BDRMS
+      - FULL_BTH
+      - HLF_BTH
+      - PROP_TYPE
+      - USE_CODE
+    mapping:
+      parcel_id: LOC_ID
+      sale_price: LS_PRICE
+      sale_date: LS_DATE
+      assessed_value: TOTAL_VAL
+      land_value: LAND_VAL
+      improvement_value: BLDG_VAL
+      dwelling_type: USE_CODE
+      sqft: BLD_AREA
+      land_area: LOT_SIZE
+      year_built: YEAR_BUILT
+      bedrooms: BDRMS
+      bathrooms: null  # derived
+      stories: STORIES
+      address: SITE_ADDR
+    derived:
+      bathrooms: "FULL_BTH + 0.5 * HLF_BTH"
+
+  maricopa_az:
+    gcs_prefix: maricopa_az
+    format: csv
+    verified: false  # URLs returning HTML, need fix
+    columns_verbatim: []  # TO BE VERIFIED after URL fix
+    mapping: {}
+
+  king_county_wa:
+    gcs_prefix: king_county_wa
+    format: csv_multi
+    verified: false  # 503 error
+    columns_verbatim: []
+    mapping: {}
+
+  uk_ppd:
+    gcs_prefix: uk_ppd
+    format: csv_single
+    verified: false  # download failed
+    columns_verbatim:
+      - transaction_id
+      - price
+      - date_of_transfer
+      - postcode
+      - property_type
+      - old_new
+      - duration
+      - paon
+      - saon
+      - street
+      - locality
+      - town_city
+      - district
+      - county
+      - category_type
+      - record_status
+    mapping:
+      parcel_id: transaction_id
+      sale_price: price
+      sale_date: date_of_transfer
+      dwelling_type: property_type
+      address: null  # derived
+    derived:
+      address: "paon + ' ' + street + ', ' + town_city + ' ' + postcode"
+    missing: [assessed_value, land_value, improvement_value, sqft, land_area, year_built, bedrooms, bathrooms, stories, lat, lon]
+
+# ─── Contextual / Macro Sources ───
+
+# ═══════════════════════════════════════════════════
+# SPATIAL JOIN STRATEGY
+# ═══════════════════════════════════════════════════
+#
+# Parcel (lat, lon)
+#   ↓ point-in-polygon (Census TIGER shapefiles)
+# Census Tract FIPS (11 digits, e.g. "48201310100")
+#   ↓ substring [0:5]
+# County FIPS (5 digits, e.g. "48201")
+#   ↓ substring [0:2]
+# State FIPS (2 digits, e.g. "48")
+#   ↓ HUD crosswalk
+# CBSA / MSA code (e.g. "26420" = Houston-The Woodlands)
+#
+# VINTAGE ISSUE: Census tract boundaries change every decennial
+#   - 2000 tracts used for pre-2010 data
+#   - 2010 tracts used for 2010-2019 data
+#   - 2020 tracts used for 2020+ data
+#   - NHGIS provides tract relationship files for crosswalking
+#   - Strategy: geocode parcels to 2020 tracts, use crosswalk tables
+#     for older contextual vintages
+#
+# For France: commune code → département → no census tract equivalent
+# For UK: postcode → LSOA → local authority
+
+spatial_join:
+  geocode_method: point_in_polygon
+  reference_shapefile: Census TIGER/Line 2020
+  hierarchy:
+    - level: tract
+      fips_digits: 11
+      example: "48201310100"
+      used_by: [census_acs, fema_nri, lehd]
+    - level: county
+      fips_digits: 5
+      example: "48201"
+      used_by: [epa_aqi, hud_fmr, building_permits, irs_migration, noaa_climate]
+    - level: state
+      fips_digits: 2
+      example: "48"
+      used_by: [fhfa_hpi_state, ms_buildings]
+    - level: msa
+      code_digits: 5
+      example: "26420"
+      crosswalk: county_to_cbsa_hud
+      used_by: [fhfa_hpi_metro]
+    - level: zip3
+      example: "770"
+      source: parcel_address_zip
+      used_by: [fhfa_hpi_zip3]
+    - level: national
+      used_by: [fred]
+  vintage_crosswalks:
+    - name: tract_2000_to_2010
+      url: "https://www2.census.gov/geo/docs/maps-data/data/rel2/tract/tab20_tract20_tract10_natl.txt"
+    - name: tract_2010_to_2020
+      url: "https://www2.census.gov/geo/docs/maps-data/data/rel2/tract/tab20_tract20_tract10_natl.txt"
+    - name: county_to_cbsa
+      url: "https://www.huduser.gov/portal/datasets/usps/COUNTY_CBSA_2024.xlsx"
+  france_join:
+    method: commune_code
+    field: code_commune
+    hierarchy: [commune, département, région]
+  uk_join:
+    method: postcode
+    field: postcode
+    hierarchy: [postcode, lsoa, local_authority, region]
+
+# ═══════════════════════════════════════════════════
+# CONTEXTUAL SOURCE MAPPINGS
+# Each source: how it joins to parcels, what years,
+# and which fields map to final panel columns
+# ═══════════════════════════════════════════════════
+
+contextual:
+  fred:
+    gcs_prefix: fred
+    format: csv
+    join_key: year  # national — same for all parcels
+    join_level: national
+    temporal: all years match by year (weekly/monthly → annual average)
+    series:
+      - {blob: MORTGAGE30US.csv, name: "30-yr Fixed Mortgage Rate", freq: weekly, start: 1971, output_field: mortgage_rate_30yr}
+      - {blob: DGS10.csv, name: "10-yr Treasury Yield", freq: daily, start: 1962, output_field: treasury_10yr}
+      - {blob: FEDFUNDS.csv, name: "Federal Funds Rate", freq: daily, start: 1954, output_field: fed_funds_rate}
+      - {blob: CPIAUCSL.csv, name: "CPI All Urban", freq: monthly, start: 1947, output_field: cpi}
+      - {blob: UNRATE.csv, name: "Unemployment Rate", freq: monthly, start: 1948, output_field: unemployment_rate}
+      - {blob: CSUSHPINSA.csv, name: "Case-Shiller US National HPI", freq: monthly, start: 1987, output_field: case_shiller_hpi}
+      - {blob: USSTHPI.csv, name: "FHFA US HPI", freq: quarterly, start: 1975, output_field: fhfa_hpi_national}
+
+  fhfa:
+    gcs_prefix: fhfa
+    format: csv
+    granularity: [state, metro, zip3]
+    join_levels:
+      state: {key: state_fips, source_col: state, output_field: fhfa_hpi_state}
+      metro: {key: cbsa_code, source_col: cbsa, output_field: fhfa_hpi_metro}
+      zip3: {key: zip3, source_col: three_digit_zip, output_field: fhfa_hpi_zip3}
+    temporal: quarterly, matched by year+quarter
+    years_available: 1975-2025
+    years_changes: false  # FIPS codes stable for HPI
+
+  census_acs:
+    gcs_prefix: census
+    format: zip_csv
+    join_key: tract_fips
+    join_level: tract
+    temporal: 5-year rolling (vintage label)
+    tables:
+      - {table: B01001, output_field: population, vintage: 2022}
+      - {table: B19013, output_field: median_hh_income, vintage: 2022}
+      - {table: B25077, output_field: median_home_value, vintage: 2022}
+    years_available: 2012-2022  # expanded from 2022-only
+    vintage_boundary: tract_2020  # Uses 2020 tract definitions
+    notes: "ACS 5-year table-based SF format. 11 vintages × 3 tables = 33 files."
+
+  fema_nri:
+    gcs_prefix: fema
+    format: zip_csv
+    join_key: tract_fips  # NRI_ID is FIPS-based
+    join_level: tract
+    temporal: static snapshot (v1.20)
+    output_fields:
+      - risk_score
+      - eal_score      # expected annual loss
+      - sovi_score      # social vulnerability
+      - bric_score      # community resilience
+      - cfld_riskr      # coastal flood risk rating
+      - drgt_riskr      # drought
+      - erqk_riskr      # earthquake
+      - hwav_riskr      # heat wave
+      - hrcn_riskr      # hurricane
+      - trnd_riskr      # tornado
+      - wfir_riskr      # wildfire
+    vintage_boundary: tract_2010  # NRI uses 2010 tracts!
+    years_changes: false  # single snapshot, no temporal join
+
+  hud_fmr:
+    gcs_prefix: hud
+    format: xlsx
+    join_key: county_fips  # fips2010 column
+    join_level: county
+    temporal: matched by fiscal year
+    output_fields: [fmr_0br, fmr_1br, fmr_2br, fmr_3br, fmr_4br]
+    years_available: 2010-2025  # expanded from 2023-2025
+    years_changes: false
+
+  epa_aqi:
+    gcs_prefix: epa
+    format: zip_csv
+    join_key: county_fips  # state_code + county_code
+    join_level: county
+    temporal: yearly files, matched by year
+    output_fields: [median_aqi, days_with_aqi, good_days, unhealthy_days]
+    years_available: 2005-2023  # was 2020-2023, expanded
+    source_fips_construction: "state_code (2d) + county_code (3d)"
+
+  lehd:
+    gcs_prefix: lehd
+    format: csv_gz
+    join_key: census_block  # w_geocode column (15-digit block FIPS)
+    join_level: block  # most granular — aggregate to tract for join
+    temporal: yearly vintage
+    states: [il, wa, az, ny, ca, ma, tx]
+    output_fields: [total_jobs, jobs_age_29_54, jobs_earnings_3334plus, jobs_naics_retail, jobs_naics_finance]
+    source_cols: [C000, CA02, CE03, CNS07, CNS10]
+    years_available: 2015-2021  # expanded from 2021-only
+    vintage_boundary: tract_2020
+
+  irs_migration:
+    gcs_prefix: irs
+    format: csv
+    join_key: county_fips  # y2_statefips + y2_countyfips
+    join_level: county
+    temporal: yearly pairs (e.g. 2021-2022)
+    output_fields: [migration_inflow_returns, migration_inflow_agi, migration_outflow_returns, migration_outflow_agi]
+    years_available: 2011-2022  # expanded from 2021-2022
+
+  building_permits:
+    gcs_prefix: census
+    format: txt
+    join_key: county_fips  # FIPS code in file
+    join_level: county
+    temporal: yearly
+    output_fields: [permits_1unit, permits_2unit, permits_5plus_units, permit_valuation]
+    years_available: 2004-2023  # expanded from 2022-2023
+    notes: "Census BPS county files co{year}a.txt"
+
+  noaa_climate:
+    gcs_prefix: climate
+    format: csv
+    join_key: county_fips
+    join_level: county
+    temporal: yearly (annual avg temp per county)
+    output_fields: [tavg_annual]
+    years_available: 1895-2025
+    notes: "NOAA Climate-at-a-Glance county time series"
+
+  ms_buildings:
+    gcs_prefix: buildings
+    format: geojson_zip
+    join_key: spatial  # point-in-polygon from parcel lat/lon
+    join_level: parcel  # nearest/count within radius
+    temporal: static (2023 snapshot)
+    output_fields: [building_count_100m, building_count_500m, nearest_building_dist]
+    notes: "Scoped to states matching our jurisdictions"
+
+  nlcd:
+    gcs_prefix: lulc
+    format: raster_zip
+    join_key: spatial  # raster value at parcel lat/lon
+    join_level: parcel  # 30m pixel
+    temporal: multi-vintage (2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019, 2021)
+    output_fields: [lulc_class, pct_developed_500m, pct_forest_500m, pct_water_500m]
+    years_available: 2021  # downloading 2021 only for now
+    notes: "Spatial filtering done in ETL. 30m resolution."
+
+  ecb_rate:
+    gcs_prefix: ecb
+    format: csv
+    join_key: year  # national — same for all France parcels
+    join_level: national_eu
+    temporal: monthly → annual average
+    series:
+      - {blob: ecb_mro_rate.csv, output_field: ecb_mro_rate}
+      - {blob: ecb_deposit_rate.csv, output_field: ecb_deposit_rate}
+    years_available: 1999-2025
+    applies_to: [france_dvf]
+
+  boe_rate:
+    gcs_prefix: boe
+    format: csv
+    join_key: year  # national — same for all UK parcels
+    join_level: national_uk
+    temporal: monthly → annual average
+    series:
+      - {blob: bank_rate.csv, output_field: boe_bank_rate}
+    years_available: 1975-2026
+    applies_to: [uk_ppd]
+
+  insee_hpi:
+    gcs_prefix: insee
+    format: csv
+    join_key: year  # département-level if available
+    join_level: national_fr  # start with national, later by département
+    temporal: quarterly → annual average
+    series:
+      - {blob: insee_hpi_national.csv, output_field: insee_hpi_national}
+      - {blob: insee_hpi_apartments.csv, output_field: insee_hpi_apartments}
+    years_available: 1996-2024
+    applies_to: [france_dvf]

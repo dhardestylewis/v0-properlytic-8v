@@ -20,7 +20,7 @@ import os, time, hashlib, copy
 import numpy as np
 import polars as pl
 
-os.environ.setdefault("WANDB_API_KEY", "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")
+os.environ.setdefault("WANDB_API_KEY", os.environ.get("WANDB_API_KEY", ""))
 
 # ═══════════════════════════════════════════════════════════════════
 # SWEEP CONFIG

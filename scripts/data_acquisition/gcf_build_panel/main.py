@@ -218,30 +218,32 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
     # --- Read raw data (CHUNKED to avoid OOM) ---
     if fmt == "parquet":
         blob = bucket.blob(cfg["gcs_path"])
-        data = blob.download_as_bytes()
-        pf = pq.ParquetFile(io.BytesIO(data))
+        
+        # Read file as stream
+        with blob.open("rb") as f:
+            pf = pq.ParquetFile(f)
 
-        if dry_run:
-            # Read just first row group for dry run
-            first_rg = pf.read_row_group(0).to_pandas()
-            return {
-                "columns": list(first_rg.columns),
-                "rows": pf.metadata.num_rows,
-                "row_groups": pf.metadata.num_row_groups,
-                "dtypes": {c: str(first_rg[c].dtype) for c in first_rg.columns[:20]},
-                "sample": first_rg.head(3).to_dict(orient="records"),
-            }
+            if dry_run:
+                first_rg = pf.read_row_group(0).to_pandas()
+                return {
+                    "columns": list(first_rg.columns),
+                    "rows": pf.metadata.num_rows,
+                    "row_groups": pf.metadata.num_row_groups,
+                    "dtypes": {c: str(first_rg[c].dtype) for c in first_rg.columns[:20]},
+                    "sample": first_rg.head(3).to_dict(orient="records"),
+                }
 
-        # Read row groups one at a time, map each to canonical, then concat
-        # This way we never hold the full raw DataFrame in memory
-        available_cols = [c for c in needed_raw_cols if c in pf.schema.names]
-        mapped_chunks = []
-        for i in range(pf.metadata.num_row_groups):
-            rg = pf.read_row_group(i, columns=available_cols if available_cols else None).to_pandas()
-            mapped_chunks.append(_map_chunk_to_canonical(rg, mapping, derived, jurisdiction))
-            del rg  # free memory immediately
-        mapped = pd.concat(mapped_chunks, ignore_index=True)
-        del mapped_chunks, data
+            available_cols = [c for c in needed_raw_cols if c in pf.schema.names]
+            
+            # Using PyArrow RecordBatchReader for efficient batching without loading whole groups
+            mapped_chunks = []
+            for batch in pf.iter_batches(batch_size=100000, columns=available_cols if available_cols else None):
+                rg = batch.to_pandas()
+                mapped_chunks.append(_map_chunk_to_canonical(rg, mapping, derived, jurisdiction))
+                del rg  # free memory immediately
+                
+            mapped = pd.concat(mapped_chunks, ignore_index=True) if mapped_chunks else pd.DataFrame(columns=CANONICAL_COLS)
+            del mapped_chunks
 
     elif fmt == "csv_chunked":
         prefix = cfg["gcs_prefix"]
@@ -261,16 +263,17 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
                 "sample": sample.head(3).to_dict(orient="records"),
             }
 
-        # Map each CSV chunk independently — only hold canonical cols in memory
+        # Map each CSV chunk independently — only hold canonical cols in memory using pandas chunksize iterator
         mapped_chunks = []
         for blob_obj in blobs:
             try:
-                text = blob_obj.download_as_text()
-                chunk = pd.read_csv(io.StringIO(text), low_memory=False)
-                mapped_chunks.append(_map_chunk_to_canonical(chunk, mapping, derived, jurisdiction))
-                del chunk  # free raw data immediately
+                with blob_obj.open("rt", encoding="utf-8") as f:
+                    for chunk in pd.read_csv(f, chunksize=100000, low_memory=False):
+                        mapped_chunks.append(_map_chunk_to_canonical(chunk, mapping, derived, jurisdiction))
+                        del chunk  # free raw data immediately
             except Exception:
                 continue
+                
         if not mapped_chunks:
             return {"error": "No CSV chunks could be parsed"}
         mapped = pd.concat(mapped_chunks, ignore_index=True)
@@ -296,18 +299,20 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
                 "sample": sample.head(3).to_dict(orient="records"),
             }
 
-        # Map each file independently to canonical schema
+        # Map each file using pandas chunksize iterator
         mapped_chunks = []
         for blob_obj in blobs:
             try:
                 data = blob_obj.download_as_bytes()
-                chunk = pd.read_csv(io.BytesIO(data),
+                for chunk in pd.read_csv(io.BytesIO(data),
                     compression="gzip" if blob_obj.name.endswith(".gz") else None,
-                    low_memory=False)
-                mapped_chunks.append(_map_chunk_to_canonical(chunk, mapping, derived, jurisdiction))
-                del chunk, data  # free raw data immediately
+                    chunksize=100000, low_memory=False):
+                    mapped_chunks.append(_map_chunk_to_canonical(chunk, mapping, derived, jurisdiction))
+                    del chunk  # free raw data immediately
+                del data
             except Exception:
                 continue
+                
         if not mapped_chunks:
             return {"error": "No CSV files could be parsed"}
         mapped = pd.concat(mapped_chunks, ignore_index=True)

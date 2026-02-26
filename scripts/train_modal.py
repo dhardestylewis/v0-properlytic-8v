@@ -114,6 +114,9 @@ def train_worldmodel(
         grand_blob = bucket.blob("panel/grand_panel/part.parquet")
         grand_blob.upload_from_filename(panel_local)
         print(f"[{ts()}] Uploaded grand panel to gs://{bucket_name}/panel/grand_panel/part.parquet")
+
+        # Fall through to adaptation and training using the merged dataframe `df`
+        jurisdiction_suffix = "grand_panel"
     else:
         blob_path = f"panel/jurisdiction={jurisdiction}/part.parquet"
         blob = bucket.blob(blob_path)
@@ -128,6 +131,7 @@ def train_worldmodel(
         size_mb = os.path.getsize(panel_local) / 1e6
         print(f"[{ts()}] Downloaded panel: {size_mb:.1f} MB")
         df = pl.read_parquet(panel_local)
+        jurisdiction_suffix = jurisdiction
 
     # ─── Adapt canonical → worldmodel schema ───
     print(f"[{ts()}] Raw panel: {len(df):,} rows, columns: {df.columns}")
@@ -135,7 +139,7 @@ def train_worldmodel(
     rename_map = {
         "parcel_id": "acct",
         "year": "yr",
-        "property_value": "tot_appr_val",
+        # "property_value": "tot_appr_val", # Handled via hierarchy coalesce below 
         "sqft": "living_area",
         "land_area": "land_ar",
         "year_built": "yr_blt",
@@ -144,7 +148,6 @@ def train_worldmodel(
         "stories": "nbr_story",
         "lat": "gis_lat",
         "lon": "gis_lon",
-        # "dwelling_type": "property_type",
     }
     actual_renames = {k: v for k, v in rename_map.items() if k in df.columns}
     
@@ -154,6 +157,24 @@ def train_worldmodel(
         df = df.drop(drop_targets)
 
     df = df.rename(actual_renames)
+
+    # SECURE TARGET LEAKAGE 
+    # Determine the strongest valuation signal available per row
+    available_val_cols = [c for c in ["sale_price", "property_value", "assessed_value"] if c in df.columns]
+    if available_val_cols and "tot_appr_val" not in df.columns:
+        df = df.with_columns(
+            pl.coalesce([pl.col(c) for c in available_val_cols]).alias("tot_appr_val")
+        )
+    elif "tot_appr_val" not in df.columns:
+        raise ValueError("Panel contains no sale_price, property_value, assessed_value, or tot_appr_val to form a target.")
+
+    # Explicitly DROP all canonical valuation components to strictly prevent model leakage into the features
+    leaky_cols = ["sale_price", "property_value", "assessed_value", "land_value", "improvement_value"]
+    drop_leaks = [c for c in leaky_cols if c in df.columns]
+    if drop_leaks:
+        print(f"[{ts()}] Dropping LEAKY valuation columns from feature set: {drop_leaks}")
+        df = df.drop(drop_leaks)
+
     df = df.filter(pl.col("tot_appr_val").is_not_null() & (pl.col("tot_appr_val") > 0))
 
     # Map canonical dwelling_type values → codes the worldmodel SF filter expects
@@ -194,7 +215,7 @@ def train_worldmodel(
         print(f"[{ts()}] Dropping {len(all_null_cols)} all-null columns: {all_null_cols}")
         df = df.drop(all_null_cols)
 
-    adapted_path = f"/tmp/panel_{jurisdiction}_adapted.parquet"
+    adapted_path = f"/tmp/panel_{jurisdiction_suffix}_adapted.parquet"
     df.write_parquet(adapted_path)
 
     yr_min = int(df["yr"].min())
@@ -211,7 +232,7 @@ def train_worldmodel(
     os.environ["FORECAST_ORIGIN_YEAR"] = str(origin)
 
     # Create output directory
-    out_dir = f"/output/{jurisdiction}_v11"
+    out_dir = f"/output/{jurisdiction_suffix}_v11"
     os.makedirs(out_dir, exist_ok=True)
 
     # Patch the globals that worldmodel.py sets
@@ -347,6 +368,15 @@ def train_worldmodel(
     retrain_source = retrain_source.replace(
         '_n_cat = globals().get("N_CAT", len(_cat_use))',
         '_n_cat = len(_cat_use); print(f"  PATCHED _n_cat={_n_cat} from len(_cat_use)={len(_cat_use)}")'
+    )
+    # PATCH: Include jurisdiction in W&B run names so HCAD isn't mislabeled as SF
+    retrain_source = retrain_source.replace(
+        'name=f"v11-{variant_tag}-o{origin}"',
+        f'name=f"v11-{jurisdiction}-{{variant_tag}}-o{{origin}}"'
+    )
+    retrain_source = retrain_source.replace(
+        'tags=["v11", variant_tag, f"origin_{origin}", "retrain"]',
+        f'tags=["v11", variant_tag, f"origin_{{origin}}", "retrain", "{jurisdiction}"]'
     )
 
     exec(retrain_source, globals())

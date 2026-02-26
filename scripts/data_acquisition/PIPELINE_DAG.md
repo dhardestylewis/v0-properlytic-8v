@@ -229,10 +229,10 @@ property_value = COALESCE(sale_price, assessed_value)
 
 | Source | Rows | property_value | year range | Contextual cols | Status |
 |--------|------|---------------|-----------|----------------|--------|
-| **SF** | TBD | ✅ (assessed) | 2011-2022 | LEHD (3) | 🟢 **BUILT** |
+| **SF** | 200K+ | ✅ (assessed) | 2007-2024 | LEHD, ACS, etc | 🟢 **BUILT** |
 | **NYC** | 1.86M | ❌ (mapping was wrong) | ❌ (no year) | LEHD (3) | 🟡 rebuild pending |
-| HCAD | — | — | — | — | 🔴 OOM at 8GB |
-| Cook County | — | — | — | — | 🔴 OOM at 8GB |
+| **HCAD** | 1.3M+ | ✅ (assessed) | 2005-2025 | LEHD, ACS, etc | 🟢 **BUILT** |
+| **Cook County** | 1.9M+ | ✅ (assessed) | 1999-2025 | LEHD, ACS, etc | 🟢 **BUILT** |
 | France DVF | — | — | — | — | 🔴 OOM at 8GB |
 
 ---
