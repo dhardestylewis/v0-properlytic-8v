@@ -1,0 +1,395 @@
+# Schema Registry — Machine-Readable ETL Config
+# Loaded by ETL pipeline to map source columns → canonical schema
+# Keep DATA_TRACKER.md for human review, this file for code.
+# Updated: 2026-02-26T12:48Z
+
+canonical_fields:
+  - parcel_id        # str   — unique parcel identifier
+  - jurisdiction     # str   — source code (e.g. cook_il, sf_ca, uk)
+  - year             # int   — assessment / transaction year
+  - sale_price       # float — transaction price
+  - sale_date        # str   — ISO-8601 transaction date
+  - assessed_value   # float — total assessed value
+  - land_value       # float — land-only component
+  - improvement_value  # float — building/improvement component
+  - dwelling_type    # str   — SF, CONDO, MULTI, COMMERCIAL, VACANT
+  - sqft             # float — building / living area
+  - land_area        # float — lot / parcel area
+  - year_built       # int   — construction year
+  - bedrooms         # int   — bedroom count
+  - bathrooms        # float — bathroom count
+  - stories          # float — number of stories
+  - address          # str   — full street address
+  - lat              # float — latitude
+  - lon              # float — longitude
+
+# Dwelling type normalization
+dwelling_type_map:
+  # Cook County class codes
+  "2-00": SF
+  "2-11": SF
+  "3-99": MULTI
+  "5-00": COMMERCIAL
+  # SF use codes
+  "DWEL": SF
+  "COND": CONDO
+  "APTS": MULTI
+  "COMR": COMMERCIAL
+  "VCNT": VACANT
+  # France
+  "Maison": SF
+  "Appartement": CONDO
+  # UK PPD
+  "D": SF          # detached
+  "S": SF          # semi-detached
+  "T": SF          # terraced
+  "F": CONDO       # flat
+  "O": OTHER
+
+sources:
+  hcad_houston:
+    gcs_prefix: hcad
+    format: parquet_single
+    verified: true
+    file: hcad_master_panel_2005_2025_leakage_strict_FIXEDYR_WITHGIS.parquet
+    columns_verbatim:
+      - acct
+      - yr
+      - tot_appr_val
+      - land_val
+      - impr_val
+      - state_class
+      - living_area
+      - land_ar
+      - yr_blt
+      - bed_cnt
+      - full_bath
+      - half_bath
+      - nbr_story
+      - site_addr_1
+      - lat
+      - lon
+    mapping:
+      parcel_id: acct
+      year: yr
+      assessed_value: tot_appr_val
+      land_value: land_val
+      improvement_value: impr_val
+      dwelling_type: state_class
+      sqft: living_area
+      land_area: land_ar
+      year_built: yr_blt
+      bedrooms: bed_cnt
+      address: site_addr_1
+      lat: lat
+      lon: lon
+    derived:
+      bathrooms: "full_bath + 0.5 * half_bath"
+      stories: nbr_story
+    missing: [sale_price, sale_date]
+
+  nyc:
+    gcs_prefix: nyc
+    format: parquet_single
+    verified: true
+    file: nyc_sales_clean.parquet
+    columns_verbatim: []  # TO VERIFY from parquet metadata
+    mapping: {}  # TO FILL after header inspection
+    notes: "Cleaned sales data from e6691 thesis work"
+
+  cook_county_il:
+    gcs_prefix: cook_county_il/assessed_values
+    format: csv_chunked
+    verified: true
+    columns_verbatim:
+      - pin
+      - year
+      - class
+      - township_code
+      - township_name
+      - nbhd
+      - mailed_bldg
+      - mailed_land
+      - mailed_tot
+      - mailed_hie
+      - certified_bldg
+      - certified_land
+      - certified_tot
+      - certified_hie
+      - board_bldg
+      - board_land
+      - board_tot
+      - board_hie
+      - row_id
+    mapping:
+      parcel_id: pin
+      year: year
+      dwelling_type: class
+      improvement_value: certified_bldg
+      land_value: certified_land
+      assessed_value: certified_tot
+    missing: [sale_price, sale_date, sqft, year_built, bedrooms, bathrooms, address, lat, lon]
+    notes: "Assessment-only. Sales data on separate Socrata endpoint."
+
+  sf_ca:
+    gcs_prefix: sf/secured_roll
+    format: csv_chunked
+    verified: true
+    columns_verbatim:
+      - closed_roll_year
+      - property_location
+      - parcel_number
+      - block
+      - lot
+      - volume_number
+      - use_code
+      - use_definition
+      - property_class_code
+      - property_class_code_definition
+      - year_property_built
+      - number_of_bathrooms
+      - number_of_bedrooms
+      - number_of_rooms
+      - number_of_stories
+      - number_of_units
+      - zoning_code
+      - construction_type
+      - lot_depth
+      - lot_frontage
+      - property_area
+      - basement_area
+      - lot_area
+      - lot_code
+      - tax_rate_area_code
+      - percent_of_ownership
+      - exemption_code
+      - exemption_code_definition
+      - status_code
+      - misc_exemption_value
+      - homeowner_exemption_value
+      - current_sales_date
+      - assessed_fixtures_value
+      - assessed_improvement_value
+      - assessed_land_value
+      - assessed_personal_property_value
+      - assessor_neighborhood_district
+      - assessor_neighborhood_code
+      - assessor_neighborhood
+      - supervisor_district
+      - supervisor_district_2012
+      - analysis_neighborhood
+      - the_geom
+      - row_id
+      - data_as_of
+      - data_loaded_at
+    mapping:
+      parcel_id: parcel_number
+      year: closed_roll_year
+      dwelling_type: property_class_code
+      improvement_value: assessed_improvement_value
+      land_value: assessed_land_value
+      assessed_value: null  # derived: land + improvement
+      sqft: property_area
+      land_area: lot_area
+      year_built: year_property_built
+      bedrooms: number_of_bedrooms
+      bathrooms: number_of_bathrooms
+      stories: number_of_stories
+      address: property_location
+      lat: null   # extract from the_geom POINT
+      lon: null   # extract from the_geom POINT
+      sale_date: current_sales_date
+    derived:
+      assessed_value: "assessed_improvement_value + assessed_land_value"
+      lat: "parse_point(the_geom)[1]"
+      lon: "parse_point(the_geom)[0]"
+    missing: [sale_price]
+
+  france_dvf:
+    gcs_prefix: france_dvf
+    format: csv_gz_yearly
+    verified: true
+    columns_verbatim:
+      - id_mutation
+      - date_mutation
+      - nature_mutation
+      - valeur_fonciere
+      - adresse_numero
+      - adresse_suffixe
+      - adresse_nom_voie
+      - adresse_code_voie
+      - code_postal
+      - code_commune
+      - nom_commune
+      - code_departement
+      - id_parcelle
+      - type_local
+      - surface_reelle_bati
+      - nombre_pieces_principales
+      - surface_terrain
+      - longitude
+      - latitude
+    mapping:
+      parcel_id: id_parcelle
+      sale_price: valeur_fonciere
+      sale_date: date_mutation
+      dwelling_type: type_local
+      sqft: surface_reelle_bati
+      land_area: surface_terrain
+      bedrooms: nombre_pieces_principales
+      lat: latitude
+      lon: longitude
+    derived:
+      address: "adresse_numero + ' ' + adresse_nom_voie + ', ' + code_postal + ' ' + nom_commune"
+    missing: [assessed_value, land_value, improvement_value, year_built, bathrooms, stories]
+
+  massgis:
+    gcs_prefix: massgis
+    format: gdb_zip
+    verified: true  # file exists, schema from docs
+    columns_verbatim:
+      - LOC_ID
+      - SITE_ADDR
+      - ADDR_NUM
+      - FULL_STR
+      - CITY
+      - ZIP
+      - LS_PRICE
+      - LS_DATE
+      - BLDG_VAL
+      - LAND_VAL
+      - OTHER_VAL
+      - TOTAL_VAL
+      - FY
+      - LOT_SIZE
+      - YEAR_BUILT
+      - BLD_AREA
+      - UNITS
+      - RES_AREA
+      - STYLE
+      - STORIES
+      - NUM_ROOMS
+      - BDRMS
+      - FULL_BTH
+      - HLF_BTH
+      - PROP_TYPE
+      - USE_CODE
+    mapping:
+      parcel_id: LOC_ID
+      sale_price: LS_PRICE
+      sale_date: LS_DATE
+      assessed_value: TOTAL_VAL
+      land_value: LAND_VAL
+      improvement_value: BLDG_VAL
+      dwelling_type: USE_CODE
+      sqft: BLD_AREA
+      land_area: LOT_SIZE
+      year_built: YEAR_BUILT
+      bedrooms: BDRMS
+      bathrooms: null  # derived
+      stories: STORIES
+      address: SITE_ADDR
+    derived:
+      bathrooms: "FULL_BTH + 0.5 * HLF_BTH"
+
+  maricopa_az:
+    gcs_prefix: maricopa_az
+    format: csv
+    verified: false  # URLs returning HTML, need fix
+    columns_verbatim: []  # TO BE VERIFIED after URL fix
+    mapping: {}
+
+  king_county_wa:
+    gcs_prefix: king_county_wa
+    format: csv_multi
+    verified: false  # 503 error
+    columns_verbatim: []
+    mapping: {}
+
+  uk_ppd:
+    gcs_prefix: uk_ppd
+    format: csv_single
+    verified: false  # download failed
+    columns_verbatim:
+      - transaction_id
+      - price
+      - date_of_transfer
+      - postcode
+      - property_type
+      - old_new
+      - duration
+      - paon
+      - saon
+      - street
+      - locality
+      - town_city
+      - district
+      - county
+      - category_type
+      - record_status
+    mapping:
+      parcel_id: transaction_id
+      sale_price: price
+      sale_date: date_of_transfer
+      dwelling_type: property_type
+      address: null  # derived
+    derived:
+      address: "paon + ' ' + street + ', ' + town_city + ' ' + postcode"
+    missing: [assessed_value, land_value, improvement_value, sqft, land_area, year_built, bedrooms, bathrooms, stories, lat, lon]
+
+# ─── Contextual / Macro Sources ───
+
+contextual:
+  fred:
+    gcs_prefix: fred
+    format: csv
+    series:
+      - {blob: MORTGAGE30US.csv, name: "30-yr Fixed Mortgage Rate", freq: weekly, start: 1971}
+      - {blob: DGS10.csv, name: "10-yr Treasury Yield", freq: daily, start: 1962}
+      - {blob: FEDFUNDS.csv, name: "Federal Funds Rate", freq: daily, start: 1954}
+      - {blob: CPIAUCSL.csv, name: "CPI All Urban", freq: monthly, start: 1947}
+      - {blob: UNRATE.csv, name: "Unemployment Rate", freq: monthly, start: 1948}
+      - {blob: CSUSHPINSA.csv, name: "Case-Shiller US National HPI", freq: monthly, start: 1987}
+      - {blob: USSTHPI.csv, name: "FHFA US HPI", freq: quarterly, start: 1975}
+
+  fhfa:
+    gcs_prefix: fhfa
+    format: csv
+    granularity: [tract, state, metro, zip3]
+
+  census_acs:
+    gcs_prefix: census
+    format: zip_csv
+    tables: [B01001_population, B19013_income, B25077_home_value]
+    vintage: 2022
+    granularity: tract
+
+  fema_nri:
+    gcs_prefix: fema
+    format: zip_csv
+    granularity: tract
+    fields: [RISK_SCORE, EAL_SCORE, SOVI_SCORE, BRIC_SCORE, CFLD_RISKR, DRGT_RISKR, ERQK_RISKR, HWAV_RISKR, HRCN_RISKR, TRND_RISKR, WFIR_RISKR]
+
+  hud_fmr:
+    gcs_prefix: hud
+    format: xlsx
+    granularity: county
+    fields: [fmr_0, fmr_1, fmr_2, fmr_3, fmr_4]
+
+  epa_aqi:
+    gcs_prefix: epa
+    format: zip_csv
+    granularity: county
+    fields: [median_aqi, days_with_aqi, good_days, unhealthy_days]
+
+  lehd:
+    gcs_prefix: lehd
+    format: csv_gz
+    states: [il, wa, az, ny, ca, ma, tx]
+    granularity: census_block
+
+  irs_migration:
+    gcs_prefix: irs
+    format: csv
+    granularity: county
+    fields: [n1, n2, agi, d_flag]  # returns, exemptions, adjusted gross income
