@@ -53,6 +53,10 @@ def download_data(request):
         # Additional US cities
         "philly": _download_philly,
         "dc": _download_dc,
+        # Education / Safety / Disaster
+        "nces_schools": _download_nces_schools,
+        "fema_disasters": _download_fema_disasters,
+        "fbi_crime": _download_fbi_crime,
     }
 
     if source == "all":
@@ -545,3 +549,51 @@ def _download_dc(bucket):
     return _paginate_socrata(bucket, "dc/cama_residential",
                              "https://opendata.dc.gov/api/views/a2bh-cepn/rows.csv?accessType=DOWNLOAD",
                              paginate=False)
+
+
+def _download_nces_schools(bucket):
+    """NCES school district data — school-level, joinable by ZIP/county.
+    CCD (Common Core of Data) school-level characteristics + performance."""
+    results = {}
+    # School-level universe file (location, type, enrollment, grade span)
+    url = "https://nces.ed.gov/ccd/data/zip/ccd_sch_029_2223_w_1a_080623.zip"
+    try:
+        results["schools_2223"] = _upload_url_to_gcs(
+            bucket, "nces/ccd_schools_2223.zip", url, timeout=120)
+    except Exception as e:
+        results["schools_2223"] = {"error": str(e)}
+    # District-level finance (revenue/expenditure per pupil)
+    url2 = "https://nces.ed.gov/ccd/data/zip/ccd_lea_029_2223_w_1a_080623.zip"
+    try:
+        results["districts_2223"] = _upload_url_to_gcs(
+            bucket, "nces/ccd_districts_2223.zip", url2, timeout=120)
+    except Exception as e:
+        results["districts_2223"] = {"error": str(e)}
+    return results
+
+
+def _download_fema_disasters(bucket):
+    """FEMA disaster declarations — county-level, 1953-present. ~20MB."""
+    results = {}
+    url = "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries.csv"
+    try:
+        results["declarations"] = _upload_url_to_gcs(
+            bucket, "fema/disaster_declarations.csv", url, timeout=60)
+    except Exception as e:
+        results["declarations"] = {"error": str(e)}
+    return results
+
+
+def _download_fbi_crime(bucket):
+    """FBI UCR crime data — county-level estimates.
+    Using Crime Data Explorer bulk download."""
+    results = {}
+    # Estimated crimes at county level
+    for year in range(2015, 2023):
+        url = f"https://s3-us-gov-west-1.amazonaws.com/cg-d4b776d0-d898-4153-90c8-8336f86bdfec/estimated_crimes_{year}.csv"
+        try:
+            results[f"crime_{year}"] = _upload_url_to_gcs(
+                bucket, f"fbi/estimated_crimes_{year}.csv", url, timeout=60)
+        except Exception as e:
+            results[f"crime_{year}"] = {"error": str(e)}
+    return results
