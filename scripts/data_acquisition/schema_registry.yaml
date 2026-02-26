@@ -95,39 +95,42 @@ sources:
   nyc:
     gcs_prefix: nyc
     format: parquet_single
-    verified: true
+    verified_against:
+      method: Panel builder dry-run + build verification (1.86M rows)
+      date: 2026-02-26
+      docs: https://www.nyc.gov/site/finance/taxes/property-rolling-sales-data.page
     file: nyc_sales_clean.parquet
-    columns_verbatim:
+    columns_verbatim:   # ACTUAL names from parquet (spaces, not underscores!)
+      - BOROUGH_CODE
+      - BOROUGH_NAME
       - BOROUGH
-      - NEIGHBORHOOD
-      - BUILDING_CLASS_CATEGORY
-      - TAX_CLASS_AT_PRESENT
       - BLOCK
       - LOT
+      - BBL
+      - BIN
       - ADDRESS
-      - APARTMENT_NUMBER
-      - ZIP_CODE
-      - RESIDENTIAL_UNITS
-      - COMMERCIAL_UNITS
-      - TOTAL_UNITS
-      - LAND_SQUARE_FEET
-      - GROSS_SQUARE_FEET
-      - YEAR_BUILT
-      - SALE_PRICE
-      - SALE_DATE
+      - APARTMENT NUMBER
+      - ZIP CODE
+      - RESIDENTIAL UNITS
+      - COMMERCIAL UNITS
+      - TOTAL UNITS
+      - LAND SQUARE FEET
+      - GROSS SQUARE FEET
+      - YEAR BUILT
+      - SALE PRICE
+      - SALE DATE
+      - BUILDING CLASS CATEGORY
     mapping:
-      parcel_id: null   # derived: BOROUGH-BLOCK-LOT
-      sale_price: SALE_PRICE
-      sale_date: SALE_DATE
-      dwelling_type: BUILDING_CLASS_CATEGORY
-      sqft: GROSS_SQUARE_FEET
-      land_area: LAND_SQUARE_FEET
-      year_built: YEAR_BUILT
-      address: ADDRESS
-    derived:
-      parcel_id: "BOROUGH.astype(str) + '-' + BLOCK.astype(str) + '-' + LOT.astype(str)"
-    missing: [assessed_value, land_value, improvement_value, bedrooms, bathrooms, stories, lat, lon]
-    notes: "NYC DoF rolling sales. Need to verify exact column names from parquet metadata."
+      parcel_id: BBL                           # source → canonical
+      sale_price: "SALE PRICE"                 # source → canonical
+      sale_date: "SALE DATE"                   # source → canonical
+      dwelling_type: "BUILDING CLASS CATEGORY" # source → canonical
+      sqft: "GROSS SQUARE FEET"                # source → canonical
+      land_area: "LAND SQUARE FEET"            # source → canonical
+      year_built: "YEAR BUILT"                 # source → canonical
+      address: ADDRESS                         # source → canonical
+    missing: [assessed_value, land_value, improvement_value, bedrooms, bathrooms, stories, lat, lon, year]
+    notes: "NYC DoF rolling sales. Column names use SPACES not underscores. No year column — must derive from SALE DATE."
 
   cook_county_il:
     gcs_prefix: cook_county_il/assessed_values

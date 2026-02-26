@@ -236,7 +236,9 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
     # Unified target: property_value = coalesce(sale_price, assessed_value)
     mapped["property_value"] = mapped["sale_price"].fillna(mapped["assessed_value"])
 
-    # Coerce year to int
+    # Coerce year to int; if year is null, try to derive from sale_date
+    if mapped["year"].isna().all() and mapped["sale_date"].notna().any():
+        mapped["year"] = pd.to_datetime(mapped["sale_date"], errors="coerce").dt.year
     if mapped["year"].notna().any():
         mapped["year"] = pd.to_numeric(mapped["year"], errors="coerce").astype("Int64")
 

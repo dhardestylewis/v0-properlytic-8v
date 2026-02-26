@@ -1,5 +1,5 @@
 # ETL Pipeline DAG — Status Board
-**Updated:** 2026-02-26T13:53Z
+**Updated:** 2026-02-26T14:12Z
 
 ## Pipeline DAG
 
@@ -152,8 +152,9 @@ property_value = COALESCE(sale_price, assessed_value)
 
 | Issue | Impact | Fix |
 |-------|--------|-----|
-| HCAD/Cook/DVF OOM at 4GB | Can't build 3 of 6 panels | ✅ Upgraded to 8GB, redeploy pending |
+| HCAD/Cook/DVF OOM at 8GB | 3 of 5 panels can't build | Need chunked read or 16GB+ instance |
 | UK PPD download 503 | No UK data | Need alt URL (gov.uk HTTPS) |
 | Census ACS needs tract geocoding | County-level fallback possible | Can aggregate to county for now |
 | MassGIS is GDB format | Skipped in panel builder | Needs geopandas/fiona |
 | MS Buildings needs spatial join | Not in panel | Needs geopandas |
+| NYC missing `year` column | No contextual joins worked | ✅ Fixed: derive from SALE DATE |
