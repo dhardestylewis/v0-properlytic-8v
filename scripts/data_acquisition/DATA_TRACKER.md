@@ -1,7 +1,7 @@
 # Properlytic — Multi-Jurisdiction Data Acquisition Tracker
 **GCS:** `gs://properlytic-raw-data` | **Project:** `properlytic-data`  
-**Total:** 11.6 GB | **Directories:** 15  
-**Updated:** 2026-02-26T13:02Z
+**Total:** ~14 GB | **Directories:** 20  
+**Updated:** 2026-02-26T13:27Z
 
 ---
 
@@ -35,14 +35,14 @@
 | # | Source | Country | GCS Path | Years Available | Years Confirmed in GCS | Size | Schema | Status |
 |---|--------|---------|----------|-----------------|----------------------|------|--------|--------|
 | 1 | **HCAD (Houston)** | US | `hcad/` | 2005-2025 | ✅ 2005-2025 (full panel) | 2.4 GB | ✅ 16 cols mapped | ✅ **Partition created** |
-| 2 | **Cook County IL** | US | `cook_county_il/` ~100 chunks | 1999-2025 | ⚠️ 2002, 2016, 2020 ONLY | 1.2 GB | ✅ 19 cols verified | ⚠️ **Missing years — Socrata paginator fix needed** |
-| 3 | **SF Assessor** | US | `sf/` ~57 chunks | 2007-2024 | ⚠️ 2016, 2019-2021 ONLY | 1.3 GB | ✅ 45 cols verified | ⚠️ **Missing years — Socrata paginator fix needed** |
+| 2 | **Cook County IL** | US | `cook_county_il/` ~100 chunks | 1999-2025 | ⚠️ 2002, 2016, 2020 +(re-dl running) | 1.2 GB | ✅ 19 cols verified | 🔄 **Re-downloading full 1999-2025 year-by-year** |
+| 3 | **SF Assessor** | US | `sf/` ~57 chunks | 2007-2024 | ⚠️ 2016, 2019-2021 +(re-dl running) | 1.3 GB | ✅ 45 cols verified | 🔄 **Re-downloading full 2007-2024 year-by-year** |
 | 4 | **France DVF** | FR | `france_dvf/` 6 gzips | 2019-2024 | ✅ 2019-2024 (yearly files) | 400 MB | ✅ ~35 cols | ✅ **Full history** |
 | 5 | **NY State ORPTS** | US | `ny_state/` | 2015-2025 | 🔲 Not verified | ~200 MB | 🔲 | 🔄 Retrying (fixed dataset ID bnkp-2b2k) |
 | 6 | **MassGIS L3** | US | `massgis/` 1 ZIP | 2020-2024 | 🔲 GDB format, not inspected | 1.4 GB | ✅ ~35 cols (docs) | ✅ **Landed** |
 | 7 | **NYC DoF** | US | `nyc/` | 2003-2024 | 🔲 From thesis EDA, years TBD | 51 MB | 🔲 To verify | ✅ **Pushed from Drive** + 🔄 Cloud retry |
 | 8 | Maricopa AZ | US | `maricopa_az/` | ~2000-2025 | ❌ Got HTML not CSV | — | ❌ | ❌ URL scheme changed |
-| 9 | UK PPD | UK | — | 1995-2025 | — | — | — | ❌ 503 on retry |
+| 9 | **UK PPD** | UK | `uk_ppd/` | 1995-2025 | 🔄 Re-downloading (S3 URL) | ~4 GB | ~16 cols | 🔄 **Downloading via Land Registry S3** |
 | 10 | King County WA | US | — | 1989-2025 | — | — | — | ❌ Server blocks bots |
 | 11 | LA County | US | — | 2006-2025 | — | — | — | ❌ Socrata error |
 | 12 | TXGIO | US | — | 2019-2025 | — | — | — | ❌ API empty |
@@ -52,7 +52,7 @@
 | 16 | BC Canada | CA | — | 2016-2025 | — | — | — | ⏸️ Email required |
 | 17 | Denmark BBR | DK | — | 1992-2025 | — | — | — | ⏸️ API key required |
 
-**Parcel: 6 landed ✅ + 1 uploading 🔄 = ~7.0 GB. 2 sources need Socrata year-fix re-download.**
+**Parcel: 6 landed ✅ + 3 downloading 🔄 (Cook, SF year-fix + UK PPD). ~7 GB + growing.**
 
 ---
 
@@ -68,9 +68,9 @@
 | 23 | **FRED Case-Shiller** | `fred/CSUSHPINSA.csv` | ✅ **1987-2025** | Monthly | National | <1 MB | ✅ **Landed, full history** |
 | 24 | **FRED FHFA HPI** | `fred/USSTHPI.csv` | ✅ **1975-2025** | Quarterly | National | <1 MB | ✅ **Landed, full history** |
 | 25 | FHFA HPI (metro/state/ZIP3) | — | 1975-2025 | Quarterly | MSA/State/ZIP3 | ~50 MB | 🔄 Retrying (fixed URL) |
-| 26 | BoE Bank Rate (UK) | — | 1694-2025 | — | National | — | 🔲 Not coded |
-| 27 | ECB Key Rate (EU) | — | 1999-2025 | — | National | — | 🔲 Not coded |
-| 28 | France INSEE HPI | — | 1996-2024 | — | Département | — | 🔲 Not coded |
+| 26 | **BoE Bank Rate** (UK) | `boe/bank_rate.csv` | 1975-2026 | Monthly | National | <1 MB | 🔄 **Downloading** |
+| 27 | **ECB Key Rate** (EU) | `ecb/ecb_mro_rate.csv` | 1999-2025 | Monthly | National | <1 MB | 🔄 **Downloading** |
+| 28 | **INSEE HPI** (FR) | `insee/insee_hpi_*.csv` | 1996-2024 | Quarterly | Département | <1 MB | 🔄 **Downloading** |
 
 ---
 
@@ -91,7 +91,7 @@
 
 | # | Source | GCS Path | Years | Resolution | Coverage | Status |
 |---|--------|----------|-------|------------|----------|--------|
-| 35 | **NLCD** (USGS) | — | 2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019, 2021 | 30m | US | 🔲 **Not coded — adding now** |
+| 35 | **NLCD** (USGS) | `lulc/` | 2021 | 30m | US | ✅ **Landed** |
 | 36 | Copernicus GLC | — | 2015-2019 | 100m | Global | 🔲 Not coded |
 
 ---
@@ -111,9 +111,9 @@
 
 | # | Source | GCS Path | Years | Grain | Coverage | Status |
 |---|--------|----------|-------|-------|----------|--------|
-| 41 | **NOAA GHCN-D** | — | 1850-2025 | Station/Daily | Global | 🔲 **Not coded — adding now** (scoped to our counties) |
+| 41 | **NOAA GHCN-D** | `climate/` | 1850-2025 | County/Annual avg | Our counties | ✅ **Landed** |
 | 42 | ERA5-Land | — | 1950-now | 9km grid | Global | 🔲 Not coded (CDS API) |
-| 43 | **EPA AQI** | `epa/aqi_county_20{20-23}.zip` | 2020-2023 only | County/Annual | US | ⚠️ **Landed but only 4 years — need 2005+** |
+| 43 | **EPA AQI** | `epa/aqi_county_20{05-23}.zip` | 2005-2023 | County/Annual | US | 🔄 **Expanding from 4yr to 19yr** |
 
 ---
 
@@ -121,7 +121,7 @@
 
 | # | Source | GCS Path | Years | Grain | Coverage | Status |
 |---|--------|----------|-------|-------|----------|--------|
-| 44 | **MS Building Footprints** | — | 2023 | Polygon | US (129M) | 🔲 **Not coded — adding now** (scoped to our states) |
+| 44 | **MS Building Footprints** | `buildings/` | 2023 | Polygon | Our 7 states | ✅ **Landed** |
 | 45 | Google Open Buildings | — | 2022 | Polygon | Global 1.8B | 🔲 Not coded |
 | 46 | **OSM / Geofabrik PBF** | — | Current | Polygon/POI | Global | 🔲 Not coded → OSMnx features |
 | 47 | Geofabrik regional PBFs | — | Current | All | Global | 🔲 Not coded |
@@ -196,8 +196,8 @@ Training reads:
 ```
 
 **Config:** `schema_registry.yaml` (machine-readable column mappings)  
-**ETL:** `build_panel.py` (Hive-partitioned, concurrent-safe, GCS-native)  
-**Download:** `gcf_download/main.py` (Cloud Function, 23 sources, JURISDICTIONS scoped)
+**Panel Builder:** `gcf_build_panel/main.py` (Cloud Function, GCS→GCS, 5 parcel + 8 contextual joins)  
+**Download:** `gcf_download/main.py` (Cloud Function, 28 sources, JURISDICTIONS scoped)
 
 ---
 
@@ -207,8 +207,13 @@ Training reads:
 |-----|--------|-----|
 | HCAD panel → partition | ✅ Done | — |
 | NYC push from Drive | ✅ Done | — |
-| Cook County re-download (year-fix) | 🔲 Pending redeploy | After deploy |
-| SF re-download (year-fix) | 🔲 Pending redeploy | After deploy |
-| FHFA HPI download | 🔄 Running | ~5 min |
-| NY State download | 🔄 Running | ~10 min |
-| Buildings/climate/LULC | 🔲 Pending deploy | After deploy |
+| MS Buildings download | ✅ Done | — |
+| NOAA Climate download | ✅ Done | — |
+| NLCD LULC download | ✅ Done | — |
+| Cook County re-download (1999-2025) | 🔄 Running | ~30 min |
+| SF re-download (2007-2024) | 🔄 Running | ~30 min |
+| EPA AQI (2005-2023 expanded) | 🔄 Running | ~10 min |
+| UK PPD download (S3) | 🔄 Deploying | After deploy |
+| BoE Bank Rate | 🔄 Deploying | After deploy |
+| ECB Rate + INSEE HPI | 🔄 Deploying | After deploy |
+| Panel builder: dry-run verify | 🔄 Pending deploy | After deploy |

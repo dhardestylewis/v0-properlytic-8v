@@ -156,7 +156,7 @@ def _download_uk_ppd(bucket):
 def _download_france_dvf(bucket):
     base = "https://files.data.gouv.fr/geo-dvf/latest/csv"
     results = {}
-    for year in [2019, 2020, 2021, 2022, 2023, 2024]:
+    for year in range(2014, 2025):  # DVF available 2014-2024
         try:
             results[str(year)] = _upload_url_to_gcs(bucket, f"france_dvf/{year}_full.csv.gz",
                                                      f"{base}/{year}/full.csv.gz", timeout=600)
@@ -265,33 +265,21 @@ def _download_fhfa_hpi(bucket):
 
 
 def _download_census_acs(bucket):
-    """Census ACS 5-year — key tables at tract level for all states.
-    Using pre-built bulk CSV from Census FTP."""
+    """Census ACS 5-year — key tables at tract level. 2012-2022."""
     results = {}
-    # ACS 5-year 2022 summary file — tract-level demographics
-    url = "https://www2.census.gov/programs-surveys/acs/summary_file/2022/table-based-SF/2022_ACS_Detailed_Tables_Group_B01001.zip"
-    try:
-        results["acs_population"] = _upload_url_to_gcs(
-            bucket, "census/2022_ACS_B01001_population.zip", url, timeout=300)
-    except Exception as e:
-        results["acs_population"] = {"error": str(e)}
-
-    # Median household income
-    url2 = "https://www2.census.gov/programs-surveys/acs/summary_file/2022/table-based-SF/2022_ACS_Detailed_Tables_Group_B19013.zip"
-    try:
-        results["acs_income"] = _upload_url_to_gcs(
-            bucket, "census/2022_ACS_B19013_income.zip", url2, timeout=300)
-    except Exception as e:
-        results["acs_income"] = {"error": str(e)}
-
-    # Median home value
-    url3 = "https://www2.census.gov/programs-surveys/acs/summary_file/2022/table-based-SF/2022_ACS_Detailed_Tables_Group_B25077.zip"
-    try:
-        results["acs_home_value"] = _upload_url_to_gcs(
-            bucket, "census/2022_ACS_B25077_home_value.zip", url3, timeout=300)
-    except Exception as e:
-        results["acs_home_value"] = {"error": str(e)}
-
+    tables = {
+        "B01001": "population",
+        "B19013": "income",
+        "B25077": "home_value",
+    }
+    for year in range(2012, 2023):  # ACS 5-year available 2009-2022, table-based from 2012
+        for table, label in tables.items():
+            url = f"https://www2.census.gov/programs-surveys/acs/summary_file/{year}/table-based-SF/{year}_ACS_Detailed_Tables_Group_{table}.zip"
+            try:
+                results[f"{label}_{year}"] = _upload_url_to_gcs(
+                    bucket, f"census/{year}_ACS_{table}_{label}.zip", url, timeout=300)
+            except Exception as e:
+                results[f"{label}_{year}"] = {"error": str(e)}
     return results
 
 
@@ -306,18 +294,15 @@ def _download_fema_nri(bucket):
 # ═══════════════════════════════════════════════════════════════
 
 def _download_hud_fmr(bucket):
-    """HUD Fair Market Rents — county and ZIP level. <10MB."""
-    datasets = {
-        "hud/FY2025_FMR_county.xlsx": "https://www.huduser.gov/portal/datasets/fmr/fmr2025/FY2025_FMRs_revised.xlsx",
-        "hud/FY2024_FMR_county.xlsx": "https://www.huduser.gov/portal/datasets/fmr/fmr2024/FY2024_FMRs_revised.xlsx",
-        "hud/FY2023_FMR_county.xlsx": "https://www.huduser.gov/portal/datasets/fmr/fmr2023/FY2023_FMRs_revised.xlsx",
-    }
+    """HUD Fair Market Rents — county and ZIP level. FY2010-2025."""
     results = {}
-    for k, v in datasets.items():
+    for fy in range(2010, 2026):  # HUD FMR available ~FY2006-FY2025
+        url = f"https://www.huduser.gov/portal/datasets/fmr/fmr{fy}/FY{fy}_FMRs_revised.xlsx"
         try:
-            results[k] = _upload_url_to_gcs(bucket, k, v, timeout=60)
+            results[f"fmr_{fy}"] = _upload_url_to_gcs(
+                bucket, f"hud/FY{fy}_FMR_county.xlsx", url, timeout=60)
         except Exception as e:
-            results[k] = {"error": str(e)}
+            results[f"fmr_{fy}"] = {"error": str(e)}
     return results
 
 
@@ -336,53 +321,47 @@ def _download_fbi_crime(bucket):
 
 
 def _download_building_permits(bucket):
-    """Census building permits survey — county/MSA level. <50MB."""
+    """Census building permits survey — county/MSA level. 2004-2023."""
     results = {}
-    url = "https://www2.census.gov/econ/bps/County/co2023a.txt"
-    try:
-        results["permits_2023"] = _upload_url_to_gcs(
-            bucket, "census/building_permits_2023.txt", url, timeout=60)
-    except Exception as e:
-        results["permits_2023"] = {"error": str(e)}
-    url2 = "https://www2.census.gov/econ/bps/County/co2022a.txt"
-    try:
-        results["permits_2022"] = _upload_url_to_gcs(
-            bucket, "census/building_permits_2022.txt", url2, timeout=60)
-    except Exception as e:
-        results["permits_2022"] = {"error": str(e)}
+    for year in range(2004, 2024):  # BPS available ~2004-2023
+        url = f"https://www2.census.gov/econ/bps/County/co{year}a.txt"
+        try:
+            results[f"permits_{year}"] = _upload_url_to_gcs(
+                bucket, f"census/building_permits_{year}.txt", url, timeout=60)
+        except Exception as e:
+            results[f"permits_{year}"] = {"error": str(e)}
     return results
 
 
 def _download_irs_migration(bucket):
-    """IRS SOI county-to-county migration. ~200MB per year."""
+    """IRS SOI county-to-county migration. 2011-2022."""
     results = {}
-    # Latest available: 2021-2022
     base = "https://www.irs.gov/pub/irs-soi"
-    files = {
-        "irs/migration_inflow_2122.csv": f"{base}/county_migration_2021_2022_inflow.csv",
-        "irs/migration_outflow_2122.csv": f"{base}/county_migration_2021_2022_outflow.csv",
-    }
-    for k, v in files.items():
-        try:
-            results[k] = _upload_url_to_gcs(bucket, k, v, timeout=120)
-        except Exception as e:
-            results[k] = {"error": str(e)}
+    for y1 in range(2011, 2022):  # SOI available ~2011-2022
+        y2 = y1 + 1
+        tag = f"{str(y1)[-2:]}{str(y2)[-2:]}"
+        for flow in ["inflow", "outflow"]:
+            key = f"irs/migration_{flow}_{tag}.csv"
+            url = f"{base}/county_migration_{y1}_{y2}_{flow}.csv"
+            try:
+                results[key] = _upload_url_to_gcs(bucket, key, url, timeout=120)
+            except Exception as e:
+                results[key] = {"error": str(e)}
     return results
 
 
 def _download_lehd(bucket):
-    """Census LEHD/LODES — workplace-residence flows. ~2GB total but we grab summary only."""
+    """Census LEHD/LODES — workplace area characteristics. 2015-2021."""
     results = {}
-    # LODES workplace area characteristics (WAC) — by census block
-    # Grab a few key states only (matching our parcel data)
     states = ["il", "wa", "az", "ny", "ca", "ma", "tx"]
-    for st in states:
-        url = f"https://lehd.ces.census.gov/data/lodes/LODES8/{st}/wac/{st}_wac_S000_JT00_2021.csv.gz"
-        try:
-            results[st] = _upload_url_to_gcs(
-                bucket, f"lehd/{st}_wac_2021.csv.gz", url, timeout=120)
-        except Exception as e:
-            results[st] = {"error": str(e)}
+    for year in range(2015, 2022):  # LODES8 typically 2015-2021
+        for st in states:
+            url = f"https://lehd.ces.census.gov/data/lodes/LODES8/{st}/wac/{st}_wac_S000_JT00_{year}.csv.gz"
+            try:
+                results[f"{st}_{year}"] = _upload_url_to_gcs(
+                    bucket, f"lehd/{st}_wac_{year}.csv.gz", url, timeout=120)
+            except Exception as e:
+                results[f"{st}_{year}"] = {"error": str(e)}
     return results
 
 
