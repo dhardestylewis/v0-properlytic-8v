@@ -54,9 +54,9 @@ SOURCES = {
         "gcs_path": "nyc/nyc_sales_clean.parquet",
         "format": "parquet",
         "mapping": {
-            "parcel_id": "BBL", "sale_price": "SALE_PRICE",
-            "sale_date": "SALE_DATE", "dwelling_type": "BUILDING_CLASS_CATEGORY",
-            "sqft": "GROSS_SQUARE_FEET", "land_area": "LAND_SQUARE_FEET",
+            "parcel_id": "BBL", "sale_price": "SALE PRICE",
+            "sale_date": "SALE DATE", "dwelling_type": "BUILDING CLASS CATEGORY",
+            "sqft": "GROSS SQUARE FEET", "land_area": "LAND SQUARE FEET",
             "year_built": "YEAR BUILT", "address": "ADDRESS",
         },
     },
