@@ -1,219 +1,128 @@
 # Properlytic — Multi-Jurisdiction Data Acquisition Tracker
 **GCS:** `gs://properlytic-raw-data` | **Project:** `properlytic-data`  
-**Total:** ~14 GB | **Directories:** 20  
-**Updated:** 2026-02-26T13:27Z
+**Total:** ~20 GB | **Directories:** 22  
+**Updated:** 2026-02-26T13:45Z  
+**Download CF:** `gcf_download/main.py` (29 sources) | **Panel CF:** `gcf_build_panel/main.py` (8GB, 11 contextual joins)
 
 ---
 
-## A. Canonical Covariate Ontology
+## Full Pipeline Status (per source)
 
-| # | Canonical Field | Description |
-|---|----------------|-------------|
-| 1 | `parcel_id` | Unique parcel identifier (str) |
-| 2 | `jurisdiction` | Source jurisdiction key |
-| 3 | `year` | Assessment / transaction year |
-| 4 | `sale_price` | Most recent arm's-length sale price |
-| 5 | `sale_date` | Sale date (YYYY-MM-DD) |
-| 6 | `assessed_value` | Total assessed / appraised value |
-| 7 | `land_value` | Land-only assessed value |
-| 8 | `improvement_value` | Improvement (building) assessed value |
-| 9 | `dwelling_type` | Normalized: SF, CONDO, MULTI, COMMERCIAL, VACANT |
-| 10 | `sqft` | Living area (sq ft) |
-| 11 | `land_area` | Lot / land area |
-| 12 | `year_built` | Year structure built |
-| 13 | `bedrooms` | Bedroom count |
-| 14 | `bathrooms` | Bathroom count (half=0.5) |
-| 15 | `stories` | Story count |
-| 16 | `address` | Street address |
-| 17 | `lat` | Latitude |
-| 18 | `lon` | Longitude |
+Legend: ⬜ Not started | 🔄 In progress | ✅ Done | ❌ Failed | ⏸️ Blocked
 
----
+### Parcel Sources
 
-## B. Parcel-Level Sources
+| # | Source | Download | GCS Size | Years in GCS | Schema Verified | YAML Mapping | Panel Builder | Panel Built |
+|---|--------|----------|----------|-------------|-----------------|-------------|---------------|-------------|
+| 1 | **HCAD Houston** | ✅ | 2.4 GB | 2005-2025 | ✅ GCS inspect 2/25 | ✅ 16 cols | ✅ | ⬜ (OOM→8GB retry) |
+| 2 | **Cook County IL** | 🔄 re-dl 1999-2025 | 1.2 GB+ | ⚠️ partial years | ✅ GCS inspect 2/25 | ✅ 6 cols | ✅ | ⬜ |
+| 3 | **SF Assessor** | 🔄 re-dl 2007-2024 | 1.6 GB | ⚠️ partial years | ✅ GCS inspect 2/25 | ✅ 12 cols | ✅ | ⬜ |
+| 4 | **France DVF** | ✅ (expanded 2014-2024) | 400 MB+ | 2014-2024 | ✅ data.gouv docs | ✅ 8 cols | ✅ | ⬜ |
+| 5 | **NYC DoF** | ✅ (from Drive) | 51 MB | TBD | ⬜ Need parquet header | ✅ 7 cols | ✅ (newly mapped) | ⬜ |
+| 6 | **MassGIS L3** | ✅ | 1.4 GB | 2020-2024 | ✅ Mass.gov docs | ✅ 10 cols | ❌ GDB not handled | ⬜ |
+| 7 | **UK PPD** | ❌ S3 503 | 0 | — | ✅ Land Registry docs | ✅ 5 cols | ✅ (newly added) | ⬜ (no data) |
+| 8 | **NY State ORPTS** | 🔄 | ~200 MB | TBD | ⬜ | ⬜ | ⬜ | ⬜ |
+| 9 | Maricopa AZ | ❌ URL changed | 0 | — | ❌ | ❌ | ❌ | ❌ |
+| 10 | King County WA | ❌ bot-blocked | 0 | — | ❌ | ❌ | ❌ | ❌ |
+| 11 | LA County | ❌ Socrata error | 0 | — | ❌ | ❌ | ❌ | ❌ |
 
-| # | Source | Country | GCS Path | Years Available | Years Confirmed in GCS | Size | Schema | Status |
-|---|--------|---------|----------|-----------------|----------------------|------|--------|--------|
-| 1 | **HCAD (Houston)** | US | `hcad/` | 2005-2025 | ✅ 2005-2025 (full panel) | 2.4 GB | ✅ 16 cols mapped | ✅ **Partition created** |
-| 2 | **Cook County IL** | US | `cook_county_il/` ~100 chunks | 1999-2025 | ⚠️ 2002, 2016, 2020 +(re-dl running) | 1.2 GB | ✅ 19 cols verified | 🔄 **Re-downloading full 1999-2025 year-by-year** |
-| 3 | **SF Assessor** | US | `sf/` ~57 chunks | 2007-2024 | ⚠️ 2016, 2019-2021 +(re-dl running) | 1.3 GB | ✅ 45 cols verified | 🔄 **Re-downloading full 2007-2024 year-by-year** |
-| 4 | **France DVF** | FR | `france_dvf/` 6 gzips | 2019-2024 | ✅ 2019-2024 (yearly files) | 400 MB | ✅ ~35 cols | ✅ **Full history** |
-| 5 | **NY State ORPTS** | US | `ny_state/` | 2015-2025 | 🔲 Not verified | ~200 MB | 🔲 | 🔄 Retrying (fixed dataset ID bnkp-2b2k) |
-| 6 | **MassGIS L3** | US | `massgis/` 1 ZIP | 2020-2024 | 🔲 GDB format, not inspected | 1.4 GB | ✅ ~35 cols (docs) | ✅ **Landed** |
-| 7 | **NYC DoF** | US | `nyc/` | 2003-2024 | 🔲 From thesis EDA, years TBD | 51 MB | 🔲 To verify | ✅ **Pushed from Drive** + 🔄 Cloud retry |
-| 8 | Maricopa AZ | US | `maricopa_az/` | ~2000-2025 | ❌ Got HTML not CSV | — | ❌ | ❌ URL scheme changed |
-| 9 | **UK PPD** | UK | `uk_ppd/` | 1995-2025 | 🔄 Re-downloading (S3 URL) | ~4 GB | ~16 cols | 🔄 **Downloading via Land Registry S3** |
-| 10 | King County WA | US | — | 1989-2025 | — | — | — | ❌ Server blocks bots |
-| 11 | LA County | US | — | 2006-2025 | — | — | — | ❌ Socrata error |
-| 12 | TXGIO | US | — | 2019-2025 | — | — | — | ❌ API empty |
-| 13 | Florida DOR | US | — | 2002-2025 | — | — | — | ⏸️ Email required |
-| 14 | NJ MOD-IV | US | — | 1989-2025 | — | — | — | ⏸️ Registration |
-| 15 | NSW Australia | AU | — | 1990-2025 | — | — | — | ⏸️ Email required |
-| 16 | BC Canada | CA | — | 2016-2025 | — | — | — | ⏸️ Email required |
-| 17 | Denmark BBR | DK | — | 1992-2025 | — | — | — | ⏸️ API key required |
+### Financial / Market Context  
 
-**Parcel: 6 landed ✅ + 3 downloading 🔄 (Cook, SF year-fix + UK PPD). ~7 GB + growing.**
+| # | Source | Download | Years | Join Level | Join Key | Panel Join | Verified Against |
+|---|--------|----------|-------|------------|----------|------------|-----------------|
+| 12 | **FRED 30yr mortgage** | ✅ | 1971-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 13 | **FRED 10yr treasury** | ✅ | 1962-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 14 | **FRED fed funds** | ✅ | 1954-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 15 | **FRED CPI** | ✅ | 1947-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 16 | **FRED unemployment** | ✅ | 1948-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 17 | **FRED Case-Shiller** | ✅ | 1987-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 18 | **FRED FHFA HPI** | ✅ | 1975-2025 | national | year | ✅ | fred.stlouisfed.org |
+| 19 | **ECB MRO rate** | ✅ | 1999-2025 | national_eu | year | ✅ (France only) | sdw.ecb.europa.eu |
+| 20 | **BoE Bank Rate** | ✅ | 1975-2026 | national_uk | year | ✅ (UK only) | bankofengland.co.uk |
+| 21 | **INSEE HPI** | ✅ | 1996-2024 | national_fr | year | ✅ (France only) | insee.fr |
 
----
+### Census / Demographics
 
-## C. Financial / Market Context
+| # | Source | Download | Years | Join Level | Join Key | Panel Join | Verified Against |
+|---|--------|----------|-------|------------|----------|------------|-----------------|
+| 22 | **Census ACS (pop/income/value)** | 🔄 2012-2022 | 11 vintages × 3 tables | tract | tract_fips | ⬜ (needs geocoding) | census.gov |
+| 23 | **Building permits** | ✅ | 2004-2023 | county | county_fips+year | ✅ | census.gov/econ/bps |
+| 24 | **LEHD** jobs | 🔄 2015-2021 | 7yr × 7 states | state (agg) | state_fips | ✅ | lehd.ces.census.gov |
 
-| # | Source | GCS Path | Years | Frequency | Grain | Size | Status |
-|---|--------|----------|-------|-----------|-------|------|--------|
-| 18 | **FRED 30yr mortgage** | `fred/MORTGAGE30US.csv` | ✅ **1971-2025** | Weekly | National | <1 MB | ✅ **Landed, full history** |
-| 19 | **FRED 10yr treasury** | `fred/DGS10.csv` | ✅ **1962-2025** | Daily | National | <1 MB | ✅ **Landed, full history** |
-| 20 | **FRED fed funds** | `fred/FEDFUNDS.csv` | ✅ **1954-2025** | Monthly | National | <1 MB | ✅ **Landed, full history** |
-| 21 | **FRED CPI** | `fred/CPIAUCSL.csv` | ✅ **1947-2025** | Monthly | National | <1 MB | ✅ **Landed, full history** |
-| 22 | **FRED unemployment** | `fred/UNRATE.csv` | ✅ **1948-2025** | Monthly | National | <1 MB | ✅ **Landed, full history** |
-| 23 | **FRED Case-Shiller** | `fred/CSUSHPINSA.csv` | ✅ **1987-2025** | Monthly | National | <1 MB | ✅ **Landed, full history** |
-| 24 | **FRED FHFA HPI** | `fred/USSTHPI.csv` | ✅ **1975-2025** | Quarterly | National | <1 MB | ✅ **Landed, full history** |
-| 25 | FHFA HPI (metro/state/ZIP3) | — | 1975-2025 | Quarterly | MSA/State/ZIP3 | ~50 MB | 🔄 Retrying (fixed URL) |
-| 26 | **BoE Bank Rate** (UK) | `boe/bank_rate.csv` | 1975-2026 | Monthly | National | <1 MB | 🔄 **Downloading** |
-| 27 | **ECB Key Rate** (EU) | `ecb/ecb_mro_rate.csv` | 1999-2025 | Monthly | National | <1 MB | 🔄 **Downloading** |
-| 28 | **INSEE HPI** (FR) | `insee/insee_hpi_*.csv` | 1996-2024 | Quarterly | Département | <1 MB | 🔄 **Downloading** |
+### Climate / Environment
 
----
+| # | Source | Download | Years | Join Level | Join Key | Panel Join | Verified Against |
+|---|--------|----------|-------|------------|----------|------------|-----------------|
+| 25 | **EPA AQI** | 🔄 2005-2023 | 19 years | county | county_fips+year | ✅ | aqs.epa.gov |
+| 26 | **NOAA Climate** | ✅ | 1895-2025 | county | county_fips+year | ✅ | ncdc.noaa.gov |
+| 27 | **FEMA NRI** | ✅ | 2024 snapshot | county (agg from tract) | county_fips | ✅ | hazards.fema.gov |
 
-## D. Census / Demographics
+### Housing Market
 
-| # | Source | GCS Path | Years | Grain | Size | Status |
-|---|--------|----------|-------|-------|------|--------|
-| 29 | **Census building permits** | `census/building_permits_20{22,23}.txt` | 2022-2023 only | County/MSA | <5 MB | ⚠️ **Landed but only 2 years — need 2005-2021** |
-| 30 | Census ACS 5-year (pop) | `census/` (not verified) | 2022 only | Tract | ~50 MB | 🔄 Triggered |
-| 31 | Census ACS 5-year (income) | `census/` (not verified) | 2022 only | Tract | ~50 MB | 🔄 Triggered |
-| 32 | Census ACS 5-year (home value) | `census/` (not verified) | 2022 only | Tract | ~50 MB | 🔄 Triggered |
-| 33 | UK Census 2021 | — | 2021 | OA | — | 🔲 Not coded |
-| 34 | France INSEE census | — | 2020 | Commune | — | 🔲 Not coded |
+| # | Source | Download | Years | Join Level | Join Key | Panel Join | Verified Against |
+|---|--------|----------|-------|------------|----------|------------|-----------------|
+| 28 | **HUD FMR** | ✅ FY2010-2025 | 16 years | county | county_fips | ✅ | huduser.gov |
+| 29 | **IRS Migration** | ✅ 2011-2022 | 11 year-pairs | county | county_fips | ✅ | irs.gov/pub/irs-soi |
+| 30 | **HMDA mortgage** | ⬜ deploying | 2018-2023 | tract | tract_fips | ⬜ | ffiec.cfpb.gov |
+
+### Geospatial
+
+| # | Source | Download | Years | Join Level | Join Key | Panel Join | Verified Against |
+|---|--------|----------|-------|------------|----------|------------|-----------------|
+| 31 | **MS Buildings** | ✅ | 2023 | parcel (spatial) | spatial overlay | ⬜ (needs geopandas) | usbuildingdata.blob.core.windows.net |
+| 32 | **NLCD LULC** | ✅ | 2021 | parcel (raster) | lat/lon lookup | ⬜ (needs rasterio) | mrlc.gov |
 
 ---
 
-## E. LULC / Land Cover
+## Canonical Schema (18 parcel fields + contextual)
 
-| # | Source | GCS Path | Years | Resolution | Coverage | Status |
-|---|--------|----------|-------|------------|----------|--------|
-| 35 | **NLCD** (USGS) | `lulc/` | 2021 | 30m | US | ✅ **Landed** |
-| 36 | Copernicus GLC | — | 2015-2019 | 100m | Global | 🔲 Not coded |
+**Parcel:** `parcel_id, jurisdiction, year, sale_price, sale_date, assessed_value, land_value, improvement_value, dwelling_type, sqft, land_area, year_built, bedrooms, bathrooms, stories, address, lat, lon`
 
----
+**US Context (by county FIPS + year):** `mortgage_rate_30yr, treasury_10yr, fed_funds_rate, cpi, unemployment_rate, case_shiller_hpi, fhfa_hpi_national, median_aqi, good_days, unhealthy_days, tavg_annual, nri_risk_score, nri_eal_score, nri_sovi_score, nri_flood_risk, nri_heatwave_risk, nri_wildfire_risk, permits_1unit, lehd_total_jobs, lehd_retail_jobs, lehd_finance_jobs, fmr_0br..fmr_4br, migration_inflow_returns, migration_inflow_agi`
 
-## F. Flood / Hazard / Risk
+**France Context:** `ecb_mro_rate, insee_hpi_national`
 
-| # | Source | GCS Path | Years | Grain | Size | Status |
-|---|--------|----------|-------|-------|------|--------|
-| 37 | **FEMA NRI** (risk scores) | `fema/NRI_CensusTracts.zip` | 2024 v1.20 | Tract | ~500 MB | ✅ **Landed** |
-| 38 | OpenFEMA claims | — | 1978-2025 | Policy | ~2 GB | 🔲 Not coded |
-| 39 | USFS wildfire | — | 1992-2020 | Raster | ~500 MB | 🔲 Not coded |
-| 40 | USGS earthquake | — | Realtime | Point | API | 🔲 Not coded |
+**UK Context:** `boe_bank_rate`
 
 ---
 
-## G. Climate / Weather
-
-| # | Source | GCS Path | Years | Grain | Coverage | Status |
-|---|--------|----------|-------|-------|----------|--------|
-| 41 | **NOAA GHCN-D** | `climate/` | 1850-2025 | County/Annual avg | Our counties | ✅ **Landed** |
-| 42 | ERA5-Land | — | 1950-now | 9km grid | Global | 🔲 Not coded (CDS API) |
-| 43 | **EPA AQI** | `epa/aqi_county_20{05-23}.zip` | 2005-2023 | County/Annual | US | 🔄 **Expanding from 4yr to 19yr** |
-
----
-
-## H. Building Footprints / Proximity
-
-| # | Source | GCS Path | Years | Grain | Coverage | Status |
-|---|--------|----------|-------|-------|----------|--------|
-| 44 | **MS Building Footprints** | `buildings/` | 2023 | Polygon | Our 7 states | ✅ **Landed** |
-| 45 | Google Open Buildings | — | 2022 | Polygon | Global 1.8B | 🔲 Not coded |
-| 46 | **OSM / Geofabrik PBF** | — | Current | Polygon/POI | Global | 🔲 Not coded → OSMnx features |
-| 47 | Geofabrik regional PBFs | — | Current | All | Global | 🔲 Not coded |
-
----
-
-## I. Other Context
-
-| # | Source | GCS Path | Years | Status |
-|---|--------|----------|-------|--------|
-| 48 | **LEHD** workplace area | `lehd/` (AZ, WA landed) | 2021 | ⚠️ **Only 2 of 7 states — need IL, NY, CA, MA, TX** |
-| 49 | HUD Fair Market Rents | — | 2023-2025 | 🔄 Retrying |
-| 50 | FBI UCR Crime | — | 2022 | ❌ URL error |
-| 51 | IRS SOI Migration | — | 2021-2022 | 🔄 Retrying |
-
----
-
-## J. Verified Schemas (verbatim from GCS)
-
-### Cook County IL — 19 columns
-```
-pin, year, class, township_code, township_name, nbhd,
-mailed_bldg, mailed_land, mailed_tot, mailed_hie,
-certified_bldg, certified_land, certified_tot, certified_hie,
-board_bldg, board_land, board_tot, board_hie, row_id
-```
-
-### SF Assessor — 45 columns
-```
-closed_roll_year, property_location, parcel_number, block, lot,
-volume_number, use_code, use_definition, property_class_code,
-property_class_code_definition, year_property_built,
-number_of_bathrooms, number_of_bedrooms, number_of_rooms,
-number_of_stories, number_of_units, zoning_code, construction_type,
-lot_depth, lot_frontage, property_area, basement_area, lot_area,
-lot_code, tax_rate_area_code, percent_of_ownership, exemption_code,
-exemption_code_definition, status_code, misc_exemption_value,
-homeowner_exemption_value, current_sales_date,
-assessed_fixtures_value, assessed_improvement_value,
-assessed_land_value, assessed_personal_property_value,
-assessor_neighborhood_district, assessor_neighborhood_code,
-assessor_neighborhood, supervisor_district, supervisor_district_2012,
-analysis_neighborhood, the_geom, row_id, data_as_of, data_loaded_at
-```
-
-### FRED — 7 time series (all full history)
-```
-MORTGAGE30US.csv (1971-2025), DGS10.csv, FEDFUNDS.csv,
-CPIAUCSL.csv, UNRATE.csv, CSUSHPINSA.csv, USSTHPI.csv
-```
-
-### HCAD — 16 columns (2005-2025 panel)
-```
-acct, yr, tot_appr_val, land_val, impr_val, state_class,
-living_area, land_ar, yr_blt, bed_cnt, full_bath, half_bath,
-nbr_story, site_addr_1, lat, lon
-```
-
----
-
-## K. Pipeline Architecture
+## Pipeline Architecture
 
 ```
-Download (Cloud Functions, parallel)
+Download CF (29 sources, parallel per-source)
   → gs://properlytic-raw-data/{source}/ (raw)
 
-ETL Workers (local or Colab, parallel per source)
+Panel Builder CF (8GB, GCS→GCS, reads raw + joins context)
   → gs://properlytic-raw-data/panel/jurisdiction={X}/part.parquet
 
 Training reads:
   pd.read_parquet("gs://properlytic-raw-data/panel/")
 ```
 
-**Config:** `schema_registry.yaml` (machine-readable column mappings)  
-**Panel Builder:** `gcf_build_panel/main.py` (Cloud Function, GCS→GCS, 5 parcel + 8 contextual joins)  
-**Download:** `gcf_download/main.py` (Cloud Function, 28 sources, JURISDICTIONS scoped)
+**Jurisdiction → FIPS mapping** for contextual joins:
+```
+hcad_houston   → 48201 (Harris County TX)
+cook_county_il → 17031 (Cook County IL)
+sf_ca          → 06075 (San Francisco CA)
+nyc            → 36061 (New York County NY)
+massgis        → 25017 (Middlesex MA)
+france_dvf     → None (uses ECB/INSEE instead)
+uk_ppd         → None (uses BoE instead)
+```
 
 ---
 
-## L. Active Jobs
+## Active Jobs (as of 13:45Z)
 
-| Job | Status | ETA |
-|-----|--------|-----|
-| HCAD panel → partition | ✅ Done | — |
-| NYC push from Drive | ✅ Done | — |
-| MS Buildings download | ✅ Done | — |
-| NOAA Climate download | ✅ Done | — |
-| NLCD LULC download | ✅ Done | — |
-| Cook County re-download (1999-2025) | 🔄 Running | ~30 min |
-| SF re-download (2007-2024) | 🔄 Running | ~30 min |
-| EPA AQI (2005-2023 expanded) | 🔄 Running | ~10 min |
-| UK PPD download (S3) | 🔄 Deploying | After deploy |
-| BoE Bank Rate | 🔄 Deploying | After deploy |
-| ECB Rate + INSEE HPI | 🔄 Deploying | After deploy |
-| Panel builder: dry-run verify | 🔄 Pending deploy | After deploy |
+| Job | Status | Started |
+|-----|--------|---------|
+| Cook County re-download (1999-2025) | 🔄 Running | 12:50Z |
+| SF re-download (2007-2024) | 🔄 Running | 12:50Z |
+| Census ACS expanded (2012-2022) | 🔄 Running | 13:37Z |
+| LEHD expanded (2015-2021, 7 states) | 🔄 Running | 13:37Z |
+| France DVF expanded (2014-2024) | ✅ Done | 13:37Z |
+| Building permits (2004-2023) | ✅ Done | 13:37Z |
+| IRS migration (2011-2022) | ✅ Done | 13:37Z |
+| HUD FMR (FY2010-2025) | ✅ Done | 13:37Z |
+| Both CFs redeploying (HMDA + intl joins) | 🔄 Deploying | 13:43Z |
+| Panel dry-runs (5 sources) | 🔄 Running | 13:42Z |

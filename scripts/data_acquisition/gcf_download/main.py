@@ -50,6 +50,9 @@ def download_data(request):
         "boe_rate": _download_boe_rate,
         # Mortgage
         "hmda": _download_hmda,
+        # Additional US cities
+        "philly": _download_philly,
+        "dc": _download_dc,
     }
 
     if source == "all":
@@ -528,3 +531,17 @@ def _download_hmda(bucket):
         except Exception as e:
             results[str(year)] = {"error": str(e)}
     return results
+
+
+def _download_philly(bucket):
+    """Philadelphia OPA — property assessments via Open Data Philly (Socrata)."""
+    return _paginate_socrata(bucket, "philly/opa_assessments",
+                             "https://phl.carto.com/api/v2/sql?q=SELECT+*+FROM+opa_properties_public&format=csv",
+                             paginate=False)
+
+
+def _download_dc(bucket):
+    """Washington DC — CAMA property data via opendata.dc.gov (Socrata)."""
+    return _paginate_socrata(bucket, "dc/cama_residential",
+                             "https://opendata.dc.gov/api/views/a2bh-cepn/rows.csv?accessType=DOWNLOAD",
+                             paginate=False)

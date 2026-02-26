@@ -54,12 +54,11 @@ SOURCES = {
         "gcs_path": "nyc/nyc_sales_clean.parquet",
         "format": "parquet",
         "mapping": {
-            "sale_price": "SALE_PRICE", "sale_date": "SALE_DATE",
-            "dwelling_type": "BUILDING_CLASS_CATEGORY",
+            "parcel_id": "BBL", "sale_price": "SALE_PRICE",
+            "sale_date": "SALE_DATE", "dwelling_type": "BUILDING_CLASS_CATEGORY",
             "sqft": "GROSS_SQUARE_FEET", "land_area": "LAND_SQUARE_FEET",
-            "year_built": "YEAR_BUILT", "address": "ADDRESS",
+            "year_built": "YEAR BUILT", "address": "ADDRESS",
         },
-        "derived": {"parcel_id": "BOROUGH.astype(str) + '-' + BLOCK.astype(str) + '-' + LOT.astype(str)"},
     },
     "uk_ppd": {
         "gcs_path": "uk_ppd/pp-complete.csv",
@@ -68,7 +67,8 @@ SOURCES = {
             "sale_price": "price", "sale_date": "date_of_transfer",
             "dwelling_type": "property_type",
         },
-        "derived": {"parcel_id": "transaction_id", "address": "paon + ' ' + street + ', ' + town_city + ' ' + postcode"},
+        "derived": {"parcel_id": "transaction_id",
+                    "address": "paon + ' ' + street + ', ' + town_city + ' ' + postcode"},
     },
     "france_dvf": {
         "gcs_prefix": "france_dvf",
@@ -84,7 +84,9 @@ SOURCES = {
 }
 
 CANONICAL_COLS = [
-    "parcel_id", "jurisdiction", "year", "sale_price", "sale_date",
+    "parcel_id", "jurisdiction", "year",
+    "property_value",  # unified target: coalesce(sale_price, assessed_value)
+    "sale_price", "sale_date",
     "assessed_value", "land_value", "improvement_value", "dwelling_type",
     "sqft", "land_area", "year_built", "bedrooms", "bathrooms",
     "stories", "address", "lat", "lon",
@@ -98,6 +100,9 @@ JURISDICTION_FIPS = {
     "nyc":            {"county_fips": "36061", "state_fips": "36"},
     "france_dvf":     {"county_fips": None,    "state_fips": None},
     "massgis":        {"county_fips": "25017", "state_fips": "25"},
+    "uk_ppd":         {"county_fips": None,    "state_fips": None},
+    "philly":         {"county_fips": "42101", "state_fips": "42"},
+    "dc":             {"county_fips": "11001", "state_fips": "11"},
 }
 
 # Contextual source configs for joining
@@ -227,6 +232,9 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
             mapped[col] = None
 
     mapped = mapped[CANONICAL_COLS]
+
+    # Unified target: property_value = coalesce(sale_price, assessed_value)
+    mapped["property_value"] = mapped["sale_price"].fillna(mapped["assessed_value"])
 
     # Coerce year to int
     if mapped["year"].notna().any():
