@@ -53,7 +53,22 @@ SOURCES = {
     "nyc": {
         "gcs_path": "nyc/nyc_sales_clean.parquet",
         "format": "parquet",
-        "mapping": {},  # auto-detect from parquet schema
+        "mapping": {
+            "sale_price": "SALE_PRICE", "sale_date": "SALE_DATE",
+            "dwelling_type": "BUILDING_CLASS_CATEGORY",
+            "sqft": "GROSS_SQUARE_FEET", "land_area": "LAND_SQUARE_FEET",
+            "year_built": "YEAR_BUILT", "address": "ADDRESS",
+        },
+        "derived": {"parcel_id": "BOROUGH.astype(str) + '-' + BLOCK.astype(str) + '-' + LOT.astype(str)"},
+    },
+    "uk_ppd": {
+        "gcs_path": "uk_ppd/pp-complete.csv",
+        "format": "csv_chunked",
+        "mapping": {
+            "sale_price": "price", "sale_date": "date_of_transfer",
+            "dwelling_type": "property_type",
+        },
+        "derived": {"parcel_id": "transaction_id", "address": "paon + ' ' + street + ', ' + town_city + ' ' + postcode"},
     },
     "france_dvf": {
         "gcs_prefix": "france_dvf",
@@ -254,6 +269,13 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
         # IRS migration: county
         if county_fips:
             context_cols_added += _join_irs_migration(bucket, mapped, county_fips)
+
+        # International contextual: ECB + INSEE for France, BoE for UK
+        if jurisdiction == "france_dvf":
+            context_cols_added += _join_ecb_rate(bucket, mapped)
+            context_cols_added += _join_insee_hpi(bucket, mapped)
+        elif jurisdiction == "uk_ppd":
+            context_cols_added += _join_boe_rate(bucket, mapped)
 
     # --- Write partition to GCS ---
     buf = io.BytesIO()
@@ -501,6 +523,68 @@ def _join_irs_migration(bucket, panel, county_fips):
                 if "agi" in county_in.columns:
                     panel["migration_inflow_agi"] = county_in["agi"].sum()
                     added.append("migration_inflow_agi")
+    except Exception:
+        pass
+    return added
+
+
+def _join_ecb_rate(bucket, panel):
+    """Join ECB MRO rate by year (for France/EU parcels)."""
+    added = []
+    try:
+        blob = bucket.blob("ecb/ecb_mro_rate.csv")
+        text = blob.download_as_text()
+        ecb = pd.read_csv(io.StringIO(text), low_memory=False)
+        # ECB CSV has date and value columns
+        date_col = [c for c in ecb.columns if "date" in c.lower() or "period" in c.lower()]
+        val_col = [c for c in ecb.columns if "obs" in c.lower() or "value" in c.lower() or c == ecb.columns[-1]]
+        if date_col and val_col:
+            ecb["_year"] = pd.to_datetime(ecb[date_col[0]], errors="coerce").dt.year
+            ecb["_val"] = pd.to_numeric(ecb[val_col[0]], errors="coerce")
+            annual = ecb.groupby("_year")["_val"].mean().to_dict()
+            panel["ecb_mro_rate"] = panel["year"].map(annual)
+            added.append("ecb_mro_rate")
+    except Exception:
+        pass
+    return added
+
+
+def _join_boe_rate(bucket, panel):
+    """Join BoE Bank Rate by year (for UK parcels)."""
+    added = []
+    try:
+        blob = bucket.blob("boe/bank_rate.csv")
+        text = blob.download_as_text()
+        boe = pd.read_csv(io.StringIO(text), low_memory=False)
+        date_col = [c for c in boe.columns if "date" in c.lower()]
+        val_col = [c for c in boe.columns if "value" in c.lower() or c == boe.columns[-1]]
+        if date_col and val_col:
+            boe["_year"] = pd.to_datetime(boe[date_col[0]], errors="coerce").dt.year
+            boe["_val"] = pd.to_numeric(boe[val_col[0]], errors="coerce")
+            annual = boe.groupby("_year")["_val"].mean().to_dict()
+            panel["boe_bank_rate"] = panel["year"].map(annual)
+            added.append("boe_bank_rate")
+    except Exception:
+        pass
+    return added
+
+
+def _join_insee_hpi(bucket, panel):
+    """Join INSEE HPI national index by year (for France parcels)."""
+    added = []
+    try:
+        blob = bucket.blob("insee/insee_hpi_national.csv")
+        text = blob.download_as_text()
+        hpi = pd.read_csv(io.StringIO(text), low_memory=False, sep=";")
+        # INSEE CSV format: date/period column + value
+        date_col = [c for c in hpi.columns if "date" in c.lower() or "period" in c.lower() or "trimestre" in c.lower()]
+        val_col = [c for c in hpi.columns if "indice" in c.lower() or "value" in c.lower() or c == hpi.columns[-1]]
+        if date_col and val_col:
+            hpi["_year"] = pd.to_numeric(hpi[date_col[0]].astype(str).str[:4], errors="coerce")
+            hpi["_val"] = pd.to_numeric(hpi[val_col[0]].astype(str).str.replace(",", "."), errors="coerce")
+            annual = hpi.groupby("_year")["_val"].mean().to_dict()
+            panel["insee_hpi_national"] = panel["year"].map(annual)
+            added.append("insee_hpi_national")
     except Exception:
         pass
     return added

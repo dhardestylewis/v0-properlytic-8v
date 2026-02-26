@@ -48,6 +48,8 @@ def download_data(request):
         # UK
         "uk_ppd": _download_uk_ppd,
         "boe_rate": _download_boe_rate,
+        # Mortgage
+        "hmda": _download_hmda,
     }
 
     if source == "all":
@@ -511,4 +513,18 @@ def _download_boe_rate(bucket):
             bucket, "boe/bank_rate.csv", url, timeout=60)
     except Exception as e:
         results["bank_rate"] = {"error": str(e)}
+    return results
+
+
+def _download_hmda(bucket):
+    """CFPB HMDA mortgage data — tract-level originations. ~500MB/yr.
+    Covers denial rates, loan amounts, lender activity by census tract."""
+    results = {}
+    for year in range(2018, 2024):  # HMDA bulk available 2018-2023
+        url = f"https://s3.amazonaws.com/cfpb-hmda-public/prod/snapshot-data/{year}/{year}_public_lar_csv.zip"
+        try:
+            results[str(year)] = _upload_url_to_gcs(
+                bucket, f"hmda/hmda_lar_{year}.zip", url, timeout=900)
+        except Exception as e:
+            results[str(year)] = {"error": str(e)}
     return results
