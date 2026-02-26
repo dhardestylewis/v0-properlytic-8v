@@ -26,6 +26,8 @@ def download_data(request):
         "sf": _download_sf,
         "massgis": _download_massgis,
         "txgio": _download_txgio,
+        "philly": _download_philly,
+        "dc": _download_dc,
         # Macro / contextual
         "fred": _download_fred,
         "fhfa": _download_fhfa_hpi,
@@ -38,25 +40,19 @@ def download_data(request):
         "irs_migration": _download_irs_migration,
         "lehd": _download_lehd,
         "epa_aqi": _download_epa_aqi,
-        # Geo-contextual (scoped to our jurisdictions)
+        # Geo-contextual
         "buildings": _download_ms_buildings,
         "climate": _download_noaa_ghcnd,
         "lulc": _download_nlcd,
-        # French contextual
+        # International contextual
         "ecb_rate": _download_ecb_rate,
         "insee_hpi": _download_insee_hpi,
-        # UK
-        "uk_ppd": _download_uk_ppd,
         "boe_rate": _download_boe_rate,
         # Mortgage
         "hmda": _download_hmda,
-        # Additional US cities
-        "philly": _download_philly,
-        "dc": _download_dc,
         # Education / Safety / Disaster
         "nces_schools": _download_nces_schools,
         "fema_disasters": _download_fema_disasters,
-        "fbi_crime": _download_fbi_crime,
     }
 
     if source == "all":
@@ -315,18 +311,7 @@ def _download_hud_fmr(bucket):
     return results
 
 
-def _download_fbi_crime(bucket):
-    """FBI UCR / NIBRS crime data — state and agency level. ~200MB."""
-    datasets = {
-        "fbi/offenses_known_2022.csv": "https://cde.ucr.cjis.gov/LATEST/webapp/api/bulk-download/offenses-known?format=csv",
-    }
-    results = {}
-    for k, v in datasets.items():
-        try:
-            results[k] = _upload_url_to_gcs(bucket, k, v, timeout=300)
-        except Exception as e:
-            results[k] = {"error": str(e)}
-    return results
+# FBI crime: per-year version defined below (line ~560+)
 
 
 def _download_building_permits(bucket):
@@ -498,17 +483,7 @@ def _download_insee_hpi(bucket):
     return results
 
 
-def _download_uk_ppd(bucket):
-    """UK Land Registry Price Paid Data — complete dataset (~4GB CSV).
-    All residential property sales in England and Wales since 1995."""
-    results = {}
-    url = "http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazonaws.com/pp-complete.csv"
-    try:
-        results["ppd_complete"] = _upload_url_to_gcs(
-            bucket, "uk_ppd/pp-complete.csv", url, timeout=1200)
-    except Exception as e:
-        results["ppd_complete"] = {"error": str(e)}
-    return results
+# UK PPD: HTTPS version defined above (line ~160), this duplicate removed
 
 
 def _download_boe_rate(bucket):
@@ -538,17 +513,15 @@ def _download_hmda(bucket):
 
 
 def _download_philly(bucket):
-    """Philadelphia OPA — property assessments via Open Data Philly (Socrata)."""
-    return _paginate_socrata(bucket, "philly/opa_assessments",
-                             "https://phl.carto.com/api/v2/sql?q=SELECT+*+FROM+opa_properties_public&format=csv",
-                             paginate=False)
+    """Philadelphia OPA — property assessments via Carto SQL API (direct CSV)."""
+    url = "https://phl.carto.com/api/v2/sql?q=SELECT+*+FROM+opa_properties_public&format=csv"
+    return {"opa": _upload_url_to_gcs(bucket, "philly/opa_assessments.csv", url, timeout=600)}
 
 
 def _download_dc(bucket):
-    """Washington DC — CAMA property data via opendata.dc.gov (Socrata)."""
-    return _paginate_socrata(bucket, "dc/cama_residential",
-                             "https://opendata.dc.gov/api/views/a2bh-cepn/rows.csv?accessType=DOWNLOAD",
-                             paginate=False)
+    """Washington DC — CAMA residential property data (direct CSV)."""
+    url = "https://opendata.dc.gov/api/views/a2bh-cepn/rows.csv?accessType=DOWNLOAD"
+    return {"cama": _upload_url_to_gcs(bucket, "dc/cama_residential.csv", url, timeout=600)}
 
 
 def _download_nces_schools(bucket):

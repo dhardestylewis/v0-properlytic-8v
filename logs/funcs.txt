@@ -1,0 +1,38 @@
+﻿def ts() -> str:
+def _pip_install(pkgs: List[str]) -> None:
+def ensure_import(mod: str, pip_name: Optional[str] = None) -> None:
+def init_wandb(
+def wb_log(data: Dict[str, Any], **kw) -> None:
+def wb_config_update(data: Dict[str, Any]) -> None:
+def wb_log_artifact(path: str, name: str, artifact_type: str = "model") -> None:
+def compute_year_median_log1p_level(lf: pl.LazyFrame, min_year: int, max_year: int) -> Dict[int, float]:
+def fill_hist_lags_no_zeros(hist_mat: np.ndarray, fallback_value: float) -> np.ndarray:
+def stable_hash_expr(e: pl.Expr) -> pl.Expr:
+def bucket_hash_expr_str(col_expr: pl.Expr, n_buckets: int) -> pl.Expr:
+def build_region_id_expr() -> pl.Expr:
+def build_cat_hash_exprs(cat_cols_local: List[str]) -> List[pl.Expr]:
+def resolve_local_work_dirs(out_dir_drive: str, scratch_root: str = "/content/wm_scratch") -> Dict[str, str]:
+def copy_small_artifacts_to_drive(src_path: str, dst_dir_drive: str) -> str:
+def _np_savez_shard(
+def _iter_shards_npz(shard_paths: List[str]):
+def _nan_fill_with_median_per_col(X: np.ndarray) -> np.ndarray:
+def build_master_training_shards_v102_local(
+def derive_origin_shards_from_master(
+def _robust_loc_scale(X: np.ndarray, scale_floor: float) -> Tuple[np.ndarray, np.ndarray]:
+def fit_scalers_from_shards_v102_robust_y(
+def assert_y_scaler_contract(
+def write_scaled_shards_v102(
+def sample_token_paths_learned(K: int, H: int, phi_vec: torch.Tensor, S: int, device: str) -> torch.Tensor:
+def sample_token_paths(K: int, H: int, phi, S: int, device: str) -> torch.Tensor:
+def sample_ar1_path(n_steps: int, rank: int, phi: float, batch_size: int, device: str) -> torch.Tensor:
+def compute_shared_driver(alpha: torch.Tensor, Z_tokens: torch.Tensor) -> torch.Tensor:
+def create_denoiser_v11(target_dim: int, hist_len: int, num_dim: int, n_cat: int) -> nn.Module:
+def create_gating_network(hist_len: int, num_dim: int, n_cat: int) -> nn.Module:
+def create_token_persistence() -> TokenPersistence:
+def create_coherence_scale() -> CoherenceScale:
+def get_autocast_ctx(device: str):
+def train_diffusion_v11(
+def build_inference_context_chunked_v102(
+def sample_ddim_v11(
+def acceptance_test_increment_consistency(deltas: np.ndarray, y_anchor: np.ndarray) -> Dict[str, Any]:
+def acceptance_test_finite(deltas: np.ndarray) -> Dict[str, Any]:

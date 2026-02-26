@@ -46,6 +46,65 @@ dwelling_type_map:
   "F": CONDO       # flat
   "O": OTHER
 
+# Canonical → Worldmodel v11 column mapping
+# Used by train_modal.py to adapt canonical panel for worldmodel.py
+worldmodel_column_map:
+  parcel_id: acct
+  year: yr
+  property_value: tot_appr_val
+  sqft: living_area
+  land_area: land_ar
+  year_built: yr_blt
+  bedrooms: bed_cnt
+  bathrooms: full_bath
+  stories: nbr_story
+  lat: gis_lat
+  lon: gis_lon
+  # dwelling_type: DO NOT rename to property_type for training
+  # Reason: retrain_sample_sweep.py SF filter looks for property_type in ["SF","SFR","SINGLE"]
+  # but SF Assessor raw use codes are: A, A15, A5, AC, B, C, CD, D, DA, DWEL, etc. (114 unique)
+  # Keeping as dwelling_type causes the filter to skip, using all accounts (correct for single-jurisdiction panels)
+
+# Canonical dwelling_type → worldmodel property_type codes
+# NOTE: These canonical codes are NOT currently in the panel — the panel has raw source codes.
+# The dwelling_type_map above normalizes raw→canonical but the panel builder doesn't apply it yet.
+# When it does, these worldmodel codes would be the next translation layer.
+worldmodel_dwelling_codes:
+  single_family: SF
+  condo: CONDO
+  multi_family: MF
+  townhouse: TH
+  cooperative: COOP
+  mobile_home: MH
+  commercial: COMMERCIAL
+  vacant: VACANT
+
+# SF Assessor use codes (source: closed_roll_year property_class_code)
+# These are the RAW values in the panel's dwelling_type column for sf_ca
+sf_assessor_use_codes:
+  DWEL: single_family   # dwelling
+  COND: condo            # condominium
+  APTS: multi_family     # apartments
+  COMR: commercial
+  VCNT: vacant
+  # Many more: A, A15, A5, AC, B, C, D, DA, etc. — full mapping TBD
+
+# Contextual sources and their GCS/join status
+contextual_sources_status:
+  fred: {in_gcs: true, joins_by: year, scope: national}
+  lehd: {in_gcs: true, joins_by: county+year, scope: US}
+  fema_disasters: {in_gcs: true, joins_by: county+year, scope: US}
+  fema_nri: {in_gcs: false, joins_by: county, scope: US}
+  census_acs: {in_gcs: true, joins_by: county+year, scope: US}
+  fhfa_hpi: {in_gcs: false, joins_by: state+year, scope: US}
+  epa_aqi: {in_gcs: true, joins_by: county+year, scope: US}
+  hud_fmr: {in_gcs: false, joins_by: county+year, scope: US}
+  noaa_climate: {in_gcs: false, joins_by: county+year, scope: US}
+  irs_migration: {in_gcs: false, joins_by: county+year, scope: US}
+  boe_rate: {in_gcs: true, joins_by: year, scope: UK}
+  ecb_rate: {in_gcs: false, joins_by: year, scope: EU}
+  insee_hpi: {in_gcs: false, joins_by: year, scope: France}
+
 sources:
   hcad_houston:
     gcs_prefix: hcad

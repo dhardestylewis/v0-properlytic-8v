@@ -1,0 +1,25 @@
+[2026-02-26 22:09:03] Downloading worldmodel logic...
+[2026-02-26 22:09:03] Executing worldmodel.py context...
+[2026-02-26 22:09:03] HCAD World Model v11.0 FULLPANEL (INDUCING-TOKEN DIFFUSION)
+[2026-02-26 22:09:03] FULL_PANEL_MODE=False FULL_HORIZON_ONLY=True
+[2026-02-26 22:09:03] K_TOKENS=8 K_ACTIVE=4 PHI_INIT=0.8
+[2026-02-26 22:09:03] DIFF_BATCH=131072 DIFF_LR=0.0004 DIFF_EPOCHS=60 DIFF_EPOCHS_WARMSTART=20
+[2026-02-26 22:09:03] SCALE_FLOOR_Y=0.01 SCALE_FLOOR_NUM=0.01 SCALE_FLOOR_TGT=0.01
+[2026-02-26 22:09:03] SAMPLER_DISABLE_AUTOCAST=False SAMPLER_Z_CLIP=20.0
+[2026-02-26 22:09:03] Drive mount skipped: No module named 'google.colab'
+Traceback (most recent call last):
+  File "/pkg/modal/_runtime/container_io_manager.py", line 947, in handle_input_exception
+    yield
+  File "/pkg/modal/_container_entrypoint.py", line 172, in run_input_sync
+    values = io_context.call_function_sync()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pkg/modal/_runtime/container_io_manager.py", line 225, in call_function_sync
+    expected_value_or_values = self.finalized_function.callable(*args, **kwargs)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/eval_modal.py", line 93, in evaluate_checkpoints
+    exec(modified_wm_code, exec_globals)
+  File "<string>", line 303, in <module>
+FileNotFoundError: Panel not found
+
+
+STDERR:

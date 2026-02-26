@@ -86,14 +86,14 @@ CKPT_DIR = globals().get("CKPT_DIR") or globals().get("OUT_DIR") or os.environ.g
 FORECAST_ORIGIN_YEAR = 2025
 
 # Backtests
-RUN_FULL_BACKTEST = True
+RUN_FULL_BACKTEST = False
 BACKTEST_ORIGINS = None
 WRITE_BACKTEST_HISTORY_VARIANTS = False
 
 # Model sampling
 H = int(globals().get("H", 5))                 # annual horizons (1..H years ahead)
 S = int(globals().get("S_SCENARIOS", 256))     # scenarios
-MODEL_VERSION = "world_model_v10_2_fullpanel"
+MODEL_VERSION = "world_model_v11_inducing_token"
 
 # Checkpoint variant — set to "" for baseline, "SF500K" for the 500K-sample variant,
 # "SF200K", "SFstrat200K", etc. Must match the suffix in ckpt_origin_{year}_{suffix}.pt.
@@ -1073,56 +1073,106 @@ def _backtest_eval_summary_for_chunk(forecast_chunk_df: pd.DataFrame, acct_chunk
 
 def _get_checkpoint_paths(ckpt_dir: str):
     """
-    Scan ckpt_dir for files matching  ckpt_origin_YYYY*.pt
+    Scan ckpt_dir for checkpoint files.
+    Prefers v11 checkpoints (ckpt_v11_origin_YYYY*.pt) over v10.2.
     Returns list of (origin_year: int, path: str) tuples.
     """
     import re as _re
-    pairs = []
-    _pat = _re.compile(r"ckpt_origin_(\d{4})")
+    pairs = {}  # origin -> path (last wins, v11 overwrites v10.2)
+    _pat = _re.compile(r"ckpt_(?:v11_)?origin_(\d{4})")
     for fn in sorted(os.listdir(ckpt_dir)):
         if not fn.endswith(".pt"):
             continue
         m = _pat.search(fn)
         if m:
-            pairs.append((int(m.group(1)), os.path.join(ckpt_dir, fn)))
-    return pairs
+            origin = int(m.group(1))
+            is_v11 = "v11" in fn
+            # v11 always wins; otherwise only set if not already present
+            if is_v11 or origin not in pairs:
+                pairs[origin] = os.path.join(ckpt_dir, fn)
+    return sorted(pairs.items())
 
 
 def _load_ckpt_into_live_objects(ckpt_path: str):
     """
-    torch.load a checkpoint, hydrate global model / proj_g / proj_geo / scalers.
+    torch.load a checkpoint, hydrate global model + v11 modules (or v10.2 fallback).
     Returns the raw ckpt dict (caller reads global_medians from it).
     """
     import torch
 
     ckpt = torch.load(ckpt_path, map_location="cpu")
     _cfg_ckpt = ckpt.get("cfg", {})
+    _arch = ckpt.get("arch", "v10.2")
 
     # Architecture dims — pull from saved config or fall back to worldmodel.py globals
     _hist_len = int(_cfg_ckpt.get("FULL_HIST_LEN", globals().get("FULL_HIST_LEN", 21)))
     _H = int(_cfg_ckpt.get("H", globals().get("H", 5)))
-    _num_dim = int(_cfg_ckpt.get("NUM_DIM", globals().get("NUM_DIM", 30)))
-    _n_cat = int(_cfg_ckpt.get("N_CAT", globals().get("N_CAT", 10)))
-    _g_rank = int(_cfg_ckpt.get("GLOBAL_RANK", globals().get("GLOBAL_RANK", 8)))
-    _geo_rank = int(_cfg_ckpt.get("GEO_RANK", globals().get("GEO_RANK", 4)))
+    _num_dim = int(_cfg_ckpt.get("NUM_DIM", globals().get("NUM_DIM", 38)))
+    _n_cat = int(_cfg_ckpt.get("N_CAT", globals().get("N_CAT", 12)))
 
     _device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Create fresh instances
-    _model = create_denoiser_v102(target_dim=_H, hist_len=_hist_len,
-                                   num_dim=_num_dim, n_cat=_n_cat).to(_device)
-    _model.load_state_dict(ckpt["model_state_dict"])
-    _model.eval()
+    if _arch == "v11":
+        # ── v11: denoiser + gating + token_persistence + coh_scale ──
+        _model = create_denoiser_v11(target_dim=_H, hist_len=_hist_len,
+                                      num_dim=_num_dim, n_cat=_n_cat).to(_device)
+        _model.load_state_dict(ckpt["model_state_dict"])
+        _model.eval()
 
-    _proj_g = GlobalProjection(_g_rank).to(_device)
-    _proj_g.load_state_dict(ckpt["proj_g_state_dict"])
-    _proj_g.eval()
+        _gating_net = create_gating_network(hist_len=_hist_len,
+                                             num_dim=_num_dim, n_cat=_n_cat).to(_device)
+        _gating_net.load_state_dict(ckpt["gating_net_state_dict"])
+        _gating_net.eval()
 
-    _proj_geo = GeoProjection(_geo_rank).to(_device)
-    _proj_geo.load_state_dict(ckpt["proj_geo_state_dict"])
-    _proj_geo.eval()
+        _token_persistence = create_token_persistence().to(_device)
+        _token_persistence.load_state_dict(ckpt["token_persistence_state_dict"])
+        _token_persistence.eval()
 
-    # Scalers
+        _coh_scale = create_coherence_scale().to(_device)
+        if "coh_scale_state_dict" in ckpt:
+            _coh_scale.load_state_dict(ckpt["coh_scale_state_dict"])
+        _coh_scale.eval()
+
+        # Publish v11 modules into globals
+        globals()["model"] = _model
+        globals()["gating_net"] = _gating_net
+        globals()["token_persistence"] = _token_persistence
+        globals()["coh_scale"] = _coh_scale
+
+        _phi_k = _token_persistence.get_phi_list()
+        _sigma_u = _coh_scale.get_sigma()
+        print(f"[{_ts()}] Loaded v11 checkpoint: {os.path.basename(ckpt_path)} "
+              f"| H={_H} hist_len={_hist_len} num_dim={_num_dim} n_cat={_n_cat} "
+              f"| phi_k={[f'{p:.3f}' for p in _phi_k]} sigma_u={_sigma_u:.3f} "
+              f"| device={_device}")
+
+    else:
+        # ── v10.2 fallback ──
+        _g_rank = int(_cfg_ckpt.get("GLOBAL_RANK", globals().get("GLOBAL_RANK", 8)))
+        _geo_rank = int(_cfg_ckpt.get("GEO_RANK", globals().get("GEO_RANK", 4)))
+
+        _model = create_denoiser_v102(target_dim=_H, hist_len=_hist_len,
+                                       num_dim=_num_dim, n_cat=_n_cat).to(_device)
+        _model.load_state_dict(ckpt["model_state_dict"])
+        _model.eval()
+
+        _proj_g = GlobalProjection(_g_rank).to(_device)
+        _proj_g.load_state_dict(ckpt["proj_g_state_dict"])
+        _proj_g.eval()
+
+        _proj_geo = GeoProjection(_geo_rank).to(_device)
+        _proj_geo.load_state_dict(ckpt["proj_geo_state_dict"])
+        _proj_geo.eval()
+
+        globals()["model"] = _model
+        globals()["proj_g"] = _proj_g
+        globals()["proj_geo"] = _proj_geo
+
+        print(f"[{_ts()}] Loaded v10.2 checkpoint: {os.path.basename(ckpt_path)} "
+              f"| H={_H} hist_len={_hist_len} num_dim={_num_dim} n_cat={_n_cat} "
+              f"| device={_device}")
+
+    # Scalers (same format for both versions)
     _y_scaler = SimpleScaler(
         mean=np.array(ckpt["y_scaler_mean"], dtype=np.float32),
         scale=np.array(ckpt["y_scaler_scale"], dtype=np.float32),
@@ -1136,22 +1186,13 @@ def _load_ckpt_into_live_objects(ckpt_path: str):
         scale=np.array(ckpt["t_scaler_scale"], dtype=np.float32),
     )
 
-    # Attach scalers to model (used by sampler for inverse_transform)
     _model._y_scaler = _y_scaler
     _model._n_scaler = _n_scaler
     _model._t_scaler = _t_scaler
 
-    # Publish into the module-level global namespace so the sampler can find them
-    globals()["model"] = _model
-    globals()["proj_g"] = _proj_g
-    globals()["proj_geo"] = _proj_geo
     globals()["y_scaler"] = _y_scaler
     globals()["n_scaler"] = _n_scaler
     globals()["t_scaler"] = _t_scaler
-
-    print(f"[{_ts()}] Loaded checkpoint: {os.path.basename(ckpt_path)} "
-          f"| H={_H} hist_len={_hist_len} num_dim={_num_dim} n_cat={_n_cat} "
-          f"| device={_device}")
 
     return ckpt
 
@@ -1183,18 +1224,18 @@ def _build_inference_for_accounts_at_origin(accts_batch, origin: int, global_med
 
 def _sample_scenarios_for_inference_context(ctx, H: int, S: int, origin: int, prop_batch_size: int):
     """
-    Run DDIM sampler over the inference context in account batches of prop_batch_size.
+    v11: Run DDIM sampler over the inference context in account batches of prop_batch_size.
+    Uses inducing-token paths and gating network for coherent joint scenarios.
     Returns dict with keys: acct, y_levels (N,S,H), price_levels (N,S,H).
     """
     import torch
 
     _model_ref = globals().get("model")
-    _proj_g_ref = globals().get("proj_g")
-    _proj_geo_ref = globals().get("proj_geo")
+    _gating_net_ref = globals().get("gating_net")
     _y_scaler_ref = globals().get("y_scaler")
 
-    if _model_ref is None or _proj_g_ref is None or _proj_geo_ref is None:
-        raise RuntimeError("Model/projections not in globals.  Call _load_ckpt_into_live_objects first.")
+    if _model_ref is None or _gating_net_ref is None:
+        raise RuntimeError("Model/gating_net not in globals.  Call _load_ckpt_into_live_objects first.")
 
     _device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -1206,26 +1247,15 @@ def _sample_scenarios_for_inference_context(ctx, H: int, S: int, origin: int, pr
     _diff_steps = int(globals().get("DIFF_STEPS_SAMPLE", 20))
     _sched = Scheduler(_diff_steps, _device)
 
-    # Architecture dims for latent AR(1) paths
-    _g_rank = int(globals().get("GLOBAL_RANK", 8))
-    _geo_rank = int(globals().get("GEO_RANK", 4))
-    _phi_g = float(globals().get("PHI_GLOBAL", 0.85))
-    _phi_geo = float(globals().get("PHI_GEO", 0.70))
-
-    # Sample S global latent paths (shared across all accounts)
-    Zg_scenarios = torch.stack([
-        sample_ar1_path(_H, _g_rank, _phi_g, 1, _device).squeeze(0)
-        for _ in range(_S)
-    ])  # [S, H, Rg]
-
-    # Unique region IDs → per-region geo paths
-    unique_rids = np.unique(ctx["region_id"])
-    Zgeo_scenarios = {}
-    for rid in unique_rids:
-        Zgeo_scenarios[int(rid)] = torch.stack([
-            sample_ar1_path(_H, _geo_rank, _phi_geo, 1, _device).squeeze(0)
-            for _ in range(_S)
-        ])  # [S, H, Rgeo]
+    # v11: Sample K token paths once (shared across all parcels for coherence)
+    _K = int(globals().get("K_TOKENS", 8))
+    _token_persistence_ref = globals().get("token_persistence")  # learned per-token phi
+    _coh_scale_ref = globals().get("coh_scale")  # learned coherence scale
+    if _token_persistence_ref is not None:
+        Z_tokens = sample_token_paths(_K, _H, _token_persistence_ref, _S, _device)  # [S, K, H]
+    else:
+        _phi = float(globals().get("PHI_INIT", 0.80))
+        Z_tokens = sample_token_paths(_K, _H, _phi, _S, _device)  # [S, K, H]
 
     # Batch over accounts
     all_y = []
@@ -1234,18 +1264,17 @@ def _sample_scenarios_for_inference_context(ctx, H: int, S: int, origin: int, pr
     for start in range(0, N, prop_batch_size):
         end = min(start + prop_batch_size, N)
 
-        deltas = sample_ddim_v102_coherent_stable(
+        deltas = sample_ddim_v11(
             model=_model_ref,
-            proj_g=_proj_g_ref,
-            proj_geo=_proj_geo_ref,
+            gating_net=_gating_net_ref,
             sched=_sched,
             hist_y_b=ctx["hist_y"][start:end],
             cur_num_b=ctx["cur_num"][start:end],
             cur_cat_b=ctx["cur_cat"][start:end],
             region_id_b=ctx["region_id"][start:end],
-            Zg_scenarios=Zg_scenarios,
-            Zgeo_scenarios=Zgeo_scenarios,
+            Z_tokens=Z_tokens,
             device=_device,
+            coh_scale=_coh_scale_ref,
         )  # (end-start, S, H) numpy
 
         # Convert deltas to y-levels and then price levels

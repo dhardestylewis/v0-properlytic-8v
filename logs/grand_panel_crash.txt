@@ -1,0 +1,53 @@
+STDOUT:
+[2026-02-26 21:20:10] Loaded hcad_houston: 29,962,136 rows
+[2026-02-26 21:20:13] Loaded nyc: 1,860,294 rows
+[2026-02-26 21:20:15] Loaded philly: 583,581 rows
+[2026-02-26 21:20:22] Loaded sf_ca: 3,722,920 rows
+[2026-02-26 21:20:31] Grand panel: 36,128,931 rows, 2697.4 MB from 4 jurisdictions
+[2026-02-26 21:22:46] Uploaded grand panel to gs://properlytic-raw-data/panel/grand_panel/part.parquet
+[2026-02-26 21:22:46] Raw panel: 36,128,931 rows, columns: ['acct', 'yr', 'tot_appr_val', 'prior_tot_appr_val', 'prior_tot_mkt_val', 'bld_ar', 'land_ar', 'acreage', 'yr_impr', 'yr_annexed', 'state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'bld_building_count', 'bld_sum_im_sq_ft', 'bld_max_yr_remodel', 'bld_min_date_erected', 'bld_mean_accrued_depr_pct', 'bld_sum_cama_replacement_cost', 'land_line_count', 'land_sum_land_ar', 'land_sum_land_val', 'land_mean_land_val', 'deeds_count', 'deeds_count_5yr', 'deeds_last_event_year', 'deeds_max_sale_price', 'deeds_last_sale_price', 'permits_count', 'permits_count_5yr', 'permits_last_event_year', 'permits_sum_value', 'permits_max_value', 'owners_line_count', 'owners_name_nunique', 'owners_any_entity', 'jur_value_juris_count', 'jur_value_sum_value', 'jur_value_mean_value', 'jur_exempt_line_count', 'jur_exempt_sum_value', 'jur_exempt_any_homestead', 'tot_mkt_val_lag1', 'assessed_val_lag1', 'land_val_lag1', 'bld_val_lag1', 'x_features_val_lag1', 'ag_val_lag1', 'new_construction_val_lag1', 'tot_rcn_val_lag1', 'gis_lat', 'gis_lon', 'gis_zip', 'gis_shape_area', 'gis_shape_leng', 'gis_year_used', 'parcel_id', 'jurisdiction', 'year', 'property_value', 'sale_price', 'sale_date', 'assessed_value', 'land_value', 'improvement_value', 'dwelling_type', 'sqft', 'land_area', 'year_built', 'bedrooms', 'bathrooms', 'stories', 'address', 'lat', 'lon', 'lehd_total_jobs', 'lehd_retail_jobs', 'lehd_finance_jobs', 'fema_disaster_count']
+[2026-02-26 21:22:53] Dropping 48 all-null columns: ['prior_tot_appr_val', 'prior_tot_mkt_val', 'bld_ar', 'acreage', 'yr_impr', 'yr_annexed', 'bld_building_count', 'bld_sum_im_sq_ft', 'bld_max_yr_remodel', 'bld_min_date_erected', 'bld_mean_accrued_depr_pct', 'bld_sum_cama_replacement_cost', 'land_line_count', 'land_sum_land_ar', 'land_sum_land_val', 'land_mean_land_val', 'deeds_count', 'deeds_count_5yr', 'deeds_last_event_year', 'deeds_max_sale_price', 'deeds_last_sale_price', 'permits_count', 'permits_count_5yr', 'permits_last_event_year', 'permits_sum_value', 'permits_max_value', 'owners_line_count', 'owners_name_nunique', 'owners_any_entity', 'jur_value_juris_count', 'jur_value_sum_value', 'jur_value_mean_value', 'jur_exempt_line_count', 'jur_exempt_sum_value', 'jur_exempt_any_homestead', 'tot_mkt_val_lag1', 'assessed_val_lag1', 'land_val_lag1', 'bld_val_lag1', 'x_features_val_lag1', 'ag_val_lag1', 'new_construction_val_lag1', 'tot_rcn_val_lag1', 'gis_shape_area', 'gis_shape_leng', 'gis_year_used', 'gis_lat', 'gis_lon']
+[2026-02-26 21:22:54] Adapted: 5,307,528 rows, 982,925 parcels, years 0-2026
+[2026-02-26 21:22:54] Setting up v11 training pipeline...
+[2026-02-26 21:22:54] Panel loaded. Columns: ['state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'gis_zip', 'acct', 'jurisdiction', 'yr', 'tot_appr_val', 'sale_price', 'sale_date', 'assessed_value', 'land_value', 'improvement_value', 'dwelling_type', 'living_area', 'land_ar', 'yr_blt', 'bed_cnt', 'full_bath', 'nbr_story', 'address', 'lehd_total_jobs', 'lehd_retail_jobs', 'lehd_finance_jobs', 'fema_disaster_count']
+[2026-02-26 21:22:54] Training config: origin=2022, epochs=60, sample=500,000
+[2026-02-26 21:22:54] GPU: NVIDIA A100-SXM4-40GB, 40960 MiB
+[2026-02-26 21:22:56] Executing worldmodel.py (Cell 1)...
+[2026-02-26 21:23:05] HCAD World Model v11.0 FULLPANEL (INDUCING-TOKEN DIFFUSION)
+[2026-02-26 21:23:05] FULL_PANEL_MODE=False FULL_HORIZON_ONLY=True
+[2026-02-26 21:23:05] K_TOKENS=8 K_ACTIVE=4 PHI_INIT=0.8
+[2026-02-26 21:23:05] DIFF_BATCH=131072 DIFF_LR=0.0004 DIFF_EPOCHS=60 DIFF_EPOCHS_WARMSTART=20
+[2026-02-26 21:23:05] SCALE_FLOOR_Y=0.01 SCALE_FLOOR_NUM=0.01 SCALE_FLOOR_TGT=0.01
+[2026-02-26 21:23:05] SAMPLER_DISABLE_AUTOCAST=False SAMPLER_Z_CLIP=20.0
+[2026-02-26 21:23:05] Drive mount skipped: name 'drive' is not defined
+[2026-02-26 21:23:05] Loading panel: /tmp/panel_all_adapted.parquet
+[2026-02-26 21:23:05] Panel acceptance: PASS
+[2026-02-26 21:23:05] FEATURE AUDIT — DROPPED numeric: ['ag_val_lag1', 'assessed_val_lag1', 'bld_mean_accrued_depr_pct', 'bld_sum_cama_replacement_cost', 'bld_val_lag1', 'gis_year_used', 'land_val_lag1', 'new_construction_val_lag1', 'tot_mkt_val_lag1', 'tot_rcn_val_lag1', 'x_features_val_lag1']
+[2026-02-26 21:23:05] Features: 14 numeric, 16 categorical
+[2026-02-26 21:23:05] FEATURE AUDIT — numeric (14): ['sale_price', 'assessed_value', 'land_value', 'improvement_value', 'living_area', 'land_ar', 'yr_blt', 'bed_cnt', 'full_bath', 'nbr_story', 'lehd_total_jobs', 'lehd_retail_jobs', 'lehd_finance_jobs', 'fema_disaster_count']
+[2026-02-26 21:23:05] FEATURE AUDIT — categorical (16): ['state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'gis_zip', 'jurisdiction', 'sale_date', 'dwelling_type', 'address']
+[2026-02-26 21:23:05] GEO_COL=gis_zip HAS_LATLON=False
+[2026-02-26 21:23:05] Y_FALLBACK_LOG1P (year 0 median) = 13.010316
+[2026-02-26 21:23:05] Discovering accounts...
+[2026-02-26 21:23:06] all_accts=982,925
+[2026-02-26 21:23:07] Sampled accounts: 500,000
+[2026-02-26 21:23:07] work_dirs={'OUT_DIR_DRIVE': '/output/all_v11', 'SCRATCH_ROOT': '/content/wm_scratch', 'RAW_SHARD_ROOT': '/content/wm_scratch/train_shards_raw', 'SCALED_SHARD_ROOT': '/content/wm_scratch/train_shards_scaled'}
+[2026-02-26 21:23:07] POST-EXEC DIAGNOSTICS:
+  MIN_YEAR=0 MAX_YEAR=2026 H=5 SEAM_YEAR=2026
+  FULL_HIST_LEN=2027 FULL_HORIZON_ONLY=True
+  train_accts count=500000
+  num_use count=14
+  cat_use count=16
+  PANEL_PATH=/tmp/panel_all_adapted.parquet
+  lf columns (33): ['state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'gis_zip', 'acct', 'jurisdiction', 'yr']...
+  Patched EVAL_ORIGINS=[2019, 2020, 2021, 2022]
+  Forced NUM_DIM=14 N_CAT=16 to match feature lists
+  Injected into cfg: FULL_HIST_LEN=2027 H=5
+[2026-02-26 21:23:07] Executing retrain_sample_sweep.py (Cell 1.5)...
+
+
+STDERR:
++- Error ---------------------------------------------------------------------+
+| 'charmap' codec can't encode character '\U0001f52c' in position 0:          |
+| character maps to <undefined>                                               |
++-----------------------------------------------------------------------------+

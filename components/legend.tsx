@@ -16,10 +16,10 @@ interface LegendProps {
   originYear?: number
 }
 
-export function Legend({ className, colorMode = "growth", onColorModeChange, year = 2027, originYear = 2025 }: LegendProps) {
+export function Legend({ className, colorMode = "growth", onColorModeChange, year = 2026, originYear = 2025 }: LegendProps) {
   // Compute horizon-aware labels from empirical percentile fits
   const presentYear = (originYear ?? 2025) + 1
-  const yrsFromPresent = Math.max(Math.abs((year ?? 2027) - presentYear), 1)
+  const yrsFromPresent = Math.max(Math.abs((year ?? 2026) - presentYear), 1)
   // Round to nearest 5 for clean labels
   const round5 = (n: number) => Math.round(n / 5) * 5
   const p05 = round5(-5 - 4 * yrsFromPresent)   // 1yr≈-10, 3yr≈-15, 5yr≈-25

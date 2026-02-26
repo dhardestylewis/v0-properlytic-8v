@@ -1,0 +1,77 @@
+﻿e_mean_value', 'jur_exempt_line_count', 'jur_exempt_sum_value', 'jur_exempt_any_homestead', 'tot_mkt_val_lag1', 'assessed_val_lag1', 'land_val_lag1', 'bld_val_lag1', 'x_features_val_lag1', 'ag_val_lag1', 'new_construction_val_lag1', 'tot_rcn_val_lag1', 'gis_shape_area', 'gis_shape_leng', 'gis_year_used', 'gis_lat', 'gis_lon']
+
+[2026-02-26 22:00:34] Adapted: 5,307,528 rows, 982,925 parcels, years 0-2026
+
+[2026-02-26 22:00:34] Setting up v11 training pipeline...
+
+[2026-02-26 22:00:34] Panel loaded. Columns: ['state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'gis_zip', 'jurisdiction', 'acct', 'yr', 'tot_appr_val', 'sale_price', 'sale_date', 'assessed_value', 'land_value', 'improvement_value', 'dwelling_type', 'living_area', 'land_ar', 'yr_blt', 'bed_cnt', 'full_bath', 'nbr_story', 'address', 'lehd_total_jobs', 'lehd_retail_jobs', 'lehd_finance_jobs', 'fema_disaster_count']
+
+[2026-02-26 22:00:34] Training config: origin=2019, epochs=60, sample=500,000
+
+[2026-02-26 22:00:34] GPU: NVIDIA A100-SXM4-40GB, 40960 MiB
+
+[2026-02-26 22:00:35] Executing worldmodel.py (Cell 1)...
+
+[2026-02-26 22:00:39] HCAD World Model v11.0 FULLPANEL (INDUCING-TOKEN DIFFUSION)
+
+[2026-02-26 22:00:39] FULL_PANEL_MODE=False FULL_HORIZON_ONLY=True
+
+[2026-02-26 22:00:39] K_TOKENS=8 K_ACTIVE=4 PHI_INIT=0.8
+
+[2026-02-26 22:00:39] DIFF_BATCH=131072 DIFF_LR=0.0004 DIFF_EPOCHS=60 DIFF_EPOCHS_WARMSTART=20
+
+[2026-02-26 22:00:39] SCALE_FLOOR_Y=0.01 SCALE_FLOOR_NUM=0.01 SCALE_FLOOR_TGT=0.01
+
+[2026-02-26 22:00:39] SAMPLER_DISABLE_AUTOCAST=False SAMPLER_Z_CLIP=20.0
+
+[2026-02-26 22:00:39] Drive mount skipped: name 'drive' is not defined
+
+[2026-02-26 22:00:39] Loading panel: /tmp/panel_all_adapted.parquet
+
+[2026-02-26 22:00:39] Panel acceptance: PASS
+
+[2026-02-26 22:00:39] FEATURE AUDIT ∙ DROPPED numeric: ['ag_val_lag1', 'assessed_val_lag1', 'bld_mean_accrued_depr_pct', 'bld_sum_cama_replacement_cost', 'bld_val_lag1', 'gis_year_used', 'land_val_lag1', 'new_construction_val_lag1', 'tot_mkt_val_lag1', 'tot_rcn_val_lag1', 'x_features_val_lag1']
+
+[2026-02-26 22:00:39] Features: 14 numeric, 16 categorical
+
+[2026-02-26 22:00:39] FEATURE AUDIT ∙ numeric (14): ['sale_price', 'assessed_value', 'land_value', 'improvement_value', 'living_area', 'land_ar', 'yr_blt', 'bed_cnt', 'full_bath', 'nbr_story', 'lehd_total_jobs', 'lehd_retail_jobs', 'lehd_finance_jobs', 'fema_disaster_count']
+
+[2026-02-26 22:00:39] FEATURE AUDIT ∙ categorical (16): ['state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'gis_zip', 'jurisdiction', 'sale_date', 'dwelling_type', 'address']
+
+[2026-02-26 22:00:39] GEO_COL=gis_zip HAS_LATLON=False
+
+[2026-02-26 22:00:39] Y_FALLBACK_LOG1P (year 0 median) = 13.010316
+
+[2026-02-26 22:00:39] Discovering accounts...
+
+[2026-02-26 22:00:40] all_accts=982,925
+
+[2026-02-26 22:00:41] Sampled accounts: 500,000
+
+[2026-02-26 22:00:41] work_dirs={'OUT_DIR_DRIVE': '/output/all_v11', 'SCRATCH_ROOT': '/content/wm_scratch', 'RAW_SHARD_ROOT': '/content/wm_scratch/train_shards_raw', 'SCALED_SHARD_ROOT': '/content/wm_scratch/train_shards_scaled'}
+
+[2026-02-26 22:00:41] POST-EXEC DIAGNOSTICS:
+
+  MIN_YEAR=0 MAX_YEAR=2026 H=5 SEAM_YEAR=2026
+
+  FULL_HIST_LEN=2027 FULL_HORIZON_ONLY=True
+
+  train_accts count=500000
+
+  num_use count=14
+
+  cat_use count=16
+
+  PANEL_PATH=/tmp/panel_all_adapted.parquet
+
+  lf columns (33): ['state_class', 'school_dist', 'Neighborhood_Code', 'Neighborhood_Grp', 'Market_Area_1', 'Market_Area_2', 'econ_area', 'econ_bld_class', 'center_code', 'dsc_cd', 'value_status', 'gis_zip', 'jurisdiction', 'acct', 'yr']...
+
+  Patched EVAL_ORIGINS=[2016, 2017, 2018, 2019]
+
+  Forced NUM_DIM=14 N_CAT=16 to match feature lists
+
+  Injected into cfg: FULL_HIST_LEN=2027 H=5
+
+[2026-02-26 22:00:41] Executing retrain_sample_sweep.py (Cell 1.5)...
+
+

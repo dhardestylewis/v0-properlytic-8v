@@ -81,6 +81,19 @@ SOURCES = {
             "lat": "latitude", "lon": "longitude",
         },
     },
+    "philly": {
+        "gcs_prefix": "philly",
+        "format": "csv_chunked",
+        "mapping": {
+            "parcel_id": "parcel_number", "assessed_value": "market_value",
+            "sale_price": "sale_price", "sale_date": "sale_date",
+            "dwelling_type": "category_code", "sqft": "total_livable_area",
+            "land_area": "total_area", "year_built": "year_built",
+            "bedrooms": "number_of_bedrooms", "bathrooms": "number_of_bathrooms",
+            "stories": "number_stories", "address": "location",
+            "lat": "lat", "lon": "lng",
+        },
+    },
 }
 
 CANONICAL_COLS = [
@@ -158,69 +171,17 @@ def build_panel(request):
     return json.dumps(results, indent=2, default=str)
 
 
-def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, skip_context):
-    """Read raw data, map to canonical schema, join contextual, write partition."""
-    fmt = cfg.get("format", "")
-    mapping = cfg.get("mapping", {})
-
-    # --- Read raw data ---
-    if fmt == "parquet":
-        blob = bucket.blob(cfg["gcs_path"])
-        buf = io.BytesIO(blob.download_as_bytes())
-        df = pd.read_parquet(buf)
-    elif fmt == "csv_chunked":
-        dfs = []
-        prefix = cfg["gcs_prefix"]
-        blobs = list(bucket.list_blobs(prefix=prefix))
-        blobs = [b for b in blobs if b.name.endswith(".csv")][:max_chunks]
-        for blob_obj in blobs:
-            try:
-                text = blob_obj.download_as_text()
-                chunk = pd.read_csv(io.StringIO(text), low_memory=False)
-                dfs.append(chunk)
-            except Exception:
-                continue
-        if not dfs:
-            return {"error": "No CSV chunks found"}
-        df = pd.concat(dfs, ignore_index=True)
-    elif fmt == "csv_gz":
-        dfs = []
-        prefix = cfg["gcs_prefix"]
-        blobs = list(bucket.list_blobs(prefix=prefix))
-        blobs = [b for b in blobs if b.name.endswith(".csv.gz") or b.name.endswith(".csv")][:max_chunks]
-        for blob_obj in blobs:
-            try:
-                data = blob_obj.download_as_bytes()
-                chunk = pd.read_csv(io.BytesIO(data),
-                    compression="gzip" if blob_obj.name.endswith(".gz") else None,
-                    low_memory=False)
-                dfs.append(chunk)
-            except Exception:
-                continue
-        if not dfs:
-            return {"error": "No CSV files found"}
-        df = pd.concat(dfs, ignore_index=True)
-    else:
-        return {"error": f"Unsupported format: {fmt}"}
-
-    if dry_run:
-        return {
-            "columns": list(df.columns),
-            "rows": len(df),
-            "dtypes": {c: str(df[c].dtype) for c in df.columns[:20]},
-            "sample": df.head(3).to_dict(orient="records"),
-        }
-
-    # --- Map to canonical schema ---
+def _map_chunk_to_canonical(df_chunk, mapping, derived, jurisdiction):
+    """Map a raw DataFrame chunk to canonical schema. Used per-chunk to reduce memory."""
     mapped = pd.DataFrame()
     for canon_col, src_col in mapping.items():
-        if src_col in df.columns:
-            mapped[canon_col] = df[src_col]
+        if src_col in df_chunk.columns:
+            mapped[canon_col] = df_chunk[src_col]
 
     # Handle derived fields
-    for canon_col, expr in cfg.get("derived", {}).items():
+    for canon_col, expr in derived.items():
         try:
-            mapped[canon_col] = df.eval(expr)
+            mapped[canon_col] = df_chunk.eval(expr)
         except Exception:
             pass
 
@@ -231,14 +192,145 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
         if col not in mapped.columns:
             mapped[col] = None
 
-    mapped = mapped[CANONICAL_COLS]
+    return mapped[CANONICAL_COLS]
+
+
+def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, skip_context):
+    """Read raw data, map to canonical schema, join contextual, write partition.
+    Uses chunked reads to avoid OOM on large sources (HCAD 2.4GB, Cook 1.2GB+, DVF 400MB+)."""
+    import traceback
+    fmt = cfg.get("format", "")
+    mapping = cfg.get("mapping", {})
+    derived = cfg.get("derived", {})
+
+    # --- Determine columns we actually need from raw data ---
+    needed_raw_cols = set(mapping.values())
+    # Also need columns referenced in derived expressions
+    for expr in derived.values():
+        # Simple heuristic: extract word tokens that could be column names
+        for token in expr.replace("+", " ").replace("*", " ").replace("(", " ").replace(")", " ").replace("'", " ").replace(",", " ").split():
+            try:
+                float(token)
+            except ValueError:
+                if token not in ("0.5", "0", "1"):
+                    needed_raw_cols.add(token.strip())
+
+    # --- Read raw data (CHUNKED to avoid OOM) ---
+    if fmt == "parquet":
+        blob = bucket.blob(cfg["gcs_path"])
+        data = blob.download_as_bytes()
+        pf = pq.ParquetFile(io.BytesIO(data))
+
+        if dry_run:
+            # Read just first row group for dry run
+            first_rg = pf.read_row_group(0).to_pandas()
+            return {
+                "columns": list(first_rg.columns),
+                "rows": pf.metadata.num_rows,
+                "row_groups": pf.metadata.num_row_groups,
+                "dtypes": {c: str(first_rg[c].dtype) for c in first_rg.columns[:20]},
+                "sample": first_rg.head(3).to_dict(orient="records"),
+            }
+
+        # Read row groups one at a time, map each to canonical, then concat
+        # This way we never hold the full raw DataFrame in memory
+        available_cols = [c for c in needed_raw_cols if c in pf.schema.names]
+        mapped_chunks = []
+        for i in range(pf.metadata.num_row_groups):
+            rg = pf.read_row_group(i, columns=available_cols if available_cols else None).to_pandas()
+            mapped_chunks.append(_map_chunk_to_canonical(rg, mapping, derived, jurisdiction))
+            del rg  # free memory immediately
+        mapped = pd.concat(mapped_chunks, ignore_index=True)
+        del mapped_chunks, data
+
+    elif fmt == "csv_chunked":
+        prefix = cfg["gcs_prefix"]
+        blobs = list(bucket.list_blobs(prefix=prefix))
+        blobs = [b for b in blobs if b.name.endswith(".csv")][:max_chunks]
+
+        if not blobs:
+            return {"error": "No CSV chunks found"}
+
+        if dry_run:
+            text = blobs[0].download_as_text()
+            sample = pd.read_csv(io.StringIO(text), low_memory=False, nrows=100)
+            return {
+                "columns": list(sample.columns),
+                "chunks_found": len(blobs),
+                "dtypes": {c: str(sample[c].dtype) for c in sample.columns[:20]},
+                "sample": sample.head(3).to_dict(orient="records"),
+            }
+
+        # Map each CSV chunk independently — only hold canonical cols in memory
+        mapped_chunks = []
+        for blob_obj in blobs:
+            try:
+                text = blob_obj.download_as_text()
+                chunk = pd.read_csv(io.StringIO(text), low_memory=False)
+                mapped_chunks.append(_map_chunk_to_canonical(chunk, mapping, derived, jurisdiction))
+                del chunk  # free raw data immediately
+            except Exception:
+                continue
+        if not mapped_chunks:
+            return {"error": "No CSV chunks could be parsed"}
+        mapped = pd.concat(mapped_chunks, ignore_index=True)
+        del mapped_chunks
+
+    elif fmt == "csv_gz":
+        prefix = cfg["gcs_prefix"]
+        blobs = list(bucket.list_blobs(prefix=prefix))
+        blobs = [b for b in blobs if b.name.endswith(".csv.gz") or b.name.endswith(".csv")][:max_chunks]
+
+        if not blobs:
+            return {"error": "No CSV files found"}
+
+        if dry_run:
+            data = blobs[0].download_as_bytes()
+            sample = pd.read_csv(io.BytesIO(data),
+                compression="gzip" if blobs[0].name.endswith(".gz") else None,
+                low_memory=False, nrows=100)
+            return {
+                "columns": list(sample.columns),
+                "files_found": len(blobs),
+                "dtypes": {c: str(sample[c].dtype) for c in sample.columns[:20]},
+                "sample": sample.head(3).to_dict(orient="records"),
+            }
+
+        # Map each file independently to canonical schema
+        mapped_chunks = []
+        for blob_obj in blobs:
+            try:
+                data = blob_obj.download_as_bytes()
+                chunk = pd.read_csv(io.BytesIO(data),
+                    compression="gzip" if blob_obj.name.endswith(".gz") else None,
+                    low_memory=False)
+                mapped_chunks.append(_map_chunk_to_canonical(chunk, mapping, derived, jurisdiction))
+                del chunk, data  # free raw data immediately
+            except Exception:
+                continue
+        if not mapped_chunks:
+            return {"error": "No CSV files could be parsed"}
+        mapped = pd.concat(mapped_chunks, ignore_index=True)
+        del mapped_chunks
+    else:
+        return {"error": f"Unsupported format: {fmt}"}
 
     # Unified target: property_value = coalesce(sale_price, assessed_value)
     mapped["property_value"] = mapped["sale_price"].fillna(mapped["assessed_value"])
 
-    # Coerce year to int; if year is null, try to derive from sale_date
-    if mapped["year"].isna().all() and mapped["sale_date"].notna().any():
-        mapped["year"] = pd.to_datetime(mapped["sale_date"], errors="coerce").dt.year
+    # Coerce year to int; if year is null, try to derive from sale_date or year_built
+    if mapped["year"].isna().all():
+        if mapped["sale_date"].notna().any():
+            # Try parsing sale_date with multiple strategies
+            sd = mapped["sale_date"].astype(str).str.strip()
+            parsed = pd.to_datetime(sd, errors="coerce", infer_datetime_format=True)
+            if parsed.notna().any():
+                mapped["year"] = parsed.dt.year
+                print(f"  ✅ Derived year from sale_date: {int(mapped['year'].min())}-{int(mapped['year'].max())}")
+        # Fallback: use year_built if sale_date parsing failed
+        if mapped["year"].isna().all() and mapped.get("year_built") is not None and mapped["year_built"].notna().any():
+            mapped["year"] = pd.to_numeric(mapped["year_built"], errors="coerce").astype("Int64")
+            print(f"  ⚠️ Derived year from year_built (fallback): {int(mapped['year'].min())}-{int(mapped['year'].max())}")
     if mapped["year"].notna().any():
         mapped["year"] = pd.to_numeric(mapped["year"], errors="coerce").astype("Int64")
 
@@ -279,6 +371,18 @@ def _build_partition(client, bucket, jurisdiction, cfg, max_chunks, dry_run, ski
         # IRS migration: county
         if county_fips:
             context_cols_added += _join_irs_migration(bucket, mapped, county_fips)
+
+        # Census ACS: county-level fallback (population, income, home value)
+        if county_fips:
+            context_cols_added += _join_census_acs(bucket, mapped, county_fips)
+
+        # FHFA HPI: state-level
+        if state_fips:
+            context_cols_added += _join_fhfa_hpi(bucket, mapped, state_fips)
+
+        # FEMA Disasters: county + year
+        if county_fips:
+            context_cols_added += _join_fema_disasters(bucket, mapped, county_fips)
 
         # International contextual: ECB + INSEE for France, BoE for UK
         if jurisdiction == "france_dvf":
@@ -537,6 +641,57 @@ def _join_irs_migration(bucket, panel, county_fips):
         pass
     return added
 
+def _join_fred(bucket, panel):
+    """Join FRED macroeconomic indicators by year."""
+    added = []
+    try:
+        fred_vars = ["CPIAUCSL.csv", "MORTGAGE30US.csv", "UNRATE.csv", "HOUST.csv", "PAYEMS.csv", "DSPIC96.csv", "USSTHPI.csv"]
+        for var_file in fred_vars:
+            try:
+                blob = bucket.blob(f"fred/{var_file}")
+                if not blob.exists(): continue
+                text = blob.download_as_text()
+                var_name = var_file.replace(".csv", "").lower()
+                df = pd.read_csv(io.StringIO(text), low_memory=False)
+                # Ensure DATE column exists and mapped correctly
+                date_col = [c for c in df.columns if "date" in c.lower()][0]
+                val_col = [c for c in df.columns if c.lower() != "date"][0]
+                
+                df["_year"] = pd.to_datetime(df[date_col], errors="coerce").dt.year
+                df["_val"] = pd.to_numeric(df[val_col], errors="coerce")
+                annual = df.groupby("_year")["_val"].mean().to_dict()
+                
+                col_name = f"fred_{var_name}"
+                panel[col_name] = panel["year"].map(annual)
+                added.append(col_name)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return added
+
+def _join_climate(bucket, panel, county_fips):
+    """Join NOAA climate risk factors by county."""
+    added = []
+    try:
+        blob = bucket.blob("climate/nca_county_risk.csv")
+        if blob.exists():
+            text = blob.download_as_text()
+            clim = pd.read_csv(io.StringIO(text), low_memory=False)
+            fips_col = [c for c in clim.columns if "fips" in c.lower()][0] if any("fips" in c.lower() for c in clim.columns) else None
+            if fips_col:
+                clim[fips_col] = clim[fips_col].astype(str).str.zfill(5)
+                row = clim[clim[fips_col] == county_fips]
+                if not row.empty:
+                    cols_to_add = [c for c in clim.columns if "risk" in c.lower() or "score" in c.lower()]
+                    for c in cols_to_add:
+                        panel[f"climate_{c.lower()}"] = row.iloc[0][c]
+                        added.append(f"climate_{c.lower()}")
+    except Exception:
+        pass
+    return added
+
+
 
 def _join_ecb_rate(bucket, panel):
     """Join ECB MRO rate by year (for France/EU parcels)."""
@@ -595,6 +750,112 @@ def _join_insee_hpi(bucket, panel):
             annual = hpi.groupby("_year")["_val"].mean().to_dict()
             panel["insee_hpi_national"] = panel["year"].map(annual)
             added.append("insee_hpi_national")
+    except Exception:
+        pass
+    return added
+
+
+def _join_census_acs(bucket, panel, county_fips):
+    """Join Census ACS data aggregated to county level (population, income, home value)."""
+    added = []
+    try:
+        import zipfile
+        state_fips = county_fips[:2]
+        county_code = county_fips[2:]
+        # Try to load ACS tables — look for downloaded zip files
+        tables = {
+            "B01001": "acs_population",
+            "B19013": "acs_median_income",
+            "B25077": "acs_median_home_value",
+        }
+        for table, output_col in tables.items():
+            try:
+                # Find the most recent vintage
+                for year in [2022, 2021, 2020, 2019]:
+                    blob_name = f"census/{year}_ACS_{table}_{output_col.replace('acs_', '')}.zip"
+                    blob = bucket.blob(blob_name)
+                    if not blob.exists():
+                        continue
+                    data = blob.download_as_bytes()
+                    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                        csv_files = [f for f in zf.namelist() if f.endswith(".csv")]
+                        if csv_files:
+                            with zf.open(csv_files[0]) as f:
+                                acs = pd.read_csv(f, low_memory=False, dtype=str)
+                            # ACS has GEO_ID column containing FIPS
+                            geo_col = [c for c in acs.columns if "geo" in c.lower()][0] if any("geo" in c.lower() for c in acs.columns) else None
+                            if geo_col:
+                                # Filter to our county (county FIPS is in GEO_ID)
+                                county_rows = acs[acs[geo_col].astype(str).str.contains(county_fips)]
+                                if not county_rows.empty:
+                                    # Get the estimate column (usually ends in E)
+                                    est_cols = [c for c in acs.columns if c.endswith("E") and c != geo_col]
+                                    if est_cols:
+                                        val = pd.to_numeric(county_rows[est_cols[0]].iloc[0], errors="coerce")
+                                        panel[output_col] = val
+                                        added.append(output_col)
+                    break  # found a vintage, stop looking
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return added
+
+
+def _join_fhfa_hpi(bucket, panel, state_fips):
+    """Join FHFA HPI at state level by year."""
+    added = []
+    try:
+        blob = bucket.blob("fhfa/HPI_AT_state.csv")
+        text = blob.download_as_text()
+        hpi = pd.read_csv(io.StringIO(text), low_memory=False)
+        # FHFA state HPI: state, yr, qtr, index_nsa, index_sa
+        if "state" in hpi.columns and "yr" in hpi.columns:
+            # State FIPS mapping
+            STATE_NAMES = {"48": "TX", "17": "IL", "06": "CA", "36": "NY", "04": "AZ",
+                           "53": "WA", "25": "MA", "42": "PA", "11": "DC"}
+            st_abbr = STATE_NAMES.get(state_fips)
+            if st_abbr:
+                state_data = hpi[hpi["state"] == st_abbr]
+                if not state_data.empty:
+                    # Average across quarters for annual
+                    idx_col = [c for c in state_data.columns if "index" in c.lower()]
+                    if idx_col:
+                        annual = state_data.groupby("yr")[idx_col[0]].mean().reset_index()
+                        annual.columns = ["year", "fhfa_hpi_state"]
+                        annual["year"] = annual["year"].astype("Int64")
+                        merged = panel.merge(annual, on="year", how="left")
+                        panel["fhfa_hpi_state"] = merged["fhfa_hpi_state"]
+                        added.append("fhfa_hpi_state")
+    except Exception:
+        pass
+    return added
+
+
+def _join_fema_disasters(bucket, panel, county_fips):
+    """Join FEMA disaster declaration counts by county + year."""
+    added = []
+    try:
+        blob = bucket.blob("fema/disaster_declarations.csv")
+        text = blob.download_as_text()
+        fema = pd.read_csv(io.StringIO(text), low_memory=False)
+        # FEMA CSV has fipsStateCode and fipsCountyCode
+        if "fipsStateCode" in fema.columns and "fipsCountyCode" in fema.columns:
+            state_code = county_fips[:2]
+            county_code = county_fips[2:]
+            fema["_state"] = fema["fipsStateCode"].astype(str).str.zfill(2)
+            fema["_county"] = fema["fipsCountyCode"].astype(str).str.zfill(3)
+            county_disasters = fema[(fema["_state"] == state_code) & (fema["_county"] == county_code)]
+            if not county_disasters.empty and "declarationDate" in county_disasters.columns:
+                county_disasters = county_disasters.copy()
+                county_disasters["_year"] = pd.to_datetime(
+                    county_disasters["declarationDate"], errors="coerce").dt.year
+                annual_count = county_disasters.groupby("_year").size().reset_index()
+                annual_count.columns = ["year", "fema_disaster_count"]
+                annual_count["year"] = annual_count["year"].astype("Int64")
+                merged = panel.merge(annual_count, on="year", how="left")
+                panel["fema_disaster_count"] = merged["fema_disaster_count"].fillna(0).astype(int)
+                added.append("fema_disaster_count")
     except Exception:
         pass
     return added
