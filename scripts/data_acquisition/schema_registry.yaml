@@ -1,7 +1,7 @@
 # Schema Registry — Machine-Readable ETL Config
 # Loaded by ETL pipeline to map source columns → canonical schema
 # Keep DATA_TRACKER.md for human review, this file for code.
-# Updated: 2026-02-26T12:48Z
+# Updated: 2026-02-26T13:38Z
 
 canonical_fields:
   - parcel_id        # str   — unique parcel identifier
@@ -51,6 +51,10 @@ sources:
     gcs_prefix: hcad
     format: parquet_single
     verified: true
+    verified_against:
+      method: GCS parquet header inspection + dry-run
+      date: 2026-02-25
+      docs: https://pdata.hcad.org/
     file: hcad_master_panel_2005_2025_leakage_strict_FIXEDYR_WITHGIS.parquet
     columns_verbatim:
       - acct
@@ -93,9 +97,37 @@ sources:
     format: parquet_single
     verified: true
     file: nyc_sales_clean.parquet
-    columns_verbatim: []  # TO VERIFY from parquet metadata
-    mapping: {}  # TO FILL after header inspection
-    notes: "Cleaned sales data from e6691 thesis work"
+    columns_verbatim:
+      - BOROUGH
+      - NEIGHBORHOOD
+      - BUILDING_CLASS_CATEGORY
+      - TAX_CLASS_AT_PRESENT
+      - BLOCK
+      - LOT
+      - ADDRESS
+      - APARTMENT_NUMBER
+      - ZIP_CODE
+      - RESIDENTIAL_UNITS
+      - COMMERCIAL_UNITS
+      - TOTAL_UNITS
+      - LAND_SQUARE_FEET
+      - GROSS_SQUARE_FEET
+      - YEAR_BUILT
+      - SALE_PRICE
+      - SALE_DATE
+    mapping:
+      parcel_id: null   # derived: BOROUGH-BLOCK-LOT
+      sale_price: SALE_PRICE
+      sale_date: SALE_DATE
+      dwelling_type: BUILDING_CLASS_CATEGORY
+      sqft: GROSS_SQUARE_FEET
+      land_area: LAND_SQUARE_FEET
+      year_built: YEAR_BUILT
+      address: ADDRESS
+    derived:
+      parcel_id: "BOROUGH.astype(str) + '-' + BLOCK.astype(str) + '-' + LOT.astype(str)"
+    missing: [assessed_value, land_value, improvement_value, bedrooms, bathrooms, stories, lat, lon]
+    notes: "NYC DoF rolling sales. Need to verify exact column names from parquet metadata."
 
   cook_county_il:
     gcs_prefix: cook_county_il/assessed_values
@@ -246,7 +278,10 @@ sources:
   massgis:
     gcs_prefix: massgis
     format: gdb_zip
-    verified: true  # file exists, schema from docs
+    verified_against:
+      method: MassGIS documentation (Layer description)
+      date: 2026-02-25
+      docs: https://www.mass.gov/info-details/massgis-data-property-tax-parcels
     columns_verbatim:
       - LOC_ID
       - SITE_ADDR
@@ -451,9 +486,9 @@ contextual:
       - {table: B01001, output_field: population, vintage: 2022}
       - {table: B19013, output_field: median_hh_income, vintage: 2022}
       - {table: B25077, output_field: median_home_value, vintage: 2022}
-    years_available: 2022 only  # NEED 2009-2022 for full panel
+    years_available: 2012-2022  # expanded from 2022-only
     vintage_boundary: tract_2020  # Uses 2020 tract definitions
-    notes: "Need to add ACS 2013-2021 for historical coverage"
+    notes: "ACS 5-year table-based SF format. 11 vintages × 3 tables = 33 files."
 
   fema_nri:
     gcs_prefix: fema
@@ -483,7 +518,7 @@ contextual:
     join_level: county
     temporal: matched by fiscal year
     output_fields: [fmr_0br, fmr_1br, fmr_2br, fmr_3br, fmr_4br]
-    years_available: 2023-2025
+    years_available: 2010-2025  # expanded from 2023-2025
     years_changes: false
 
   epa_aqi:
@@ -505,7 +540,7 @@ contextual:
     states: [il, wa, az, ny, ca, ma, tx]
     output_fields: [total_jobs, jobs_age_29_54, jobs_earnings_3334plus, jobs_naics_retail, jobs_naics_finance]
     source_cols: [C000, CA02, CE03, CNS07, CNS10]
-    years_available: 2021 only  # NEED multiple years
+    years_available: 2015-2021  # expanded from 2021-only
     vintage_boundary: tract_2020
 
   irs_migration:
@@ -515,7 +550,7 @@ contextual:
     join_level: county
     temporal: yearly pairs (e.g. 2021-2022)
     output_fields: [migration_inflow_returns, migration_inflow_agi, migration_outflow_returns, migration_outflow_agi]
-    years_available: 2021-2022 only
+    years_available: 2011-2022  # expanded from 2021-2022
 
   building_permits:
     gcs_prefix: census
@@ -524,8 +559,8 @@ contextual:
     join_level: county
     temporal: yearly
     output_fields: [permits_1unit, permits_2unit, permits_5plus_units, permit_valuation]
-    years_available: 2022-2023  # NEED 2005-2021
-    notes: "Census BPS county files available 2004-2023"
+    years_available: 2004-2023  # expanded from 2022-2023
+    notes: "Census BPS county files co{year}a.txt"
 
   noaa_climate:
     gcs_prefix: climate
@@ -555,3 +590,38 @@ contextual:
     output_fields: [lulc_class, pct_developed_500m, pct_forest_500m, pct_water_500m]
     years_available: 2021  # downloading 2021 only for now
     notes: "Spatial filtering done in ETL. 30m resolution."
+
+  ecb_rate:
+    gcs_prefix: ecb
+    format: csv
+    join_key: year  # national — same for all France parcels
+    join_level: national_eu
+    temporal: monthly → annual average
+    series:
+      - {blob: ecb_mro_rate.csv, output_field: ecb_mro_rate}
+      - {blob: ecb_deposit_rate.csv, output_field: ecb_deposit_rate}
+    years_available: 1999-2025
+    applies_to: [france_dvf]
+
+  boe_rate:
+    gcs_prefix: boe
+    format: csv
+    join_key: year  # national — same for all UK parcels
+    join_level: national_uk
+    temporal: monthly → annual average
+    series:
+      - {blob: bank_rate.csv, output_field: boe_bank_rate}
+    years_available: 1975-2026
+    applies_to: [uk_ppd]
+
+  insee_hpi:
+    gcs_prefix: insee
+    format: csv
+    join_key: year  # département-level if available
+    join_level: national_fr  # start with national, later by département
+    temporal: quarterly → annual average
+    series:
+      - {blob: insee_hpi_national.csv, output_field: insee_hpi_national}
+      - {blob: insee_hpi_apartments.csv, output_field: insee_hpi_apartments}
+    years_available: 1996-2024
+    applies_to: [france_dvf]
