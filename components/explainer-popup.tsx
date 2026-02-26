@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, MousePointer2, GitCompare, MousePointerClick, Lock } from "lucide-react"
-import { HomecastrLogo } from "./homecastr-logo"
+import { OppcastrLogo } from "./oppcastr-logo"
 
 export function ExplainerPopup() {
     const [isOpen, setIsOpen] = useState(false)
@@ -89,7 +89,7 @@ export function ExplainerPopup() {
                     <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-start">
                         <div>
                             <div className="flex items-center gap-3 mb-1">
-                                <HomecastrLogo variant="horizontal" size={32} />
+                                <OppcastrLogo variant="horizontal" size={32} />
                             </div>
                             <p className="text-muted-foreground mt-1 text-sm font-medium">
                                 Smarter models. Clearer forecasts.
@@ -104,7 +104,7 @@ export function ExplainerPopup() {
                             <div className="space-y-3">
                                 <h3 className="font-semibold text-lg text-primary">About the Map</h3>
                                 <p className="text-sm text-foreground leading-relaxed">
-                                    Homecastr is a foundation model that forecasts value at the home level.
+                                    Oppcastr is a foundation model that forecasts value at the home level.
                                     We provide probable price bands to help you with your home buying and selling decisions, generated from many scenarios of the future.
                                 </p>
                                 <p className="text-sm text-foreground leading-relaxed">

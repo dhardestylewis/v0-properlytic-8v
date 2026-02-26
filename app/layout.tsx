@@ -8,25 +8,24 @@ import "./globals.css"
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
-const APP_URL = "https://homecastr.com"
+const APP_URL = "https://oppcastr.com"
 const OG_DESCRIPTION =
   "Know where home prices are headed. Built for buyers, agents, and investors."
 
 export const metadata: Metadata = {
-  title: "Homecastr Home Forecasts",
+  title: "Oppcastr Forecasts",
   description: OG_DESCRIPTION,
   metadataBase: new URL(APP_URL),
   icons: {
     icon: [
-      { url: "/homecastr-icon.svg", type: "image/svg+xml" },
-      { url: "/homecastr-icon.png", type: "image/png" },
+      { url: "/oppcastr-icon.png", type: "image/png" },
     ],
-    apple: "/homecastr-icon.png",
+    apple: "/oppcastr-icon.png",
   },
   openGraph: {
     type: "website",
     url: APP_URL,
-    siteName: "Homecastr",
+    siteName: "Oppcastr",
     title: "Homecastr Home Forecasts",
     description: OG_DESCRIPTION,
     images: [

@@ -105,39 +105,7 @@ export function FiltersPanel({ filters, onFiltersChange, onReset, isOpen, onTogg
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
           {/* Reliability Filter - Moved to Advanced */}
 
-          {/* Map Color Mode */}
-          <div className="space-y-3 pt-2 border-t border-border/50">
-            <Label className="text-sm font-medium text-sidebar-foreground">Map Color Mode</Label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-secondary/50 rounded-lg">
-              <button
-                onClick={() => onFiltersChange({ colorMode: "growth" })}
-                className={cn(
-                  "px-2 py-1.5 text-xs font-medium rounded-md transition-all",
-                  filters.colorMode === "growth"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Δ vs 2025
-              </button>
-              <button
-                onClick={() => onFiltersChange({ colorMode: "value" })}
-                className={cn(
-                  "px-2 py-1.5 text-xs font-medium rounded-md transition-all",
-                  filters.colorMode === "value"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Prop. Value $
-              </button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              {filters.colorMode === "growth"
-                ? "Change in value relative to 2025 baseline"
-                : "Colors represent raw property values"}
-            </p>
-          </div>
+          {/* Map Color Mode removed: Map natively uses Protest Probability exclusively */}
 
           {/* Advanced Filters (Collapsible) */}
           <details className="group">

@@ -7,7 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import type { FilterState, MapState, FanChartData } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { useRouter, useSearchParams } from "next/navigation"
-import { HomecastrLogo } from "@/components/homecastr-logo"
+import { OppcastrLogo } from "@/components/oppcastr-logo"
 import { Bot } from "lucide-react"
 import { FanChart } from "@/components/fan-chart"
 import { StreetViewCarousel } from "@/components/street-view-carousel"
@@ -75,10 +75,10 @@ function getSmartTooltipPos(x: number, y: number, windowWidth: number, windowHei
 
 }
 
-// Format currency values
+// Format percentage values for oppcastr
 function formatValue(v: number | null | undefined): string {
     if (v == null) return "N/A"
-    return "$" + v.toLocaleString("en-US", { maximumFractionDigits: 0 })
+    return (v * 100).toFixed(0) + "%"
 }
 
 // Get label for current zoom
@@ -468,38 +468,34 @@ export function ForecastMap({
     //   5yr: -22 | 1 | 27 | 51 | 163
     // Ramp is asymmetric because the underlying distribution is right-skewed.
     // Value mode uses absolute p50 with fixed percentile breakpoints.
+    // oppcastr: protest probability color ramp (0-1 scale)
+    // Low protest probability → cool blue, high → hot red
     const buildFillColor = (colorMode?: string): any => {
-        if (colorMode === "growth") {
-            const presentYear = originYear + 1  // 2026
-            if (year === presentYear) return "#e5e5e5" // Present year: growth=0 → flat neutral
-            const yrsFromPresent = Math.max(Math.abs(year - presentYear), 1)
-
-            // Empirical percentile fits from Houston parcel history
-            const p05 = -5 - 4 * yrsFromPresent   // 1yr≈-9, 3yr≈-17, 5yr≈-25
-            const p25 = 0                           // ~0% across all horizons
-            const med = 5 * yrsFromPresent          // 1yr≈5, 3yr≈15, 5yr≈25
-            const p75 = 10 * yrsFromPresent         // 1yr≈10, 3yr≈30, 5yr≈50
-            const p95 = 30 * yrsFromPresent         // 1yr≈30, 3yr≈90, 5yr≈150
-            return [
-                "interpolate",
-                ["linear"],
-                ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                p05, "#3b82f6",    // p5  — rare decline → deep blue
-                p25, "#93c5fd",    // p25 — below average → light blue
-                med, "#f8f8f8",    // p50 — median expected → neutral white
-                p75, "#f59e0b",    // p75 — above average → amber
-                p95, "#ef4444",    // p95 — rare hot growth → deep red
-            ]
-        }
         return [
             "interpolate",
             ["linear"],
             ["coalesce", ["get", "p50"], ["get", "value"], 0],
-            150000, "#1e1b4b",   // p5
-            235000, "#4c1d95",   // p25
-            335000, "#7c3aed",   // p50
-            525000, "#db2777",   // p75
-            1000000, "#fbbf24",  // p95
+            0.0, "#e0e7ff",   // near-zero → very faint blue
+            0.05, "#93c5fd",   // 5%  → light blue
+            0.15, "#3b82f6",   // 15% → blue
+            0.30, "#fbbf24",   // 30% → amber
+            0.50, "#f97316",   // 50% → orange
+            0.70, "#ef4444",   // 70% → red
+            0.90, "#7f1d1d",   // 90% → dark red
+        ]
+    }
+
+    // Opacity ramp: near-zero protest probability → transparent
+    const buildFillOpacity = (): any => {
+        return [
+            "interpolate",
+            ["linear"],
+            ["coalesce", ["get", "p50"], ["get", "value"], 0],
+            0.0, 0.0,          // zero → transparent
+            0.01, 0.0,          // <1% → still transparent
+            0.05, 0.5,          // 5%  → half visible
+            0.15, 0.7,          // 15% → mostly visible
+            0.30, 0.85,         // 30%+ → fully opaque
         ]
     }
 
@@ -508,9 +504,9 @@ export function ForecastMap({
         if (!mapContainerRef.current) return
 
         const urlParams = new URLSearchParams(window.location.search)
-        const initialLat = parseFloat(urlParams.get("lat") || "29.76")
-        const initialLng = parseFloat(urlParams.get("lng") || "-95.37")
-        const initialZoom = parseFloat(urlParams.get("zoom") || "10")
+        const initialLat = parseFloat(urlParams.get("lat") || "30.27")
+        const initialLng = parseFloat(urlParams.get("lng") || "-97.74")
+        const initialZoom = parseFloat(urlParams.get("zoom") || "11")
 
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
@@ -548,8 +544,7 @@ export function ForecastMap({
                 map.addSource(id, {
                     type: "vector",
                     tiles: [
-                        `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?originYear=${originYear}&horizonM=${horizonM}&v=2`,
-                        // v=2 cache-buster to force fresh tiles after SQL function updates
+                        `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?year=2024&v=100`,
                     ],
                     minzoom: 0,
                     maxzoom: 18,
@@ -575,7 +570,7 @@ export function ForecastMap({
                         layout: { visibility: visible ? "visible" : "none" },
                         paint: {
                             "fill-color": fillColor,
-                            "fill-opacity": 0.55,
+                            "fill-opacity": buildFillOpacity(),
                             "fill-outline-color": "rgba(255,255,255,0.2)",
                         },
                     })
@@ -1304,9 +1299,19 @@ export function ForecastMap({
     }, [filters.colorMode, isLoaded])
 
     // UPDATE YEAR — Seamless A/B swap (same pattern as vector-map.tsx)
+    const lastYearRef = useRef<number | null>(null)
     useEffect(() => {
         if (!isLoaded || !mapRef.current) return
         const map = mapRef.current
+
+        // Skip swap on initial load — source A already has year=2024 tiles baked in
+        if (lastYearRef.current === null) {
+            lastYearRef.current = year
+            return
+        }
+        // Skip if year hasn't actually changed
+        if (lastYearRef.current === year) return
+        lastYearRef.current = year
 
         const currentSuffix = (map as any)._activeSuffix || "a"
         const nextSuffix = currentSuffix === "a" ? "b" : "a"
@@ -1316,18 +1321,20 @@ export function ForecastMap({
         const source = map.getSource(nextSource)
         if (source && source.type === "vector") {
             ; (source as any).setTiles([
-                `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?originYear=${originYear}&horizonM=${horizonM}&v=2`,
+                `${window.location.origin}/api/forecast-tiles/{z}/{x}/{y}?year=${year || 2024}&v=100`,
             ])
         }
 
         // Apply color logic to all fill layers
         const fillColor = buildFillColor(filters.colorMode)
+        const fillOpacity = buildFillOpacity()
 
         for (const lvl of GEO_LEVELS) {
             ;["a", "b"].forEach((s) => {
                 const layerId = `forecast-fill-${lvl.name}-${s}`
                 if (map.getLayer(layerId)) {
                     map.setPaintProperty(layerId, "fill-color", fillColor)
+                    map.setPaintProperty(layerId, "fill-opacity", fillOpacity)
                 }
             })
         }
@@ -1377,7 +1384,7 @@ export function ForecastMap({
 
             ; (map as any)._targetYear = year
         map.on("sourcedata", onSourceData)
-    }, [year, isLoaded, filters.colorMode, originYear, horizonM])
+    }, [year, isLoaded, filters.colorMode])
 
     // SYNC VIEWPORT
     useEffect(() => {
@@ -1632,7 +1639,7 @@ export function ForecastMap({
                             data-tooltip-header="true"
                         >
                             <div className="flex items-center gap-1.5">
-                                <HomecastrLogo variant="horizontal" size={14} />
+                                <OppcastrLogo variant="horizontal" size={14} />
                                 <span className="px-1 py-0.5 bg-violet-500/20 text-violet-400 text-[7px] font-semibold uppercase tracking-wider rounded">Forecast</span>
                             </div>
                             <button
@@ -1665,7 +1672,7 @@ export function ForecastMap({
                                 className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md select-none"
                             >
                                 <div className="flex items-center gap-2">
-                                    <HomecastrLogo variant="horizontal" size={18} />
+                                    <OppcastrLogo variant="horizontal" size={18} />
                                     <span className={cn(
                                         "px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded",
                                         year > 2026
@@ -1901,8 +1908,8 @@ export function ForecastMap({
                                             }}
                                             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
                                         >
-                                            <HomecastrLogo variant="horizontal" size={14} />
-                                            <span>Talk to live agent</span>
+                                            <OppcastrLogo variant="horizontal" size={14} />
+                                            <span>Analyze Protest Appeal</span>
                                         </button>
                                     </div>
                                 )}

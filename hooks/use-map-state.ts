@@ -5,8 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation"
 import type { MapState } from "@/lib/types"
 
 const DEFAULT_MAP_STATE: MapState = {
-  center: [-95.3698, 29.7604], // Houston
-  zoom: 11, // Good zoom for Harris County
+  center: [-97.7431, 30.2672], // Austin
+  zoom: 11, // Good zoom for Travis County
   selectedId: null,
   hoveredId: null,
 }

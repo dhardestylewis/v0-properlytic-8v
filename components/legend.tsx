@@ -4,110 +4,47 @@ import { Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-// Value mode gradient (unchanged)
-const VALUE_GRADIENT = "linear-gradient(to right, oklch(0.25 0.10 280), oklch(0.60 0.20 30), oklch(0.95 0.15 80))"
-const VALUE_LABELS = ["$150k", "$525k", "$1M+"]
-
-interface LegendProps {
-  className?: string
-  colorMode?: "growth" | "value"
-  onColorModeChange?: (mode: "growth" | "value") => void
-  year?: number
-  originYear?: number
-}
-
-export function Legend({ className, colorMode = "growth", onColorModeChange, year = 2027, originYear = 2025 }: LegendProps) {
-  // Compute horizon-aware labels from empirical percentile fits
-  const presentYear = (originYear ?? 2025) + 1
-  const yrsFromPresent = Math.max(Math.abs((year ?? 2027) - presentYear), 1)
-  // Round to nearest 5 for clean labels
-  const round5 = (n: number) => Math.round(n / 5) * 5
-  const p05 = round5(-5 - 4 * yrsFromPresent)   // 1yr≈-10, 3yr≈-15, 5yr≈-25
-  const med = round5(5 * yrsFromPresent)          // 1yr≈5, 3yr≈15, 5yr≈25
-  const p95 = round5(30 * yrsFromPresent)         // 1yr≈30, 3yr≈90, 5yr≈150
-
-  const growthLabels = [
-    `${p05 > 0 ? "+" : ""}${p05}%`,
-    `${med > 0 ? "+" : ""}${med}%`,
-    `+${p95}%+`,
-  ]
-
-  // Growth gradient: same colors as buildFillColor ramp
-  const OPPORTUNITY_GRADIENT = "linear-gradient(to right, #3b82f6, #93c5fd 30%, #f8f8f8 50%, #f59e0b 70%, #ef4444)"
+export function Legend({ className }: { className?: string }) {
+  // Protest probability gradient matching the map ramp:
+  // 0.0:  "#e0e7ff" (near-zero → very faint blue)
+  // 0.05: "#93c5fd" (5%  → light blue)
+  // 0.15: "#3b82f6" (15% → blue)
+  // 0.30: "#fbbf24" (30% → amber)
+  // 0.50: "#f97316" (50% → orange)
+  // 0.70: "#ef4444" (70% → red)
+  // 0.90: "#7f1d1d" (90% → dark red)
+  const PROTEST_GRADIENT = "linear-gradient(to right, #e0e7ff, #93c5fd 5%, #3b82f6 15%, #fbbf24 30%, #f97316 50%, #ef4444 70%, #7f1d1d 90%)"
 
   return (
     <div className={cn("glass-panel rounded-lg p-3 space-y-1 text-xs", className)}>
-      {/* Color Scale */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-foreground font-medium">
-            <span>{colorMode === "value" ? "Property Value" : "Projected Growth"}</span>
+            <span>Protest Probability</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Info className="h-3 w-3 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-48">
-                  <p>
-                    {colorMode === "value"
-                      ? "Estimated median property value ($)."
-                      : "Change in value vs 2025 baseline."}
-                  </p>
+                  <p>Probability that a property or neighborhood will file a property tax protest appeal.</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          {/* Color Mode Toggle */}
-          {onColorModeChange && (
-            <div className="grid grid-cols-2 gap-1 p-0.5 bg-secondary/50 rounded-md shrink-0">
-              <button
-                onClick={() => onColorModeChange("growth")}
-                className={cn(
-                  "px-2 py-1 text-[10px] font-medium rounded transition-all",
-                  colorMode === "growth"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Growth
-              </button>
-              <button
-                onClick={() => onColorModeChange("value")}
-                className={cn(
-                  "px-2 py-1 text-[10px] font-medium rounded transition-all",
-                  colorMode === "value"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Value
-              </button>
-            </div>
-          )}
         </div>
         <div className="flex flex-col gap-1">
           <div
             className="h-3 w-full rounded-sm"
-            style={{ background: colorMode === "value" ? VALUE_GRADIENT : OPPORTUNITY_GRADIENT }}
+            style={{ background: PROTEST_GRADIENT }}
           />
           <div className="flex justify-between text-[9px] text-muted-foreground font-mono px-0.5">
-            {colorMode === "value" ? (
-              <>
-                <span>{VALUE_LABELS[0]}</span>
-                <span>{VALUE_LABELS[1]}</span>
-                <span>{VALUE_LABELS[2]}</span>
-              </>
-            ) : (
-              <>
-                <span>{growthLabels[0]}</span>
-                <span>{growthLabels[1]}</span>
-                <span>{growthLabels[2]}</span>
-              </>
-            )}
+            <span>0%</span>
+            <span>30%</span>
+            <span>90%+</span>
           </div>
         </div>
       </div>
     </div>
   )
 }
-

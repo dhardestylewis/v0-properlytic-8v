@@ -292,7 +292,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
           <div className="flex items-center gap-2">
             <div className={cn("w-2 h-2 rounded-full", isJoined ? "bg-green-500 animate-pulse" : hasError ? "bg-red-500" : "bg-yellow-500 animate-pulse")} />
             <span className="text-xs font-semibold text-white/90 tracking-wide uppercase">
-              {hasError ? "Error" : isJoined ? "Homecastr Live" : "Connecting..."}
+              {hasError ? "Error" : isJoined ? "Oppcastr Live" : "Connecting..."}
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -335,7 +335,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
         {/* Video area — top/bottom split layout */}
         {!isMinimized && !hasError && (
           <div className="flex-1 flex flex-row md:flex-col bg-black relative overflow-hidden">
-            {/* Top: Remote participant (Homecastr agent) */}
+            {/* Top: Remote participant (Oppcastr agent) */}
             <div className="flex-1 relative bg-[#0a0a0f] overflow-hidden">
               {remoteParticipant ? (
                 <>
@@ -347,7 +347,7 @@ export function TavusMiniWindow({ conversationUrl, onClose, chatOpen = false, fo
                   />
                   <audio ref={remoteAudioRef} autoPlay playsInline />
                   <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-[8px] text-white/70 font-medium">
-                    Homecastr Agent
+                    Oppcastr Agent
                   </div>
                 </>
               ) : (

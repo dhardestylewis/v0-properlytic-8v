@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import { Search, X, MapPin } from "lucide-react"
-import { HomecastrLogo } from "./homecastr-logo"
+import { OppcastrLogo } from "./oppcastr-logo"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { getAutocompleteSuggestions, type AutocompleteResult } from "@/app/actions/geocode"
@@ -111,7 +111,7 @@ export function SearchBox({ onSearch, placeholder = "Search address or ID...", v
         <div className="glass-panel shadow-lg h-10 flex items-center px-3 gap-3 rounded-md w-full md:focus-within:w-[480px] transition-all duration-300 ease-in-out">
           {/* Branding */}
           <div className="flex items-center gap-2 text-primary shrink-0 border-r border-border pr-3">
-            <HomecastrLogo variant="horizontal" size={20} />
+            <OppcastrLogo variant="horizontal" size={20} />
           </div>
 
           {/* Search Input Area */}

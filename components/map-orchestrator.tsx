@@ -9,7 +9,7 @@ import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { getOpportunityColor, getValueColor, formatOpportunity, formatCurrency, formatReliability } from "@/lib/utils/colors"
 import { TrendingUp, TrendingDown, Minus, X } from "lucide-react"
-import { HomecastrLogo } from "./homecastr-logo"
+import { OppcastrLogo } from "./oppcastr-logo"
 import type { FilterState, FeatureProperties, MapState, DetailsResponse } from "@/lib/types"
 import { getH3CellDetails } from "@/app/actions/h3-details"
 import { getH3ChildTimelines } from "@/app/actions/h3-children"
@@ -126,7 +126,7 @@ interface MapViewProps {
     onMobileSelectionModeChange?: (mode: 'replace' | 'add' | 'range') => void
 }
 
-const HARRIS_COUNTY_CENTER = { lng: -95.3698, lat: 29.7604 }
+const AUSTIN_CENTER = { lng: -97.7431, lat: 30.2672 }
 
 function getReliabilityStrokeWidth(r: number): number {
     if (r < 0.2) return 1
@@ -350,7 +350,7 @@ export function MapView({
     mobileSelectionMode,
     onMobileSelectionModeChange
 }: MapViewProps) {
-    const basemapCenter = useMemo(() => ({ lng: -95.3698, lat: 29.7604 }), [])
+    const basemapCenter = useMemo(() => ({ lng: -97.7431, lat: 30.2672 }), [])
     const [h3Resolution, setH3Resolution] = useState<number>(0)
     const lastResolutionRef = useRef<number>(0) // Track resolution to clear data on change
 

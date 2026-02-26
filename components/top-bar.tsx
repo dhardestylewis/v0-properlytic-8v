@@ -1,7 +1,7 @@
 "use client"
 
 import { Menu, X } from "lucide-react"
-import { HomecastrLogo } from "./homecastr-logo"
+import { OppcastrLogo } from "./oppcastr-logo"
 import { Button } from "@/components/ui/button"
 import { SearchBox } from "./search-box"
 import type { FilterState } from "@/lib/types"
@@ -37,7 +37,7 @@ export function TopBar({ filters, isFiltersPanelOpen, onToggleFiltersPanel, onSe
         >
           {isFiltersPanelOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
-        <HomecastrLogo variant="horizontal" size={24} />
+        <OppcastrLogo variant="horizontal" size={24} />
       </div>
 
       {/* Search */}

@@ -169,12 +169,13 @@ export function FanChart({
     const forecastYears = [2026, 2027, 2028, 2029, 2030]
 
     // Fan area path
-    const hasForcastData = p10 && p90 && p10.some(v => Number.isFinite(v))
+    const hasFanData = p10 && p90 && p10.some(v => Number.isFinite(v))
+    const hasForecastData = p50 && p50.some(v => Number.isFinite(v))
     let fanPath = ""
     let p50Line = ""
     let medLine = ""
 
-    if (hasForcastData) {
+    if (hasFanData) {
       const p90Path = forecastYears
         .map((year, i) => {
           if (!Number.isFinite(p90[i])) return null
@@ -196,7 +197,9 @@ export function FanChart({
       if (p90Path && p10PathReverse) {
         fanPath = `${p90Path} ${p10PathReverse} Z`
       }
+    }
 
+    if (hasForecastData) {
       // p50 solid anchor at 2026, then dashed from 2027 onward
       p50Line = forecastYears
         .map((year, i) => {
@@ -205,7 +208,9 @@ export function FanChart({
         })
         .filter(Boolean)
         .join(" ")
+    }
 
+    if (y_med && y_med.some(v => Number.isFinite(v))) {
       medLine = forecastYears
         .map((year, i) => {
           if (!Number.isFinite(y_med[i])) return null

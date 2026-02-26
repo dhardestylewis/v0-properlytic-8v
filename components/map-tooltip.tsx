@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { createPortal } from "react-dom"
 import { TrendingUp, TrendingDown, Minus, Bot } from "lucide-react"
-import { HomecastrLogo } from "@/components/homecastr-logo"
+import { OppcastrLogo } from "@/components/oppcastr-logo"
 import { cn } from "@/lib/utils"
 import { FanChart } from "@/components/fan-chart"
 import { StreetViewCarousel } from "@/components/street-view-carousel"
@@ -148,7 +148,7 @@ export function MapTooltip({
                         <>
                             <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 bg-muted/40 backdrop-blur-md">
                                 <div className="flex items-center gap-2">
-                                    <HomecastrLogo variant="horizontal" size={18} />
+                                    <OppcastrLogo variant="horizontal" size={18} />
                                     {lockedMode && (
                                         <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[8px] font-semibold uppercase tracking-wider rounded">Locked</span>
                                     )}
@@ -312,7 +312,7 @@ export function MapTooltip({
                                         }}
                                         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
-                                        <HomecastrLogo variant="horizontal" size={14} />
+                                        <OppcastrLogo variant="horizontal" size={14} />
                                         <span>Talk to live agent</span>
                                     </button>
                                 </div>

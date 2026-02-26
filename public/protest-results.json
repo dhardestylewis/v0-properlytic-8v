@@ -1,0 +1,26 @@
+[
+  {
+    "year": 2021,
+    "avg_prob": 0.0313,
+    "actual_rate": 0.011,
+    "n": 29456
+  },
+  {
+    "year": 2022,
+    "avg_prob": 0.0511,
+    "actual_rate": 0.0084,
+    "n": 29432
+  },
+  {
+    "year": 2023,
+    "avg_prob": 0.0168,
+    "actual_rate": 0.0038,
+    "n": 29463
+  },
+  {
+    "year": 2024,
+    "avg_prob": 0.0255,
+    "actual_rate": 0.0138,
+    "n": 29481
+  }
+]

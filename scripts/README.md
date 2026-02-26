@@ -6,12 +6,20 @@ This directory contains standalone scripts for building the `oppcastr` database 
 
 When you train a new model or generate new scores, use these scripts to update the dashboard:
 
-1. **`upload_historical_scores.py`**
-   - **Purpose:** Uploads the 2021-2024 parcel-level protest probabilities into Supabase.
-   - **Details:** Automatically zero-pads TCAD parcel IDs to 10 characters so they join properly with the `geo_parcel_poly` table, and uploads data in batches of 5000 using the Supabase REST API (via `oppcastr_bulk_insert_scores`). 
-   - **Usage:** Run `python scripts/upload_historical_scores.py` from the project root (`v0-properlytic-8v/`).
+1. **`upload_historical_actuals.py`**
+   - **Purpose:** Extracts the true ground truth protest actuals for 2007-2020 from the raw panel and uploads them to Supabase.
+   - **Usage:** Run `python scripts/upload_historical_actuals.py` from the project root.
 
-2. **Aggregation (SQL Editor)**
+2. **`upload_historical_scores.py`**
+   - **Purpose:** Uploads the recent 2021-2024 parcel-level generated forecast probabilities into Supabase from model outputs.
+   - **Details:** Automatically zero-pads TCAD parcel IDs to 10 characters so they join properly with the `geo_parcel_poly` table, and uploads data in batches of 5000 using the Supabase REST API (via `oppcastr_bulk_insert_scores`). 
+   - **Usage:** Run `python scripts/upload_historical_scores.py` from the project root.
+
+3. **`generate_2025_forecast.py`**
+   - **Purpose:** Trains an Out-Of-Sample prediction model on the full 2019-2024 panel, scores the 2024 records to predict 2025, and uploads those projections.
+   - **Usage:** Run `python scripts/generate_2025_forecast.py` from the project root.
+
+4. **Aggregation (SQL Editor)**
    - **Purpose:** Cascades the updated parcel scores up to the Tabblock, Tract, and ZCTA levels.
    - **Usage:** Copy the contents of `sql/schema/oppcastr_aggregate.sql` and run them **one at a time** in the Supabase SQL Editor.
 
