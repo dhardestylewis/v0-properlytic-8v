@@ -1721,7 +1721,7 @@ def _run_one_origin(
                             schema=schema,
                             table="metrics_parcel_history",
                             df=hist_chunk_df,
-                            conflict_cols=["acct", "year", "series_kind", "variant_id", "jurisdiction"],
+                            conflict_cols=["acct", "year", "series_kind", "variant_id"],
                             update_cols=[
                                 "value", "p50", "n",
                                 "run_id", "backtest_id", "model_version", "as_of_date",
@@ -1938,7 +1938,7 @@ def _run_one_origin(
                             schema=schema,
                             table="metrics_parcel_forecast",
                             df=_fc_df,
-                            conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id", "jurisdiction"],
+                            conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id"],
                             update_cols=parcel_forecast_update_cols,
                         )
 

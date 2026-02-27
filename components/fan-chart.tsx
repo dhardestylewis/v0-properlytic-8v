@@ -26,6 +26,28 @@ const TIMELINE_END = 2030
 const BASELINE_YEAR = 2026 // Dividing line between history and forecast ("Now")
 const YEARS = Array.from({ length: TIMELINE_END - TIMELINE_START + 1 }, (_, i) => TIMELINE_START + i)
 
+/** Build an SVG path string from year/value pairs.
+ *  Always emits "M" for the first valid point (not just index 0),
+ *  preventing the "Expected moveto path command" error when
+ *  early values are missing/NaN. */
+function buildPath(
+  years: number[],
+  values: number[],
+  xScale: (y: number) => number,
+  yScale: (v: number) => number,
+): string {
+  let first = true
+  return years
+    .map((year, i) => {
+      if (i >= values.length || !Number.isFinite(values[i])) return null
+      const cmd = first ? "M" : "L"
+      first = false
+      return `${cmd} ${xScale(year)} ${yScale(values[i])}`
+    })
+    .filter(Boolean)
+    .join(" ")
+}
+
 /**
  * Format large numbers for Y-axis (e.g., $1.2M, $850K)
  */
@@ -156,13 +178,7 @@ export function FanChart({
     let histPath = ""
     if (historicalValues && historicalValues.length > 0) {
       const histYears = [2019, 2020, 2021, 2022, 2023, 2024, 2025]
-      histPath = histYears
-        .map((year, i) => {
-          if (!Number.isFinite(historicalValues[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(historicalValues[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      histPath = buildPath(histYears, historicalValues, xScale, yScale)
     }
 
     // Build Forecast fan (P10-P90 bands for 2026-2032)
@@ -198,21 +214,9 @@ export function FanChart({
       }
 
       // p50 solid anchor at 2026, then dashed from 2027 onward
-      p50Line = forecastYears
-        .map((year, i) => {
-          if (!Number.isFinite(p50[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(p50[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      p50Line = buildPath(forecastYears, p50, xScale, yScale)
 
-      medLine = forecastYears
-        .map((year, i) => {
-          if (!Number.isFinite(y_med[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(y_med[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      medLine = buildPath(forecastYears, y_med, xScale, yScale)
     }
 
     // Connect historical to forecast with a dashed line
@@ -226,13 +230,7 @@ export function FanChart({
     let comparisonHistPath = ""
     if (comparisonHistoricalValues && comparisonHistoricalValues.length > 0) {
       const histYears = [2019, 2020, 2021, 2022, 2023, 2024, 2025]
-      comparisonHistPath = histYears
-        .map((year, i) => {
-          if (!Number.isFinite(comparisonHistoricalValues[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(comparisonHistoricalValues[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      comparisonHistPath = buildPath(histYears, comparisonHistoricalValues, xScale, yScale)
     }
 
     // Build Comparison Forecast fan
@@ -266,13 +264,7 @@ export function FanChart({
         comparisonFanPath = `${compP90Path} ${compP10PathReverse} Z`
       }
 
-      comparisonP50Line = forecastYears
-        .map((year, i) => {
-          if (!Number.isFinite(p50Comp[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(p50Comp[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      comparisonP50Line = buildPath(forecastYears, p50Comp, xScale, yScale)
     }
 
     // Comparison connector
@@ -286,13 +278,7 @@ export function FanChart({
     let previewHistPath = ""
     if (previewHistoricalValues && previewHistoricalValues.length > 0) {
       const histYears = [2019, 2020, 2021, 2022, 2023, 2024, 2025]
-      previewHistPath = histYears
-        .map((year, i) => {
-          if (!Number.isFinite(previewHistoricalValues[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(previewHistoricalValues[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      previewHistPath = buildPath(histYears, previewHistoricalValues, xScale, yScale)
     }
 
     // Build Preview Forecast fan
@@ -326,13 +312,7 @@ export function FanChart({
         previewFanPath = `${p90Path} ${p10PathReverse} Z`
       }
 
-      previewP50Line = forecastYears
-        .map((year, i) => {
-          if (!Number.isFinite(p50Prev[i])) return null
-          return `${i === 0 ? "M" : "L"} ${xScale(year)} ${yScale(p50Prev[i])}`
-        })
-        .filter(Boolean)
-        .join(" ")
+      previewP50Line = buildPath(forecastYears, p50Prev, xScale, yScale)
     }
 
     // Preview connector
