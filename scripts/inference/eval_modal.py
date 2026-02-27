@@ -114,8 +114,20 @@ os.environ["INFERENCE_ONLY"] = "1"
     bucket.blob(panel_blob_path).download_to_filename(local_panel_path)
     df_actuals = pl.read_parquet(local_panel_path)
     
-    if jurisdiction != "all" and "jurisdiction" in df_actuals.columns:
-        df_actuals = df_actuals.filter(pl.col("jurisdiction") == jurisdiction)
+    print(f"[{ts()}] Panel loaded: {len(df_actuals):,} rows, columns: {list(df_actuals.columns[:10])}")
+    
+    # Only filter by jurisdiction for grand_panel (multi-jurisdiction). 
+    # Single-jurisdiction panels are already filtered by GCS path.
+    if jurisdiction == "all":
+        pass  # grand_panel: keep all
+    elif "jurisdiction" in df_actuals.columns:
+        unique_jurs = df_actuals["jurisdiction"].unique().to_list()
+        if len(unique_jurs) > 1:
+            # Multi-jurisdiction panel: filter
+            df_actuals = df_actuals.filter(pl.col("jurisdiction") == jurisdiction)
+            print(f"[{ts()}] Filtered to jurisdiction={jurisdiction}: {len(df_actuals):,} rows")
+        else:
+            print(f"[{ts()}] Single-jurisdiction panel (value={unique_jurs}), skipping filter")
 
     # ─── Pre-rename: Coalesce missing columns before mapping ───
     # Ensure property_value exists (fallback from sale_price or assessed_value)
