@@ -99,6 +99,9 @@ MODEL_VERSION = "world_model_v11_inducing_token"
 # "SF200K", "SFstrat200K", etc. Must match the suffix in ckpt_origin_{year}_{suffix}.pt.
 CKPT_VARIANT_SUFFIX = globals().get("CKPT_VARIANT_SUFFIX", "SF500K")
 
+# Jurisdiction label for DB writes (set by inference_modal.py)
+JURISDICTION = globals().get("JURISDICTION", "hcad")
+
 # A100 / sampler tuning (adaptive backoff wrapper will use these)
 PROP_BATCH_SIZE_SAMPLER = int(globals().get("PROP_BATCH_SIZE_SAMPLER", 512))
 PROP_BATCH_SIZE_MIN = int(globals().get("PROP_BATCH_SIZE_MIN", 64))
@@ -326,6 +329,15 @@ def _upsert_df_pg(conn, schema: str, table: str, df: pd.DataFrame, conflict_cols
     """
     if df is None or df.empty:
         return 0
+
+    # Deduplicate on conflict columns to avoid
+    # "ON CONFLICT DO UPDATE cannot affect row a second time" error
+    _ck = [c for c in conflict_cols if c in df.columns]
+    if _ck:
+        _before = len(df)
+        df = df.drop_duplicates(subset=_ck, keep="last")
+        if len(df) < _before:
+            print(f"[DEDUP] {table}: {_before} -> {len(df)} rows (dropped {_before - len(df)} duplicates on {_ck})")
 
     q_table = _q_table(schema, table)
     cols, rows = _df_records(df)
@@ -1701,6 +1713,7 @@ def _run_one_origin(
             print(f"[{_ts()}] Chunk {chunk_idx}: wrote history chunk rows={len(hist_chunk_df)} -> {hist_fp}")
 
             if not hist_chunk_df.empty:
+                hist_chunk_df["jurisdiction"] = JURISDICTION
                 try:
                     with _pg_tx(label=f"hist_chunk_{chunk_idx}") as conn:
                         hist_rows_upserted = _upsert_df_pg(
@@ -1708,7 +1721,7 @@ def _run_one_origin(
                             schema=schema,
                             table="metrics_parcel_history",
                             df=hist_chunk_df,
-                            conflict_cols=["acct", "year", "series_kind", "variant_id"],
+                            conflict_cols=["acct", "year", "series_kind", "variant_id", "jurisdiction"],
                             update_cols=[
                                 "value", "p50", "n",
                                 "run_id", "backtest_id", "model_version", "as_of_date",
@@ -1911,6 +1924,7 @@ def _run_one_origin(
             try:
                 with _pg_tx(label=f"forecast_chunk_{_ci}") as conn:
                     if not _fc_df.empty:
+                        _fc_df["jurisdiction"] = JURISDICTION
                         parcel_forecast_update_cols = [
                             "forecast_year", "value", "p10", "p25", "p50", "p75", "p90",
                             "run_id", "backtest_id", "model_version", "as_of_date", "n_scenarios",
@@ -1924,7 +1938,7 @@ def _run_one_origin(
                             schema=schema,
                             table="metrics_parcel_forecast",
                             df=_fc_df,
-                            conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id"],
+                            conflict_cols=["acct", "origin_year", "horizon_m", "series_kind", "variant_id", "jurisdiction"],
                             update_cols=parcel_forecast_update_cols,
                         )
 

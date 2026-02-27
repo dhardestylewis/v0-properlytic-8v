@@ -206,6 +206,10 @@ def run_inference(jurisdiction: str, origin_year: int, backtest: bool = False):
         f'/output/{jurisdiction}_inference/'
     )
 
+    # Inject globals that inference_pipeline.py reads via globals().get()
+    globals()["FORECAST_ORIGIN_YEAR"] = origin_year
+    globals()["JURISDICTION"] = jurisdiction
+
     print(f"[{_ts()}] Executing inference_pipeline.py...")
     exec(inf_source_patched, globals())
     print(f"[{_ts()}] inference_pipeline.py loaded")
