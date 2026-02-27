@@ -1114,6 +1114,21 @@ def _load_ckpt_into_live_objects(ckpt_path: str):
 
     if _arch == "v11":
         # ── v11: denoiser + gating + token_persistence + coh_scale ──
+        # Detect actual num_dim from checkpoint weights to handle cross-jurisdiction inference
+        _ckpt_num_dim = _num_dim
+        if "model_state_dict" in ckpt and "num_enc.0.weight" in ckpt["model_state_dict"]:
+            _ckpt_num_dim = int(ckpt["model_state_dict"]["num_enc.0.weight"].shape[1])
+            if _ckpt_num_dim != _num_dim:
+                print(f"[{_ts()}] ⚠️ Cross-jurisdiction: checkpoint num_dim={_ckpt_num_dim} vs panel num_dim={_num_dim}. Using checkpoint's.")
+                _num_dim = _ckpt_num_dim
+                # Override globals so worldmodel's feature extraction matches
+                globals()["NUM_DIM"] = _num_dim
+                # Also truncate num_use to checkpoint's feature count
+                _num_use = globals().get("num_use", [])
+                if len(_num_use) > _num_dim:
+                    globals()["num_use"] = _num_use[:_num_dim]
+                    print(f"[{_ts()}]   Truncated num_use to {_num_dim} features: {globals()['num_use']}")
+
         _model = create_denoiser_v11(target_dim=_H, hist_len=_hist_len,
                                       num_dim=_num_dim, n_cat=_n_cat).to(_device)
         _model.load_state_dict(ckpt["model_state_dict"])
