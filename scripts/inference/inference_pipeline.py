@@ -1256,6 +1256,25 @@ def _build_inference_for_accounts_at_origin(accts_batch, origin: int, global_med
         global_medians=global_medians,
         anchor_year=int(origin),
     )
+
+    # ── Pre-dedup: keep ONE anchor per account (last = most recent) ──
+    # The panel often has multiple rows per property (resales, yearly assessments),
+    # producing duplicate anchors. Deduping HERE avoids wasting GPU on forecasts
+    # that would be dropped by the post-hoc dedup in _upsert_df_pg.
+    if result is not None and "acct" in result:
+        _accts = result["acct"]
+        _n_before = len(_accts)
+        # Find last occurrence index for each unique acct (preserves most-recent anchor)
+        _seen = {}
+        for _i, _a in enumerate(_accts):
+            _seen[_a] = _i  # overwrite → keeps last
+        _keep_idx = np.array(sorted(_seen.values()))
+        if len(_keep_idx) < _n_before:
+            print(f"[{_ts()}] ⚡ Pre-dedup anchors: {_n_before} → {len(_keep_idx)} "
+                  f"(removed {_n_before - len(_keep_idx)} duplicate accounts before sampling)")
+            result = {k: (v[_keep_idx] if isinstance(v, np.ndarray) and v.shape[0] == _n_before else v)
+                      for k, v in result.items()}
+
     return result
 
 
