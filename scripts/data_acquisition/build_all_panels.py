@@ -192,6 +192,15 @@ def build_panel(jurisdiction: str) -> str:
             panel = panel[panel["property_value"] > 0]
         print(f"  After cleaning: {len(panel):,} rows (dropped {before - len(panel):,})")
 
+        # v11.1: Enforce minimum feature set across ALL jurisdictions.
+        # The model handles nulls via feature dropout — this just ensures the
+        # column exists so grand panel training works without schema mismatches.
+        MINIMUM_FEATURES = ["lat", "lon", "sqft", "year_built", "bedrooms"]
+        for feat in MINIMUM_FEATURES:
+            if feat not in panel.columns:
+                panel[feat] = np.nan
+                print(f"  Added missing feature column: {feat} (null)")
+
         # Stats
         years = sorted(panel["year"].dropna().unique())
         n_parcels = panel["parcel_id"].nunique() if "parcel_id" in panel.columns else "?"

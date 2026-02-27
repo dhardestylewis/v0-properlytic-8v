@@ -208,10 +208,10 @@ USE_BF16 = True
 USE_TORCH_COMPILE = True
 COMPILE_MODE = "max-autotune"
 
-# Scaler floors (critical)
-SCALE_FLOOR_Y = 1e-2
-SCALE_FLOOR_NUM = 1e-2
-SCALE_FLOOR_TGT = 1e-2
+# Scaler floors (critical) — v11.1: raised from 1e-2 to 3e-2 for better PI coverage
+SCALE_FLOOR_Y = 3e-2
+SCALE_FLOOR_NUM = 3e-2
+SCALE_FLOOR_TGT = 3e-2
 
 # Sampling stability controls
 SAMPLER_DISABLE_AUTOCAST = False   # BF16 autocast on A100 — 2× matmul throughput; safe with nan_to_num guards

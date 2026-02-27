@@ -17,14 +17,26 @@ SOURCES = {
     # SF recorded deeds (sale prices)
     "sf_sales": {
         "url": "https://data.sfgov.org/api/views/wv5m-vpq2/rows.csv?accessType=DOWNLOAD",
-        "desc": "SF Assessor Recorder - Sales Transactions",
+        "desc": "SF Assessor-Recorder Roll (assessed values + structural features)",
         "mapping": {
-            "parcel_id": "Block and Lot Number",
-            "sale_price": "SalesPrice",
-            "sale_date": "RecordingDate",
-            "address": "StreetAddress",
-            "dwelling_type": "PropertyClassCode",
+            "parcel_id": "Parcel Number",
+            "address": "Property Location",
+            "year": "Closed Roll Year",
+            "dwelling_type": "Property Class Code",
+            "sqft": "Property Area",
+            "land_area": "Lot Area",
+            "bedrooms": "Number of Bedrooms",
+            "bathrooms": "Number of Bathrooms",
+            "rooms": "Number of Rooms",
+            "stories": "Number of Stories",
+            "units": "Number of Units",
+            "year_built": "Year Property Built",
+            "basement_area": "Basement Area",
+            "construction_type": "Construction Type",
+            "zoning": "Zoning Code",
+            "lot_depth": "Lot Depth",
         },
+        "value_col_fallback": "Closed Roll Year",  # No explicit value; year-over-year assessed panel
     },
     # Miami-Dade property appraiser
     "miami_dade": {

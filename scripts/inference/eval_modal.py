@@ -471,7 +471,8 @@ os.environ["INFERENCE_ONLY"] = "1"
                 acts = []
                 fan_hits = 0
                 fan_checks = 0
-                crps_vals = []   # per-parcel CRPS
+                crps_vals = []   # per-parcel CRPS (dollar space)
+                crps_log_vals = []  # v11.1: per-parcel CRPS (log space) — robust to outliers
                 int_scores = []  # interval scores
                 
                 for i in range(len(accts)):
@@ -509,6 +510,9 @@ os.environ["INFERENCE_ONLY"] = "1"
                         from properscoring import crps_ensemble
                         _crps = crps_ensemble(av, fan_prices)
                         crps_vals.append(float(_crps) / max(bv, 1) * 100)  # normalize as % of base
+                        # v11.1: log-space CRPS — immune to outlier contamination
+                        _crps_log = crps_ensemble(np.log1p(av), fan)  # fan is already in log1p space
+                        crps_log_vals.append(float(_crps_log) * 100)  # as percentage points
                     except Exception:
                         pass
                     
@@ -560,6 +564,8 @@ os.environ["INFERENCE_ONLY"] = "1"
                     # CRPS and Interval Score
                     crps_mean = float(np.mean(crps_vals)) if crps_vals else float('nan')
                     crps_med = float(np.median(crps_vals)) if crps_vals else float('nan')
+                    crps_log_mean = float(np.mean(crps_log_vals)) if crps_log_vals else float('nan')
+                    crps_log_med = float(np.median(crps_log_vals)) if crps_log_vals else float('nan')
                     int_score_mean = float(np.mean(int_scores)) if int_scores else float('nan')
                     
                     # PIT histogram (10 bins) — for calibration visualization
@@ -587,6 +593,8 @@ os.environ["INFERENCE_ONLY"] = "1"
                         # ── NEW: Proper scoring rules ──
                         f"eval/crps/{tag}": crps_mean,
                         f"eval/crps_med/{tag}": crps_med,
+                        f"eval/crps_log/{tag}": crps_log_mean,
+                        f"eval/crps_log_med/{tag}": crps_log_med,
                         f"eval/interval_score/{tag}": int_score_mean,
                         # ── NEW: Calibration decomposition ──
                         f"eval/pit_reliability/{tag}": pit_reliability,
@@ -595,7 +603,7 @@ os.environ["INFERENCE_ONLY"] = "1"
                     for b_idx in range(10):
                         wandb.log({f"eval/pit_hist/{tag}_bin{b_idx}": float(pit_hist_norm[b_idx])})
                     
-                    print(f"  [{tag}] ρ:{rho:+.3f} MdAE:{mdae:.1f}% CRPS:{crps_mean:.2f}% IS:{int_score_mean:.1f}% Covg:{coverage:.1f}% Bias:{bias:+.1f}pp PIT_rel:{pit_reliability:.3f} (n={len(pits)})")
+                    print(f"  [{tag}] ρ:{rho:+.3f} MdAE:{mdae:.1f}% CRPS:{crps_mean:.2f}% CRPS_log:{crps_log_mean:.3f}% IS:{int_score_mean:.1f}% Covg:{coverage:.1f}% Bias:{bias:+.1f}pp PIT_rel:{pit_reliability:.3f} (n={len(pits)})")
     
     # ─── Spatial Coherence (Cross-Parcel Correlation) ───
     key = ("v11", origin)

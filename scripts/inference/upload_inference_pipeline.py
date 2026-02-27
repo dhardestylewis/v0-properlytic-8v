@@ -17,7 +17,7 @@ def upload(content: str) -> str:
 
 @app.local_entrypoint()
 def main():
-    path = os.path.join(os.path.dirname(__file__), "inference", "inference_pipeline.py")
+    path = os.path.join(os.path.dirname(__file__), "inference_pipeline.py")
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
     print(f"[LOCAL] Read {len(content)} chars")

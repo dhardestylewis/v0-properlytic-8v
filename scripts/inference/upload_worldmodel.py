@@ -14,8 +14,8 @@ def upload_to_gcs(content: str) -> str:
     blob = bucket.blob("code/worldmodel.py")
     blob.upload_from_string(content.encode("utf-8"), content_type="text/x-python")
     downloaded = blob.download_as_text()
-    assert ".expand(B, -1, -1).clone()" in downloaded, "Fix not in uploaded file!"
-    return f"OK: {blob.size} bytes, clone fix verified"
+    assert "SCALE_FLOOR_Y = 3e-2" in downloaded, "v11.1 scale floor not in uploaded file!"
+    return f"OK: {blob.size} bytes, v11.1 verified"
 
 @app.local_entrypoint()
 def main():
@@ -23,7 +23,7 @@ def main():
     wm_path = os.path.join(os.path.dirname(__file__), "worldmodel.py")
     with open(wm_path, "r", encoding="utf-8") as f:
         content = f.read()
-    assert ".expand(B, -1, -1).clone()" in content, "Fix not in local file!"
-    print(f"[LOCAL] Read {len(content)} chars, clone fix confirmed")
+    assert "SCALE_FLOOR_Y = 3e-2" in content, "v11.1 scale floor not in local file!"
+    print(f"[LOCAL] Read {len(content)} chars, v11.1 confirmed")
     result = upload_to_gcs.remote(content)
     print(f"[UPLOAD] {result}")

@@ -208,10 +208,13 @@ USE_BF16 = True
 USE_TORCH_COMPILE = True
 COMPILE_MODE = "max-autotune"
 
-# Scaler floors (critical)
-SCALE_FLOOR_Y = 1e-2
-SCALE_FLOOR_NUM = 1e-2
-SCALE_FLOOR_TGT = 1e-2
+# Scaler floors (critical) — v11.1: raised from 1e-2 to 3e-2 for better PI coverage
+# Cross-jurisdiction eval showed HCAD under-covering at 58% (target 80%);
+# Seattle/France at 82-88% which is well-calibrated. 3e-2 should bring HCAD
+# closer to 80% without blowing out Seattle/France intervals.
+SCALE_FLOOR_Y = 3e-2
+SCALE_FLOOR_NUM = 3e-2
+SCALE_FLOOR_TGT = 3e-2
 
 # Sampling stability controls
 SAMPLER_DISABLE_AUTOCAST = False   # BF16 autocast on A100 — 2× matmul throughput; safe with nan_to_num guards
@@ -1787,6 +1790,16 @@ def train_diffusion_v11(
         mean_loss = float(np.mean(ep_losses)) if ep_losses else float("nan")
         losses.append(mean_loss)
 
+        # v11.1: Early stopping — if loss hasn't improved for PATIENCE epochs, stop.
+        # Prevents bad checkpoints (e.g. HCAD o2022 with 3% coverage from overtraining).
+        EARLY_STOP_PATIENCE = 5
+        if len(losses) > EARLY_STOP_PATIENCE:
+            recent_best = min(losses[-EARLY_STOP_PATIENCE:])
+            overall_best = min(losses[:-EARLY_STOP_PATIENCE])
+            if recent_best > overall_best * 1.001:  # no improvement (within 0.1%)
+                print(f"[{ts()}] ⚠️ Early stopping at epoch {ep+1}: loss {mean_loss:.6f} hasn't improved for {EARLY_STOP_PATIENCE} epochs (best={min(losses):.6f})")
+                break
+
         dt_ep = time.time() - t_ep0
 
         # Compute diagnostics
@@ -2057,6 +2070,11 @@ def sample_ddim_v11(
         # alpha: [N, K], Z_blk: [sb_actual, K, H] → u_i_blk: [N, sb_actual, H]
         u_i_blk = torch.einsum("nk,skh->nsh", alpha, Z_blk)  # [N, sb_actual, H]
         u_i_blk = sigma_u * u_i_blk
+        # v11.1: horizon-scaled sigma — uncertainty grows with sqrt(horizon)
+        # This prevents PI collapse at far horizons (HCAD h5: 20% → target ~70%)
+        # and keeps near-horizon PIs tight. Universal across all jurisdictions.
+        horizon_scale = torch.sqrt(torch.arange(1, H + 1, device=device, dtype=torch.float32)).unsqueeze(0).unsqueeze(0)  # [1, 1, H]
+        u_i_blk = u_i_blk * horizon_scale  # [N, sb_actual, H]
         u_i_flat = u_i_blk.reshape(N * sb_actual, H)  # [N*sb_actual, H]
 
         # Expand conditioning for this block only
