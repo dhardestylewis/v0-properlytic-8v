@@ -120,7 +120,7 @@ def run_inference(jurisdiction: str, origin_year: int, backtest: bool = False):
         "OUT_DIR": ckpt_dir,
         "FORECAST_ORIGIN_YEAR": origin_year,
         "SUPABASE_DB_URL": os.environ.get("SUPABASE_DB_URL", ""),
-        "TARGET_SCHEMA": f"forecast_{jurisdiction}",
+        "TARGET_SCHEMA": "forecast_20260220_7f31c6e4",  # Shared schema for all jurisdictions (differentiated by jurisdiction column)
         "CKPT_VARIANT_SUFFIX": "SF500K",
         "RUN_FULL_BACKTEST": backtest,
         "H": 5,
