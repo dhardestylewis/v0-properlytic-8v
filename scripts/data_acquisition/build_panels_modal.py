@@ -235,7 +235,7 @@ def main():
     import json
     
     # 1) Upload fixed worldmodel.py by reading local file and passing as arg
-    with open("scripts/inference/worldmodel.py", "r") as f:
+    with open("scripts/inference/worldmodel.py", "r", encoding="utf-8", errors="replace") as f:
         wm_content = f.read()
     
     # 2) Build panels for jurisdictions with raw data

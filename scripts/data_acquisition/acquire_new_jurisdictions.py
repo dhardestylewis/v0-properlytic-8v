@@ -339,7 +339,7 @@ def acquire_and_build(jurisdiction: str) -> str:
             elif blob.name.endswith('.csv.gz'):
                 df = pd.read_csv(io.BytesIO(content), compression='gzip', low_memory=False)
             elif blob.name.endswith('.csv'):
-                df = pd.read_csv(io.BytesIO(content), low_memory=False)
+                df = pd.read_csv(io.BytesIO(content), low_memory=False, on_bad_lines='skip')
             else:
                 continue
             all_dfs.append(df)
