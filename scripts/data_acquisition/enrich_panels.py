@@ -73,10 +73,8 @@ def enrich_panel(jurisdiction: str) -> str:
 
     macro_joined = 0
 
-    # ── FRED data (global/US) ──
-    print(f"[{jurisdiction}] Fetching FRED data...")
-    FRED_API = "https://api.stlouisfed.org/fred/series/observations"
-    FRED_KEY = "DEMO_KEY"  # Public demo key, rate-limited
+    # ── FRED data (global/US) — direct CSV download, no API key ──
+    print(f"[{jurisdiction}] Fetching FRED data (CSV direct)...")
     for col_name, series_id in FRED_SERIES.items():
         try:
             # Try reading from GCS cache first
@@ -85,15 +83,17 @@ def enrich_panel(jurisdiction: str) -> str:
                 fc = fred_blob.download_as_bytes()
                 fd = pd.read_csv(io.BytesIO(fc))
             else:
-                # Download from FRED
-                url = f"{FRED_API}?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start=1990-01-01"
-                resp = requests.get(url, timeout=30)
-                if resp.status_code == 200:
-                    data = resp.json().get("observations", [])
-                    fd = pd.DataFrame(data)
+                # Direct CSV download — no API key needed
+                url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd=1990-01-01"
+                resp = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+                if resp.status_code == 200 and len(resp.content) > 50:
+                    fd = pd.read_csv(io.BytesIO(resp.content))
+                    # Normalize column names: DATE -> date, series_id -> value
+                    fd.columns = ["date"] + ["value"] + list(fd.columns[2:]) if len(fd.columns) > 1 else fd.columns
+                    if len(fd.columns) == 2:
+                        fd.columns = ["date", "value"]
                     # Cache to GCS
-                    csv_bytes = fd.to_csv(index=False).encode()
-                    fred_blob.upload_from_string(csv_bytes)
+                    fred_blob.upload_from_string(resp.content)
                 else:
                     print(f"  FRED {series_id}: HTTP {resp.status_code}")
                     continue
@@ -118,13 +118,20 @@ def enrich_panel(jurisdiction: str) -> str:
                 boe_blob = bucket.blob(f"macro/boe/{series_code}.csv")
                 if boe_blob.exists():
                     bc = boe_blob.download_as_bytes()
-                    bd = pd.read_csv(io.BytesIO(bc))
+                    bd = pd.read_csv(io.BytesIO(bc), on_bad_lines='skip')
                 else:
                     url = f"https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp?csv.x=yes&SeriesCodes={series_code}&CSVF=CN&Datefrom=01/Jan/1990&Dateto=31/Dec/2025"
                     resp = requests.get(url, timeout=30,
                                        headers={"User-Agent": "Mozilla/5.0"})
                     if resp.status_code == 200 and len(resp.content) > 100:
-                        bd = pd.read_csv(io.BytesIO(resp.content))
+                        # BOE CSV has header rows — try multiple skiprows values
+                        for skip in [0, 1, 3, 5]:
+                            try:
+                                bd = pd.read_csv(io.BytesIO(resp.content), skiprows=skip, on_bad_lines='skip')
+                                if len(bd.columns) >= 2 and len(bd) > 5:
+                                    break
+                            except Exception:
+                                continue
                         boe_blob.upload_from_string(resp.content)
                     else:
                         print(f"  BOE {series_code}: HTTP {resp.status_code}")
@@ -160,13 +167,13 @@ def enrich_panel(jurisdiction: str) -> str:
                     fc = fred_blob.download_as_bytes()
                     fd = pd.read_csv(io.BytesIO(fc))
                 else:
-                    url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start=1990-01-01"
-                    resp = requests.get(url, timeout=30)
-                    if resp.status_code == 200:
-                        data = resp.json().get("observations", [])
-                        fd = pd.DataFrame(data)
-                        csv_bytes = fd.to_csv(index=False).encode()
-                        fred_blob.upload_from_string(csv_bytes)
+                    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}&cosd=1990-01-01"
+                    resp = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+                    if resp.status_code == 200 and len(resp.content) > 50:
+                        fd = pd.read_csv(io.BytesIO(resp.content))
+                        if len(fd.columns) == 2:
+                            fd.columns = ["date", "value"]
+                        fred_blob.upload_from_string(resp.content)
                     else:
                         continue
                 if "date" in fd.columns and "value" in fd.columns:
