@@ -135,8 +135,10 @@ def run_inference(jurisdiction: str, origin_year: int, backtest: bool = False):
     for k, v in config_patches.items():
         globals()[k] = v
 
+    _gpu_props = torch.cuda.get_device_properties(0)
+    _gpu_mem = getattr(_gpu_props, 'total_memory', getattr(_gpu_props, 'total_mem', 0))
     print(f"[{_ts()}] Config: jurisdiction={jurisdiction}, origin={origin_year}")
-    print(f"[{_ts()}] GPU: {torch.cuda.get_device_name(0)}, {torch.cuda.get_device_properties(0).total_mem // 1024**2} MiB")
+    print(f"[{_ts()}] GPU: {torch.cuda.get_device_name(0)}, {_gpu_mem // 1024**2} MiB")
 
     # ─── 6. Execute worldmodel.py to define all functions ────────────
     print(f"[{_ts()}] Executing worldmodel.py...")
