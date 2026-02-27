@@ -155,6 +155,7 @@ export function ForecastMap({
     } | null>(null)
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const selectedIdRef = useRef<string | null>(null)
+    const selectedSourceLayerRef = useRef<string | null>(null) // Track which sourceLayer the selection was made on
     const hoveredIdRef = useRef<string | null>(null)
 
     // Geographic coordinates for StreetView (from MapLibre events)
@@ -877,18 +878,24 @@ export function ForecastMap({
             const id = (feature.properties?.id || feature.id) as string
             if (!id) return
 
-            // Clear prev selection
+            // Clear prev selection — use the sourceLayer where the selection was made,
+            // NOT the current zoom's sourceLayer, to handle zoom-between-taps on mobile
             if (selectedIdRef.current) {
-                ;["forecast-a", "forecast-b"].forEach((s) => {
-                    try {
-                        map.setFeatureState(
-                            { source: s, sourceLayer, id: selectedIdRef.current! },
-                            { selected: false }
-                        )
-                    } catch (err) {
-                        /* ignore */
-                    }
-                })
+                const prevLayer = selectedSourceLayerRef.current || sourceLayer
+                // Clear on BOTH the previous layer AND current layer to handle edge cases
+                const layersToClean = new Set([prevLayer, sourceLayer])
+                    ;["forecast-a", "forecast-b"].forEach((s) => {
+                        layersToClean.forEach((sl) => {
+                            try {
+                                map.setFeatureState(
+                                    { source: s, sourceLayer: sl, id: selectedIdRef.current! },
+                                    { selected: false }
+                                )
+                            } catch (err) {
+                                /* ignore */
+                            }
+                        })
+                    })
             }
 
             // Toggle selection
@@ -906,6 +913,7 @@ export function ForecastMap({
             }
 
             selectedIdRef.current = id
+            selectedSourceLayerRef.current = sourceLayer
             setSelectedId(id)
             setSelectedProps(feature.properties)
             setComparisonData(null)
