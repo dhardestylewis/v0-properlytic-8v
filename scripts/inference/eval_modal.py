@@ -172,6 +172,21 @@ os.environ["INFERENCE_ONLY"] = "1"
             print(f"[{ts()}] ❌ No value column found. Columns: {df_actuals.columns}")
             return
     
+    # Ensure tot_appr_val is numeric (may be string from some panel builds)
+    if "tot_appr_val" in df_actuals.columns:
+        val_dtype = df_actuals["tot_appr_val"].dtype
+        val_nulls = df_actuals["tot_appr_val"].null_count()
+        print(f"[{ts()}] tot_appr_val diagnostics: dtype={val_dtype}, nulls={val_nulls}/{len(df_actuals)}")
+        if val_dtype == pl.Utf8:
+            df_actuals = df_actuals.with_columns(
+                pl.col("tot_appr_val").str.replace_all(",", "").str.replace_all("£", "").str.replace_all("$", "").str.replace_all("€", "")
+                .cast(pl.Float64, strict=False).alias("tot_appr_val")
+            )
+            print(f"[{ts()}] Cast tot_appr_val from Utf8 -> Float64")
+        elif val_dtype not in (pl.Float64, pl.Float32, pl.Int64, pl.Int32):
+            df_actuals = df_actuals.with_columns(pl.col("tot_appr_val").cast(pl.Float64, strict=False))
+            print(f"[{ts()}] Cast tot_appr_val from {val_dtype} -> Float64")
+    
     df_actuals = df_actuals.filter(pl.col("tot_appr_val").is_not_null() & (pl.col("tot_appr_val") > 0))
 
     # CRITICAL: Drop leaky valuation columns — must match train_modal.py preprocessing
