@@ -83,7 +83,7 @@ SUPABASE_DB_URL = (os.environ.get("SUPABASE_DB_URL")
 CKPT_DIR = globals().get("CKPT_DIR") or globals().get("OUT_DIR") or os.environ.get("CKPT_DIR", "")
 
 # Production forecast anchor
-FORECAST_ORIGIN_YEAR = 2025
+FORECAST_ORIGIN_YEAR = int(globals().get("FORECAST_ORIGIN_YEAR", 2025))
 
 # Backtests
 RUN_FULL_BACKTEST = False
@@ -1202,21 +1202,14 @@ def _load_ckpt_into_live_objects(ckpt_path: str):
     )
 
     # v11.1: Cross-jurisdiction hist_len alignment
-    # If checkpoint's FULL_HIST_LEN > panel's actual, truncate scalers to match
+    # Keep checkpoint's FULL_HIST_LEN intact so model dimensions match.
+    # The context builder will pad missing history years with NaN→0.
     _panel_hist_len = int(globals().get("FULL_HIST_LEN", _hist_len))
     if _hist_len != _panel_hist_len:
         print(f"[{_ts()}] ⚠️ Cross-jurisdiction hist_len: checkpoint={_hist_len} vs panel={_panel_hist_len}")
-        _trunc = min(_hist_len, _panel_hist_len)
-        # Use LAST _trunc elements (most recent years are most relevant)
-        if len(_y_scaler.mean_) > _trunc:
-            _y_scaler = SimpleScaler(
-                mean=_y_scaler.mean_[-_trunc:],
-                scale=_y_scaler.scale_[-_trunc:],
-            )
-            print(f"[{_ts()}]   Truncated y_scaler to last {_trunc} positions")
-        # Override globals so everything uses panel's actual hist_len
-        globals()["FULL_HIST_LEN"] = _panel_hist_len
-        _hist_len = _panel_hist_len
+        print(f"[{_ts()}]   Using checkpoint's hist_len={_hist_len} — context builder will pad missing years")
+        # Override globals to use checkpoint's hist_len (pad, don't truncate)
+        globals()["FULL_HIST_LEN"] = _hist_len
 
     _model._y_scaler = _y_scaler
     _model._n_scaler = _n_scaler
