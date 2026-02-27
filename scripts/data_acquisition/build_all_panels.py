@@ -130,7 +130,10 @@ def build_panel(jurisdiction: str) -> str:
             import zipfile
             with zipfile.ZipFile(io.BytesIO(content)) as zf:
                 csv_name = [f for f in zf.namelist() if f.endswith(".csv")][0]
-                df = pd.read_csv(zf.open(csv_name), low_memory=False)
+                try:
+                    df = pd.read_csv(zf.open(csv_name), low_memory=False)
+                except UnicodeDecodeError:
+                    df = pd.read_csv(zf.open(csv_name), low_memory=False, encoding="latin-1")
         elif cfg.get("has_header") is False:
             # UK PPD has no header
             df = pd.read_csv(io.BytesIO(content), header=None, low_memory=False)
@@ -183,7 +186,7 @@ def build_panel(jurisdiction: str) -> str:
         # Drop rows with no year or no value
         before = len(panel)
         panel = panel.dropna(subset=["year"])
-        panel = panel[panel["year"] > 1900]
+        panel = panel[panel["year"] >= 1990]
         if "property_value" in panel.columns:
             panel = panel.dropna(subset=["property_value"])
             panel = panel[panel["property_value"] > 0]

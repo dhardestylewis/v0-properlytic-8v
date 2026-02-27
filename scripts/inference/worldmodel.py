@@ -155,7 +155,7 @@ H = 5
 FULL_HIST_LEN = MAX_YEAR - MIN_YEAR + 1  # 21
 
 EVAL_ORIGINS = [2021, 2022, 2023, 2024]
-FULL_HORIZON_ONLY = True
+FULL_HORIZON_ONLY = False
 
 # Mode toggles
 FULL_PANEL_MODE = False
@@ -505,7 +505,7 @@ if TRAIN_MAX_ACCTS is not None:
 if not FULL_PANEL_MODE:
     sampled_accts = [
         a for a in all_accts
-        if int(hashlib.md5(a.encode()).hexdigest(), 16) % 10000 < int(ACCT_SAMPLE_FRACTION * 10000)
+        if a is not None and int(hashlib.md5(str(a).encode()).hexdigest(), 16) % 10000 < int(ACCT_SAMPLE_FRACTION * 10000)
     ][:MAX_ACCTS_DIFFUSION]
     train_accts = sampled_accts
     infer_accts = sampled_accts
