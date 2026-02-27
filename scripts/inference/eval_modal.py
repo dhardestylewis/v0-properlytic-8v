@@ -158,10 +158,14 @@ os.environ["INFERENCE_ONLY"] = "1"
         df_actuals = df_actuals.drop(all_null_cols)
 
     # Write back the properly formatted panel for worldmodel to consume
+    # Filter out bad year rows (e.g. NYC has year=0) and ensure acct is string
+    df_actuals = df_actuals.filter(pl.col("yr") >= 1990)
+    if df_actuals["acct"].dtype != pl.Utf8:
+        df_actuals = df_actuals.with_columns(pl.col("acct").cast(pl.Utf8))
     df_actuals.write_parquet(local_panel_path)
     
     # Patch MIN_YEAR and MAX_YEAR based on the actual dataset
-    yr_min = int(df_actuals["yr"].min())
+    yr_min = max(int(df_actuals["yr"].min()), 1990)  # floor to 1990
     yr_max = int(df_actuals["yr"].max())
     print(f"[{ts()}] Patching worldmodel constants: yr_min={yr_min}, yr_max={yr_max}")
     
