@@ -332,6 +332,10 @@ NUM_DROP = {
     "new_construction_val_lag1",     # valuation component, reassessed
     "tot_rcn_val_lag1",              # valuation component, reassessed
     "gis_year_used",                 # GIS metadata, not a property feature
+    # v4 leakage fix (uncomment for leakage-free training):
+    # "land_sum_land_val",           # current-year land value, component of target
+    # "jur_value_sum_value",         # current-year jurisdiction value aggregate
+    # "jur_value_mean_value",        # current-year jurisdiction value aggregate
 }
 # PROMOTE: move these to the front so they're always included
 NUM_PROMOTE = ["gis_lat", "gis_lon"]
@@ -1278,15 +1282,19 @@ def sample_token_paths_learned(K: int, H: int, phi_vec: torch.Tensor, S: int, de
     Sample K independent AR(1) token paths per scenario with per-token phi.
     phi_vec: [K] tensor of persistence values.
     Returns: [S, K, H] tensor of shock values.
+
+    Uses torch.stack (no inplace ops) so gradients flow cleanly back to phi_vec.
     """
     phi_vec = phi_vec.to(device)
     innovation_std = torch.sqrt(torch.clamp(1.0 - phi_vec ** 2, min=1e-6))  # [K]
-    Z = torch.zeros((S, K, H), device=device)
-    Z[:, :, 0] = torch.randn((S, K), device=device)
+    z_steps = []
+    z_prev = torch.randn((S, K), device=device)
+    z_steps.append(z_prev)
     for t in range(1, H):
         eta = torch.randn((S, K), device=device)
-        Z[:, :, t] = phi_vec.unsqueeze(0) * Z[:, :, t - 1] + innovation_std.unsqueeze(0) * eta
-    return Z
+        z_prev = phi_vec.unsqueeze(0) * z_prev + innovation_std.unsqueeze(0) * eta
+        z_steps.append(z_prev)
+    return torch.stack(z_steps, dim=2)  # [S, K, H]
 
 def sample_token_paths(K: int, H: int, phi, S: int, device: str) -> torch.Tensor:
     """
@@ -1637,13 +1645,19 @@ def train_diffusion_v11(
 
     print(f"[{ts()}] Creating scheduler..."); sys.stdout.flush()
     sched = Scheduler(DIFF_STEPS_TRAIN, device=device)
-    params = (list(model.parameters()) + list(gating_net.parameters())
-              + list(token_persistence.parameters()) + list(coh_scale.parameters()))
-    print(f"[{ts()}] Creating optimizer ({len(params)} param groups)..."); sys.stdout.flush()
+    # Separate param groups: 10x LR for phi_logits so token persistence can learn
+    param_groups = [
+        {"params": list(model.parameters()), "lr": DIFF_LR},
+        {"params": list(gating_net.parameters()), "lr": DIFF_LR},
+        {"params": list(token_persistence.parameters()), "lr": DIFF_LR * 10},
+        {"params": list(coh_scale.parameters()), "lr": DIFF_LR * 5},
+    ]
+    n_params = sum(len(pg["params"]) for pg in param_groups)
+    print(f"[{ts()}] Creating optimizer ({n_params} params, 4 groups, phi_lr={DIFF_LR*10:.1e})..."); sys.stdout.flush()
     try:
-        opt = torch.optim.AdamW(params, lr=DIFF_LR, weight_decay=1e-4, fused=True)
+        opt = torch.optim.AdamW(param_groups, weight_decay=1e-4, fused=True)
     except TypeError:
-        opt = torch.optim.AdamW(params, lr=DIFF_LR, weight_decay=1e-4)
+        opt = torch.optim.AdamW(param_groups, weight_decay=1e-4)
 
     lr_sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=int(epochs), eta_min=DIFF_LR * 0.1)
 
@@ -1656,10 +1670,8 @@ def train_diffusion_v11(
     autocast_ctx = get_autocast_ctx(device)
     losses: List[float] = []
 
-    # Token path bank: sample K token paths with learned phi (refreshed every 5 epochs)
-    TOKEN_BANK_SIZE = 128
-    token_bank = sample_token_paths(K_TOKENS, H, token_persistence, TOKEN_BANK_SIZE, device)
-    print(f"[{ts()}] Token bank ready shape={token_bank.shape} device={token_bank.device}"); sys.stdout.flush()
+    # No pre-sampled token bank — sample fresh per-batch so phi gradients flow
+    print(f"[{ts()}] Per-batch token sampling enabled (differentiable phi_k)"); sys.stdout.flush()
 
     # Diagnostic accumulators (per-epoch)
     _diag_alpha_sum = None
@@ -1681,8 +1693,7 @@ def train_diffusion_v11(
         _diag_alpha_entropy_sum = 0.0
         _diag_alpha_count = 0
 
-        if (ep > 0) and ((ep % 5) == 0):
-            token_bank = sample_token_paths(K_TOKENS, H, token_persistence, TOKEN_BANK_SIZE, device)
+        # (token paths sampled fresh per-batch — no bank refresh needed)
 
         for _shard_idx, (_, z) in enumerate(_iter_shards_npz(scaled_paths_local)):
             hist_y_s = z["hist_y_s"]
@@ -1718,12 +1729,13 @@ def train_diffusion_v11(
                 xc = torch.from_numpy(cur_cat[b]).to(device, non_blocking=True)
                 rid = torch.from_numpy(region_id[b]).to(device, non_blocking=True)
 
-                # Sample a random token path from the bank (shared for this batch).
-                # .detach() prevents gradients flowing back through the token bank
-                # structure (phi gradients flow through gating/alpha instead).
-                # .clone() after expand ensures contiguous storage not shared with phi.
-                zi = int(rng.integers(0, TOKEN_BANK_SIZE))
-                Z_k = token_bank[zi:zi+1].detach().expand(B, -1, -1).clone()  # [B, K, H]
+                # Sample fresh token paths PER BATCH — phi gradients flow through
+                # the AR(1) recurrence via reparameterization trick.
+                # torch.randn terms are constants w.r.t. phi, so autograd works.
+                Z_k = sample_token_paths_learned(
+                    K_TOKENS, H, token_persistence.get_phi(), 1, device
+                )  # [1, K, H]
+                Z_k = Z_k.expand(B, -1, -1).clone()  # [B, K, H] — clone() avoids inplace grad error
 
                 eps_idio = torch.randn_like(x0)  # [B, H] idiosyncratic noise
 
@@ -1755,7 +1767,8 @@ def train_diffusion_v11(
 
                     opt.zero_grad(set_to_none=True)
                     loss.backward()
-                    torch.nn.utils.clip_grad_norm_(params, 1.0)
+                    all_params = [p for pg in param_groups for p in pg["params"]]
+                    torch.nn.utils.clip_grad_norm_(all_params, 1.0)
                     opt.step()
 
                     ep_losses.append(float(loss.item()))

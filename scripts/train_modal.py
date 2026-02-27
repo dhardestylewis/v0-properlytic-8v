@@ -9,9 +9,18 @@ Cost: ~$3-4/hr on A100-40GB, ~1-2 hrs for 500K parcels @ 60 epochs = ~$4-6 total
 """
 import modal
 import os
+import sys
 
-# ─── Modal app definition ───
-app = modal.App("properlytic-worldmodel-v11")
+# ─── Parse args at module load for descriptive Modal app name ───
+_jur = "unknown"
+_ori = "unknown"
+for i, arg in enumerate(sys.argv):
+    if arg == "--jurisdiction" and i + 1 < len(sys.argv):
+        _jur = sys.argv[i + 1]
+    if arg == "--origin" and i + 1 < len(sys.argv):
+        _ori = sys.argv[i + 1]
+
+app = modal.App(f"train-{_jur}-o{_ori}")
 
 # Container image with all dependencies
 training_image = (
