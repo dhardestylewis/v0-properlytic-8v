@@ -117,6 +117,27 @@ os.environ["INFERENCE_ONLY"] = "1"
     if jurisdiction != "all" and "jurisdiction" in df_actuals.columns:
         df_actuals = df_actuals.filter(pl.col("jurisdiction") == jurisdiction)
 
+    # ─── Pre-rename: Coalesce missing columns before mapping ───
+    # Ensure property_value exists (fallback from sale_price or assessed_value)
+    if "property_value" not in df_actuals.columns:
+        if "sale_price" in df_actuals.columns:
+            df_actuals = df_actuals.with_columns(pl.col("sale_price").alias("property_value"))
+            print(f"[{ts()}] Derived property_value from sale_price")
+        elif "assessed_value" in df_actuals.columns:
+            df_actuals = df_actuals.with_columns(pl.col("assessed_value").alias("property_value"))
+            print(f"[{ts()}] Derived property_value from assessed_value")
+        elif "tot_appr_val" in df_actuals.columns:
+            df_actuals = df_actuals.with_columns(pl.col("tot_appr_val").alias("property_value"))
+            print(f"[{ts()}] Using existing tot_appr_val as property_value")
+    
+    # Ensure year exists (fallback from sale_date)
+    if "year" not in df_actuals.columns and "yr" not in df_actuals.columns:
+        if "sale_date" in df_actuals.columns:
+            df_actuals = df_actuals.with_columns(
+                pl.col("sale_date").cast(pl.Utf8).str.slice(0, 4).cast(pl.Int64, strict=False).alias("year")
+            )
+            print(f"[{ts()}] Derived year from sale_date")
+    
     # Filter to valid appraisal values and map to standard WorldModel canonical mappings
     rename_map = {
         "parcel_id": "acct",
@@ -139,6 +160,18 @@ os.environ["INFERENCE_ONLY"] = "1"
         df_actuals = df_actuals.drop(drop_targets)
 
     df_actuals = df_actuals.rename(actual_renames)
+    
+    # Ensure tot_appr_val exists after rename
+    if "tot_appr_val" not in df_actuals.columns:
+        # Last resort: find any numeric column that looks like a value
+        val_candidates = [c for c in df_actuals.columns if any(v in c.lower() for v in ["val", "price", "amount"])]
+        if val_candidates:
+            df_actuals = df_actuals.with_columns(pl.col(val_candidates[0]).alias("tot_appr_val"))
+            print(f"[{ts()}] Used '{val_candidates[0]}' as tot_appr_val")
+        else:
+            print(f"[{ts()}] ❌ No value column found. Columns: {df_actuals.columns}")
+            return
+    
     df_actuals = df_actuals.filter(pl.col("tot_appr_val").is_not_null() & (pl.col("tot_appr_val") > 0))
 
     # CRITICAL: Drop leaky valuation columns — must match train_modal.py preprocessing
