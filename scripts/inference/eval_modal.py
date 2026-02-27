@@ -191,7 +191,24 @@ os.environ["INFERENCE_ONLY"] = "1"
         df_actuals = df_actuals.drop(all_null_cols)
 
     # Write back the properly formatted panel for worldmodel to consume
-    # Filter out bad year rows (e.g. NYC has year=0, UK PPD may have null yr)
+    # Ensure yr column is properly typed (enrichment may have converted int->float)
+    if "yr" in df_actuals.columns:
+        yr_dtype = df_actuals["yr"].dtype
+        yr_null_count = df_actuals["yr"].null_count()
+        yr_sample = df_actuals["yr"].drop_nulls().head(5).to_list() if yr_null_count < len(df_actuals) else []
+        print(f"[{ts()}] yr diagnostics: dtype={yr_dtype}, nulls={yr_null_count}/{len(df_actuals)}, sample={yr_sample}")
+        
+        # Cast float years to int (pandas enrichment creates float64 from NaN merges)
+        if yr_dtype in (pl.Float64, pl.Float32):
+            df_actuals = df_actuals.with_columns(pl.col("yr").cast(pl.Int64, strict=False))
+            print(f"[{ts()}] Cast yr from {yr_dtype} -> Int64")
+        elif yr_dtype == pl.Utf8:
+            df_actuals = df_actuals.with_columns(
+                pl.col("yr").cast(pl.Float64, strict=False).cast(pl.Int64, strict=False)
+            )
+            print(f"[{ts()}] Cast yr from Utf8 -> Int64")
+    
+    # Filter out bad year rows
     df_actuals = df_actuals.filter(pl.col("yr").is_not_null() & (pl.col("yr") >= 1990))
     if df_actuals["acct"].dtype != pl.Utf8:
         df_actuals = df_actuals.with_columns(pl.col("acct").cast(pl.Utf8))
