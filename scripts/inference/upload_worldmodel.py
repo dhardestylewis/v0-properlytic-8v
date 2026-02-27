@@ -20,7 +20,7 @@ def upload_to_gcs(content: str) -> str:
 @app.local_entrypoint()
 def main():
     # Read locally (this runs on YOUR machine, not Modal)
-    wm_path = os.path.join(os.path.dirname(__file__), "inference", "worldmodel.py")
+    wm_path = os.path.join(os.path.dirname(__file__), "worldmodel.py")
     with open(wm_path, "r", encoding="utf-8") as f:
         content = f.read()
     assert ".expand(B, -1, -1).clone()" in content, "Fix not in local file!"

@@ -391,6 +391,9 @@ for variant_tag, sample_size, strat_above, strat_pct in SWEEP_VARIANTS:
             "global_medians": _global_medians,
             "cfg": _cfg,
             "arch": "v11",
+            # Feature lists: critical for eval-time alignment
+            "num_use": list(_num_use),
+            "cat_use": list(_cat_use),
             "sweep": {
                 "variant": variant_tag,
                 "sample_size": sample_size,

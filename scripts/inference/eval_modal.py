@@ -560,7 +560,8 @@ os.environ["INFERENCE_ONLY"] = "1"
                 alpha = gating_net(
                     ctx["hist_y"][:samp_n].to(_device),
                     ctx["cur_num"][:samp_n].to(_device),
-                    ctx["cur_cat"][:samp_n].to(_device)
+                    ctx["cur_cat"][:samp_n].to(_device),
+                    ctx["region_id"][:samp_n].to(_device)
                 )  # [N, K]
             alpha_np = alpha.cpu().numpy()
             alpha_mean = alpha_np.mean(axis=0)  # [K]

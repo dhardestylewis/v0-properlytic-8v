@@ -332,10 +332,10 @@ NUM_DROP = {
     "new_construction_val_lag1",     # valuation component, reassessed
     "tot_rcn_val_lag1",              # valuation component, reassessed
     "gis_year_used",                 # GIS metadata, not a property feature
-    # v4 leakage fix (uncomment for leakage-free training):
-    # "land_sum_land_val",           # current-year land value, component of target
-    # "jur_value_sum_value",         # current-year jurisdiction value aggregate
-    # "jur_value_mean_value",        # current-year jurisdiction value aggregate
+    # v4 leakage fix:
+    "land_sum_land_val",           # current-year land value, component of target
+    "jur_value_sum_value",         # current-year jurisdiction value aggregate
+    "jur_value_mean_value",        # current-year jurisdiction value aggregate
 }
 # PROMOTE: move these to the front so they're always included
 NUM_PROMOTE = ["gis_lat", "gis_lon"]

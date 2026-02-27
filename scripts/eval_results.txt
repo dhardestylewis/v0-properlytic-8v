@@ -1,0 +1,31 @@
+
+=== eval_v11_sf_ca_2024 (origin=2024, state=finished) ===
+  (no metrics found)
+
+=== eval_v11_sf_ca_2023 (origin=2023, state=finished) ===
+  h1:  rho=0.240  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=79.922  bias=-83.573  pct_neg=98.168  med_growth=-81.573  rho_p=3.23e-259
+
+=== eval_v11_sf_ca_2020 (origin=2020, state=finished) ===
+  h1:  rho=0.508  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=16.930  bias=-77.645  pct_neg=94.540  med_growth=-76.610  rho_p=0.00e+00
+  h2:  rho=0.469  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=3.736  bias=-99.569  pct_neg=96.746  med_growth=-96.513  rho_p=0.00e+00
+  h3:  rho=0.433  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=2.812  bias=-105  pct_neg=97.682  med_growth=-99.424  rho_p=0.00e+00
+  h4:  rho=0.366  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=2.814  bias=-107  pct_neg=97.872  med_growth=-99.922  rho_p=0.00e+00
+
+=== eval_v11_sf_ca_2022 (origin=2022, state=finished) ===
+  h1:  rho=-0.102  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=6.237  bias=-81.811  pct_neg=99.844  med_growth=-79.811  rho_p=1.86e-47
+  h2:  rho=-0.057  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=3.415  bias=-88.583  pct_neg=99.905  med_growth=-84.544  rho_p=1.44e-15
+
+=== eval_v11_sf_ca_2019 (origin=2019, state=finished) ===
+  h1:  rho=0.493  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=15.648  bias=-81.072  pct_neg=95.320  med_growth=-79.072  rho_p=0.00e+00
+  h2:  rho=0.456  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=3.592  bias=-100  pct_neg=97.075  med_growth=-96.996  rho_p=0.00e+00
+  h3:  rho=0.414  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=2.682  bias=-105  pct_neg=97.263  med_growth=-99.541  rho_p=0.00e+00
+  h4:  rho=0.385  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=2.704  bias=-107  pct_neg=97.856  med_growth=-99.941  rho_p=0.00e+00
+  h5:  rho=0.321  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=2.298  bias=-109  pct_neg=97.854  med_growth=-99.986  rho_p=0.00e+00
+
+=== eval_v11_sf_ca_2021 (origin=2021, state=finished) ===
+  h1:  rho=-0.347  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=1.162  bias=-94.149  pct_neg=99.885  med_growth=-92.149  rho_p=0.00e+00
+  h2:  rho=-0.285  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=0.819  bias=-100  pct_neg=99.965  med_growth=-96.047  rho_p=0.00e+00
+  h3:  rho=-0.303  mdPIT=N/A  avgFW=N/A  MdAE=N/A  MAE=N/A  MAPE=N/A  coverage=0.755  bias=-105  pct_neg=99.874  med_growth=-98.944  rho_p=0.00e+00
+
+=== eval_v11_sf_ca_2019 (origin=2019, state=finished) ===
+  (no metrics found)
