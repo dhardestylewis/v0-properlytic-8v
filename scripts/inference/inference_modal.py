@@ -135,6 +135,60 @@ def run_inference(jurisdiction: str, origin_year: int, backtest: bool = False):
     for k, v in config_patches.items():
         globals()[k] = v
 
+    # ─── 5b. Preprocess panel: rename columns to worldmodel's expected schema ──
+    # worldmodel.py expects HCAD column names (acct, yr, tot_appr_val, etc.)
+    # Multi-jurisdiction panels use canonical names (parcel_id, year, property_value)
+    # This mapping mirrors eval_modal.py lines 132-174.
+    import polars as pl
+    print(f"[{_ts()}] Preprocessing panel columns...")
+    _df = pl.read_parquet(panel_path)
+    print(f"[{_ts()}] Panel loaded: {len(_df):,} rows, columns: {_df.columns[:15]}")
+
+    # Derive property_value if missing
+    if "property_value" not in _df.columns:
+        if "sale_price" in _df.columns:
+            _df = _df.with_columns(pl.col("sale_price").alias("property_value"))
+        elif "assessed_value" in _df.columns:
+            _df = _df.with_columns(pl.col("assessed_value").alias("property_value"))
+        elif "tot_appr_val" in _df.columns:
+            _df = _df.with_columns(pl.col("tot_appr_val").alias("property_value"))
+
+    # Derive year if missing
+    if "year" not in _df.columns and "yr" not in _df.columns:
+        if "sale_date" in _df.columns:
+            _df = _df.with_columns(
+                pl.col("sale_date").cast(pl.Utf8).str.slice(0, 4).cast(pl.Int64, strict=False).alias("year")
+            )
+
+    # Rename to worldmodel canonical schema
+    _rename_map = {
+        "parcel_id": "acct",
+        "year": "yr",
+        "property_value": "tot_appr_val",
+        "sqft": "living_area",
+        "land_area": "land_ar",
+        "year_built": "yr_blt",
+        "bedrooms": "bed_cnt",
+        "bathrooms": "full_bath",
+        "stories": "nbr_story",
+        "lat": "gis_lat",
+        "lon": "gis_lon",
+    }
+    _actual_renames = {k: v for k, v in _rename_map.items() if k in _df.columns}
+    # Drop clashing target columns
+    _drop = [v for k, v in _actual_renames.items() if v in _df.columns]
+    if _drop:
+        _df = _df.drop(_drop)
+    _df = _df.rename(_actual_renames)
+    print(f"[{_ts()}] Renamed columns: {_actual_renames}")
+
+    # Filter: need acct, yr, tot_appr_val
+    if "tot_appr_val" in _df.columns:
+        _df = _df.filter(pl.col("tot_appr_val").is_not_null() & (pl.col("tot_appr_val") > 0))
+    _df.write_parquet(panel_path)
+    print(f"[{_ts()}] Panel preprocessed: {len(_df):,} rows → {panel_path}")
+    del _df
+
     _gpu_props = torch.cuda.get_device_properties(0)
     _gpu_mem = getattr(_gpu_props, 'total_memory', getattr(_gpu_props, 'total_mem', 0))
     print(f"[{_ts()}] Config: jurisdiction={jurisdiction}, origin={origin_year}")
