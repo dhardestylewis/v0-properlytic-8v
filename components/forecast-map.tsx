@@ -462,12 +462,10 @@ export function ForecastMap({
 
 
     // Color ramp: growth mode uses growth_pct (% change from baseline).
-    // Breakpoints are fitted from HISTORICAL parcel-level percentiles:
-    //   p05 (deep blue) | p25 (light blue) | median (neutral) | p75 (amber) | p95 (red)
-    //   1yr: -9 | 0 | 2.5 | 10 | 28
-    //   3yr: -18 | 0 | 14.5 | 33 | 88
-    //   5yr: -22 | 1 | 27 | 51 | 163
-    // Ramp is asymmetric because the underlying distribution is right-skewed.
+    // Zero-centered: negative growth → blue, zero → neutral white, positive → amber/red.
+    // This matches the tooltip which shows green ▲ for positive and red ▼ for negative.
+    // The ramp is slightly asymmetric (wider on the positive side) because
+    // the underlying distribution is right-skewed.
     // Value mode uses absolute p50 with fixed percentile breakpoints.
     const buildFillColor = (colorMode?: string): any => {
         if (colorMode === "growth") {
@@ -475,21 +473,20 @@ export function ForecastMap({
             if (year === presentYear) return "#e5e5e5" // Present year: growth=0 → flat neutral
             const yrsFromPresent = Math.max(Math.abs(year - presentYear), 1)
 
-            // Empirical percentile fits from Houston parcel history
-            const p05 = -5 - 4 * yrsFromPresent   // 1yr≈-9, 3yr≈-17, 5yr≈-25
-            const p25 = 0                           // ~0% across all horizons
-            const med = 5 * yrsFromPresent          // 1yr≈5, 3yr≈15, 5yr≈25
-            const p75 = 10 * yrsFromPresent         // 1yr≈10, 3yr≈30, 5yr≈50
-            const p95 = 30 * yrsFromPresent         // 1yr≈30, 3yr≈90, 5yr≈150
+            // Zero-centered breakpoints scaled by horizon
+            const deepNeg = -5 - 4 * yrsFromPresent  // 1yr≈-9, 3yr≈-17, 5yr≈-25
+            const slightNeg = -2 * yrsFromPresent     // 1yr≈-2, 3yr≈-6, 5yr≈-10
+            const slightPos = 5 * yrsFromPresent      // 1yr≈5, 3yr≈15, 5yr≈25
+            const hotPos = 20 * yrsFromPresent         // 1yr≈20, 3yr≈60, 5yr≈100
             return [
                 "interpolate",
                 ["linear"],
                 ["coalesce", ["to-number", ["get", "growth_pct"], 0], 0],
-                p05, "#3b82f6",    // p5  — rare decline → deep blue
-                p25, "#93c5fd",    // p25 — below average → light blue
-                med, "#f8f8f8",    // p50 — median expected → neutral white
-                p75, "#f59e0b",    // p75 — above average → amber
-                p95, "#ef4444",    // p95 — rare hot growth → deep red
+                deepNeg, "#3b82f6",    // rare decline → deep blue
+                slightNeg, "#93c5fd",  // slight decline → light blue
+                0, "#f8f8f8",          // zero growth → neutral white
+                slightPos, "#f59e0b",  // moderate growth → amber
+                hotPos, "#ef4444",     // hot growth → deep red
             ]
         }
         return [

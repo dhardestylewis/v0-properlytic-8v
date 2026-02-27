@@ -265,6 +265,25 @@ def run_inference(jurisdiction: str, origin_year: int, backtest: bool = False):
     elapsed = time.time() - t0
     print(f"\n[{_ts()}] Done in {elapsed/60:.1f} min")
     output_vol.commit()
+
+    # ─── GCS backup: upload all output parquet chunks ────────────────
+    print(f"[{_ts()}] Backing up output to GCS...")
+    _gcs_backup_count = 0
+    _out_root = config_patches["OUT_ROOT"]
+    for dirpath, dirnames, filenames in os.walk(_out_root):
+        for fname in filenames:
+            if fname.endswith((".parquet", ".csv.gz", ".json")):
+                local_fp = os.path.join(dirpath, fname)
+                rel_path = os.path.relpath(local_fp, _out_root)
+                gcs_key = f"inference_output/{jurisdiction}/{rel_path.replace(os.sep, '/')}"
+                try:
+                    blob = bucket.blob(gcs_key)
+                    blob.upload_from_filename(local_fp)
+                    _gcs_backup_count += 1
+                except Exception as _gcs_err:
+                    print(f"[{_ts()}] ⚠️  GCS upload failed for {gcs_key}: {_gcs_err}")
+    print(f"[{_ts()}] GCS backup complete: {_gcs_backup_count} files → gs://properlytic-raw-data/inference_output/{jurisdiction}/")
+
     return json.dumps({
         "status": "ok",
         "jurisdiction": jurisdiction,
