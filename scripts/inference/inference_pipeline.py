@@ -1208,10 +1208,10 @@ def _load_ckpt_into_live_objects(ckpt_path: str):
         print(f"[{_ts()}] ⚠️ Cross-jurisdiction hist_len: checkpoint={_hist_len} vs panel={_panel_hist_len}")
         _trunc = min(_hist_len, _panel_hist_len)
         # Use LAST _trunc elements (most recent years are most relevant)
-        if len(_y_scaler.mean) > _trunc:
+        if len(_y_scaler.mean_) > _trunc:
             _y_scaler = SimpleScaler(
-                mean=_y_scaler.mean[-_trunc:],
-                scale=_y_scaler.scale[-_trunc:],
+                mean=_y_scaler.mean_[-_trunc:],
+                scale=_y_scaler.scale_[-_trunc:],
             )
             print(f"[{_ts()}]   Truncated y_scaler to last {_trunc} positions")
         # Override globals so everything uses panel's actual hist_len
