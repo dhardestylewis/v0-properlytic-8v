@@ -2149,6 +2149,7 @@ if _lf_global is not None:
             ("property_type", ["SF", "SFR", "SINGLE"]),
             ("prop_type_cd",  ["A1"]),
             ("impr_tp_cd",    ["1001", "1002", "1003"]),
+            ("dwelling_type", ["SFR", "SF", "Single Family", "SINGLE", "Maison", "House", "Detached", "1"]),
         ]:
             if _cand_col in _panel_cols:
                 _sf_col, _sf_vals = _cand_col, _cand_vals
