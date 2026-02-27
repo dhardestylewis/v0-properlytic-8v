@@ -135,11 +135,12 @@ def wb_log_artifact(path: str, name: str, artifact_type: str = "model") -> None:
 # -----------------------------
 # 1) Config - v10.2 FULLPANEL
 # -----------------------------
+# Use globals().get() so inference_modal.py can inject these before exec
 PANEL_PATH_DRIVE = "/content/drive/MyDrive/HCAD_Archive_Aggregates/hcad_master_panel_2005_2025_leakage_strict_FIXEDYR_WITHGIS.parquet"
 PANEL_PATH_LOCAL = "/content/local_panel.parquet"
-PANEL_PATH = PANEL_PATH_LOCAL if os.path.exists(PANEL_PATH_LOCAL) else PANEL_PATH_DRIVE
+PANEL_PATH = globals().get("PANEL_PATH", PANEL_PATH_LOCAL if os.path.exists(PANEL_PATH_LOCAL) else PANEL_PATH_DRIVE)
 
-OUT_DIR = "/content/drive/MyDrive/data_backups/world_model_v10_2_fullpanel"
+OUT_DIR = globals().get("OUT_DIR", "/content/drive/MyDrive/data_backups/world_model_v10_2_fullpanel")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 SEED = 42
