@@ -256,13 +256,19 @@ os.environ["INFERENCE_ONLY"] = "1"
     H = int(_cfg.get("H", MAX_HORIZON))
 
     # CRITICAL: Use checkpoint's saved feature lists if available (best alignment).
-    # Fallback: truncate panel-discovered features to match checkpoint dim.
+    # Fallback: handle v3→v4 feature dimension mismatch.
+    _panel_num_dim = len(num_use_local)
     if "num_use" in ckpt and ckpt["num_use"]:
         saved_num = ckpt["num_use"]
         print(f"[{ts()}] Using checkpoint feature list ({len(saved_num)} features): {saved_num[:5]}...")
         num_use_local = saved_num
-    elif len(num_use_local) != num_dim:
-        print(f"[{ts()}] ⚠️ num_use mismatch: panel has {len(num_use_local)} features, checkpoint has {num_dim}. Truncating.")
+    elif num_dim > len(num_use_local):
+        # v3 checkpoint (33 features) with v4 panel (30 features) — pad with placeholders
+        n_pad = num_dim - len(num_use_local)
+        print(f"[{ts()}] ⚠️ Checkpoint expects {num_dim} features but panel has {len(num_use_local)}. Padding {n_pad} zero columns.")
+        num_use_local = num_use_local + [f"_pad_{i}" for i in range(n_pad)]
+    elif num_dim < len(num_use_local):
+        print(f"[{ts()}] ⚠️ Truncating num_use: panel has {len(num_use_local)}, checkpoint has {num_dim}.")
         num_use_local = num_use_local[:num_dim]
     if "cat_use" in ckpt and ckpt["cat_use"]:
         cat_use_local = ckpt["cat_use"]
@@ -310,6 +316,14 @@ os.environ["INFERENCE_ONLY"] = "1"
         lf=lf, accts=sample_accts, num_use_local=num_use_local, cat_use_local=cat_use_local,
         global_medians=global_medians, anchor_year=origin, max_parcels=len(sample_accts)
     )
+    
+    # Pad cur_num if checkpoint expects more features than the panel provides
+    if ctx["cur_num"].shape[1] < num_dim:
+        n_pad = num_dim - ctx["cur_num"].shape[1]
+        pad = torch.zeros(ctx["cur_num"].shape[0], n_pad, dtype=ctx["cur_num"].dtype, device=ctx["cur_num"].device)
+        ctx["cur_num"] = torch.cat([ctx["cur_num"], pad], dim=1)
+        print(f"[{ts()}] Padded cur_num: {ctx['cur_num'].shape[1] - n_pad} → {ctx['cur_num'].shape[1]} (added {n_pad} zero cols)")
+    
     n_valid = len(ctx["acct"])
     print(f"[{ts()}] Built context for {n_valid:,} valid parcels")
 
