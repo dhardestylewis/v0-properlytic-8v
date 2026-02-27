@@ -1201,6 +1201,23 @@ def _load_ckpt_into_live_objects(ckpt_path: str):
         scale=np.array(ckpt["t_scaler_scale"], dtype=np.float32),
     )
 
+    # v11.1: Cross-jurisdiction hist_len alignment
+    # If checkpoint's FULL_HIST_LEN > panel's actual, truncate scalers to match
+    _panel_hist_len = int(globals().get("FULL_HIST_LEN", _hist_len))
+    if _hist_len != _panel_hist_len:
+        print(f"[{_ts()}] ⚠️ Cross-jurisdiction hist_len: checkpoint={_hist_len} vs panel={_panel_hist_len}")
+        _trunc = min(_hist_len, _panel_hist_len)
+        # Use LAST _trunc elements (most recent years are most relevant)
+        if len(_y_scaler.mean) > _trunc:
+            _y_scaler = SimpleScaler(
+                mean=_y_scaler.mean[-_trunc:],
+                scale=_y_scaler.scale[-_trunc:],
+            )
+            print(f"[{_ts()}]   Truncated y_scaler to last {_trunc} positions")
+        # Override globals so everything uses panel's actual hist_len
+        globals()["FULL_HIST_LEN"] = _panel_hist_len
+        _hist_len = _panel_hist_len
+
     _model._y_scaler = _y_scaler
     _model._n_scaler = _n_scaler
     _model._t_scaler = _t_scaler
